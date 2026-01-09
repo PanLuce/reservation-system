@@ -4,8 +4,8 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"start": "tsc && node server.js",
-		"dev": "tsc && node server.js",
+		"start": "tsx server.ts",
+		"dev": "tsx watch server.ts",
 		"test": "playwright test",
 		"test:ui": "playwright test --ui",
 		"lint": "biome check .",
@@ -38,9 +38,11 @@
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {
+		"@types/better-sqlite3": "^7.6.13",
 		"@types/cors": "^2.8.19",
 		"@types/express": "^5.0.6",
 		"@types/multer": "^2.0.0",
+		"better-sqlite3": "^12.5.0",
 		"cors": "^2.8.5",
 		"express": "^5.2.1",
 		"multer": "^2.0.2",

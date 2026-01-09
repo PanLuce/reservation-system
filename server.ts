@@ -3,16 +3,28 @@ import cors from "cors";
 import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
-import { LessonCalendar } from "./src/calendar.js";
+import fs from "fs";
+import { LessonCalendarDB } from "./src/calendar-db.js";
 import { createLesson } from "./src/lesson.js";
 import type { Lesson } from "./src/lesson.js";
-import { RegistrationManager } from "./src/registration.js";
+import { RegistrationManagerDB } from "./src/registration-db.js";
 import { createParticipant } from "./src/participant.js";
 import type { Participant } from "./src/participant.js";
 import { ExcelParticipantLoader } from "./src/excel-loader.js";
+import { initializeDatabase, seedSampleData } from "./src/database.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Ensure data directory exists
+const dataDir = path.join(__dirname, "data");
+if (!fs.existsSync(dataDir)) {
+	fs.mkdirSync(dataDir, { recursive: true });
+}
+
+// Initialize database
+initializeDatabase();
+seedSampleData();
 
 const app = express();
 const PORT = 3000;
@@ -25,53 +37,10 @@ app.use(express.static("public"));
 // File upload setup
 const upload = multer({ dest: "uploads/" });
 
-// Initialize data stores (in-memory for now)
-const calendar = new LessonCalendar();
-const registrationManager = new RegistrationManager(calendar);
+// Initialize data stores with database
+const calendar = new LessonCalendarDB();
+const registrationManager = new RegistrationManagerDB();
 const excelLoader = new ExcelParticipantLoader();
-
-// Sample data for demo
-function initializeSampleData() {
-	const sampleLessons: Lesson[] = [
-		{
-			id: "lesson_1",
-			title: "Cvičení pro maminky s dětmi - Pondělí dopoledne",
-			dayOfWeek: "Monday",
-			time: "10:00",
-			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
-			capacity: 10,
-			enrolledCount: 3,
-		},
-		{
-			id: "lesson_2",
-			title: "Cvičení pro maminky s dětmi - Úterý odpoledne",
-			dayOfWeek: "Tuesday",
-			time: "14:00",
-			location: "CVČ Jeremiáše",
-			ageGroup: "1-2 years",
-			capacity: 12,
-			enrolledCount: 8,
-		},
-		{
-			id: "lesson_3",
-			title: "Cvičení pro maminky s dětmi - Středa dopoledne",
-			dayOfWeek: "Wednesday",
-			time: "10:00",
-			location: "DK Poklad",
-			ageGroup: "2-3 years",
-			capacity: 15,
-			enrolledCount: 12,
-		},
-	];
-
-	for (const lesson of sampleLessons) {
-		calendar.addLesson(lesson);
-	}
-}
-
-// Initialize with sample data
-initializeSampleData();
 
 // API Routes
 

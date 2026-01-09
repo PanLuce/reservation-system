@@ -26,7 +26,8 @@
       "Bash(command npm install --save-dev @types/xlsx)",
       "Bash(pkill:*)",
       "Bash(command npm start)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(timeout 5 npm start)"
     ]
   },
   "sandbox": {
