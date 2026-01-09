@@ -4,6 +4,8 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
+		"start": "tsc && node server.js",
+		"dev": "tsc && node server.js",
 		"test": "playwright test",
 		"test:ui": "playwright test --ui",
 		"lint": "biome check .",
@@ -19,7 +21,7 @@
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
-	"type": "commonjs",
+	"type": "module",
 	"bugs": {
 		"url": "https://github.com/PanLuce/reservation-system/issues"
 	},
@@ -29,9 +31,19 @@
 		"@playwright/test": "^1.57.0",
 		"@types/node": "^25.0.3",
 		"@types/xlsx": "^0.0.35",
+		"c8": "^10.1.3",
+		"nodemon": "^3.1.11",
+		"ts-node": "^10.9.2",
+		"tsx": "^4.21.0",
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {
+		"@types/cors": "^2.8.19",
+		"@types/express": "^5.0.6",
+		"@types/multer": "^2.0.0",
+		"cors": "^2.8.5",
+		"express": "^5.2.1",
+		"multer": "^2.0.2",
 		"xlsx": "^0.18.5"
 	}
 }

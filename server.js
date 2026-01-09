@@ -1,0 +1,167 @@
+import express from "express";
+import cors from "cors";
+import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
+import { LessonCalendar } from "./src/calendar.js";
+import { createLesson } from "./src/lesson.js";
+import { RegistrationManager } from "./src/registration.js";
+import { createParticipant } from "./src/participant.js";
+import { ExcelParticipantLoader } from "./src/excel-loader.js";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const app = express();
+const PORT = 3000;
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static("public"));
+// File upload setup
+const upload = multer({ dest: "uploads/" });
+// Initialize data stores (in-memory for now)
+const calendar = new LessonCalendar();
+const registrationManager = new RegistrationManager(calendar);
+const excelLoader = new ExcelParticipantLoader();
+// Sample data for demo
+function initializeSampleData() {
+    const sampleLessons = [
+        {
+            id: "lesson_1",
+            title: "Cvičení pro maminky s dětmi - Pondělí dopoledne",
+            dayOfWeek: "Monday",
+            time: "10:00",
+            location: "CVČ Vietnamská",
+            ageGroup: "3-12 months",
+            capacity: 10,
+            enrolledCount: 3,
+        },
+        {
+            id: "lesson_2",
+            title: "Cvičení pro maminky s dětmi - Úterý odpoledne",
+            dayOfWeek: "Tuesday",
+            time: "14:00",
+            location: "CVČ Jeremiáše",
+            ageGroup: "1-2 years",
+            capacity: 12,
+            enrolledCount: 8,
+        },
+        {
+            id: "lesson_3",
+            title: "Cvičení pro maminky s dětmi - Středa dopoledne",
+            dayOfWeek: "Wednesday",
+            time: "10:00",
+            location: "DK Poklad",
+            ageGroup: "2-3 years",
+            capacity: 15,
+            enrolledCount: 12,
+        },
+    ];
+    for (const lesson of sampleLessons) {
+        calendar.addLesson(lesson);
+    }
+}
+// Initialize with sample data
+initializeSampleData();
+// API Routes
+// Lessons
+app.get("/api/lessons", (req, res) => {
+    res.json(calendar.getAllLessons());
+});
+app.get("/api/lessons/:id", (req, res) => {
+    const lesson = calendar.getLessonById(req.params.id);
+    if (!lesson) {
+        return res.status(404).json({ error: "Lesson not found" });
+    }
+    res.json(lesson);
+});
+app.post("/api/lessons", (req, res) => {
+    const lessonData = req.body;
+    const lesson = createLesson({
+        title: lessonData.title,
+        dayOfWeek: lessonData.dayOfWeek,
+        time: lessonData.time,
+        location: lessonData.location,
+        ageGroup: lessonData.ageGroup,
+        capacity: Number(lessonData.capacity),
+    });
+    calendar.addLesson(lesson);
+    res.status(201).json(lesson);
+});
+app.put("/api/lessons/:id", (req, res) => {
+    const lesson = calendar.getLessonById(req.params.id);
+    if (!lesson) {
+        return res.status(404).json({ error: "Lesson not found" });
+    }
+    calendar.updateLesson(req.params.id, req.body);
+    const updated = calendar.getLessonById(req.params.id);
+    res.json(updated);
+});
+app.delete("/api/lessons/:id", (req, res) => {
+    const count = calendar.bulkDeleteLessons({ id: req.params.id });
+    if (count === 0) {
+        return res.status(404).json({ error: "Lesson not found" });
+    }
+    res.json({ message: "Lesson deleted" });
+});
+// Registrations
+app.post("/api/registrations", (req, res) => {
+    const { lessonId, participant } = req.body;
+    const newParticipant = createParticipant({
+        name: participant.name,
+        email: participant.email,
+        phone: participant.phone,
+        ageGroup: participant.ageGroup,
+    });
+    const registration = registrationManager.registerParticipant(lessonId, newParticipant);
+    res.status(201).json(registration);
+});
+app.get("/api/registrations/lesson/:lessonId", (req, res) => {
+    const registrations = registrationManager.getRegistrationsForLesson(req.params.lessonId);
+    res.json(registrations);
+});
+// Substitutions
+app.get("/api/substitutions/:ageGroup", (req, res) => {
+    const availableLessons = registrationManager.getAvailableSubstitutionLessons(req.params.ageGroup);
+    res.json(availableLessons);
+});
+app.post("/api/substitutions", (req, res) => {
+    const { lessonId, participant, missedLessonId } = req.body;
+    const newParticipant = createParticipant({
+        name: participant.name,
+        email: participant.email,
+        phone: participant.phone,
+        ageGroup: participant.ageGroup,
+    });
+    const registration = registrationManager.registerForSubstitution(lessonId, newParticipant, missedLessonId);
+    res.status(201).json(registration);
+});
+// Excel Import
+app.post("/api/excel/import", upload.single("file"), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+    }
+    const lessonId = req.body.lessonId;
+    if (!lessonId) {
+        return res.status(400).json({ error: "Lesson ID required" });
+    }
+    try {
+        const count = excelLoader.bulkLoadAndRegister(req.file.path, lessonId, registrationManager);
+        res.json({ message: `Successfully registered ${count} participants` });
+    }
+    catch (error) {
+        res
+            .status(500)
+            .json({ error: "Failed to process Excel file", details: String(error) });
+    }
+});
+// Serve frontend
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+// Start server
+app.listen(PORT, () => {
+    console.log(`🚀 Reservation System running at http://localhost:${PORT}`);
+    console.log(`📅 Sample lessons loaded`);
+    console.log(`\n✨ Open http://localhost:${PORT} in your browser\n`);
+});
+//# sourceMappingURL=server.js.map

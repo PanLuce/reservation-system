@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centrum Rubáček - Rezervační Systém</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Centrum Rubáček</h1>
+            <p>Rezervační Systém pro Lekce</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab active" data-tab="lessons">📅 Lekce</button>
+            <button class="tab" data-tab="register">👥 Registrace</button>
+            <button class="tab" data-tab="substitution">🔄 Náhradní Lekce</button>
+            <button class="tab" data-tab="excel">📊 Import Excel</button>
+        </nav>
+
+        <!-- Lessons Tab -->
+        <div class="tab-content active" id="lessons">
+            <div class="section-header">
+                <h2>Přehled Lekcí</h2>
+                <button class="btn btn-primary" onclick="showAddLessonForm()">+ Přidat Lekci</button>
+            </div>
+
+            <div id="add-lesson-form" class="form-card" style="display: none;">
+                <h3>Nová Lekce</h3>
+                <form onsubmit="addLesson(event)">
+                    <div class="form-group">
+                        <label>Název lekce:</label>
+                        <input type="text" name="title" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Den:</label>
+                            <select name="dayOfWeek" required>
+                                <option value="Monday">Pondělí</option>
+                                <option value="Tuesday">Úterý</option>
+                                <option value="Wednesday">Středa</option>
+                                <option value="Thursday">Čtvrtek</option>
+                                <option value="Friday">Pátek</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Čas:</label>
+                            <input type="time" name="time" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Lokace:</label>
+                        <input type="text" name="location" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Věková skupina:</label>
+                            <select name="ageGroup" required>
+                                <option value="3-12 months">3-12 měsíců</option>
+                                <option value="1-2 years">1-2 roky</option>
+                                <option value="2-3 years">2-3 roky</option>
+                                <option value="3-4 years">3-4 roky</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Kapacita:</label>
+                            <input type="number" name="capacity" min="1" required>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Uložit</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideAddLessonForm()">Zrušit</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="lessons-list" class="lessons-grid"></div>
+        </div>
+
+        <!-- Register Tab -->
+        <div class="tab-content" id="register">
+            <h2>Registrace Účastníka</h2>
+            <form onsubmit="registerParticipant(event)" class="form-card">
+                <div class="form-group">
+                    <label>Vyberte lekci:</label>
+                    <select name="lessonId" id="lesson-select" required></select>
+                </div>
+                <h3>Údaje účastníka</h3>
+                <div class="form-group">
+                    <label>Jméno:</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Telefon:</label>
+                    <input type="tel" name="phone" required>
+                </div>
+                <div class="form-group">
+                    <label>Věková skupina:</label>
+                    <select name="ageGroup" required>
+                        <option value="3-12 months">3-12 měsíců</option>
+                        <option value="1-2 years">1-2 roky</option>
+                        <option value="2-3 years">2-3 roky</option>
+                        <option value="3-4 years">3-4 roky</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Registrovat</button>
+            </form>
+        </div>
+
+        <!-- Substitution Tab -->
+        <div class="tab-content" id="substitution">
+            <h2>Náhradní Lekce</h2>
+            <div class="form-card">
+                <div class="form-group">
+                    <label>Věková skupina:</label>
+                    <select id="sub-age-group" onchange="loadSubstitutionLessons()">
+                        <option value="">-- Vyberte --</option>
+                        <option value="3-12 months">3-12 měsíců</option>
+                        <option value="1-2 years">1-2 roky</option>
+                        <option value="2-3 years">2-3 roky</option>
+                        <option value="3-4 years">3-4 roky</option>
+                    </select>
+                </div>
+                <div id="substitution-lessons"></div>
+            </div>
+        </div>
+
+        <!-- Excel Import Tab -->
+        <div class="tab-content" id="excel">
+            <h2>Import Účastníků z Excel</h2>
+            <div class="form-card">
+                <div class="info-box">
+                    <h3>📋 Formát Excel souboru:</h3>
+                    <p>Soubor musí obsahovat sloupce:</p>
+                    <ul>
+                        <li><strong>name</strong> - Jméno účastníka</li>
+                        <li><strong>email</strong> - Email</li>
+                        <li><strong>phone</strong> - Telefon</li>
+                        <li><strong>ageGroup</strong> - Věková skupina (např. "3-12 months")</li>
+                    </ul>
+                </div>
+                <form onsubmit="uploadExcel(event)">
+                    <div class="form-group">
+                        <label>Vyberte lekci pro registraci:</label>
+                        <select name="lessonId" id="excel-lesson-select" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Excel soubor:</label>
+                        <input type="file" name="file" accept=".xlsx,.xls" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Nahrát a Registrovat</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

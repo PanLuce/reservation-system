@@ -19,3 +19,14 @@ playwright/.cache/
 
 # TypeScript
 *.tsbuildinfo
+*.js
+*.d.ts
+*.js.map
+*.d.ts.map
+
+# But keep config files
+!playwright.config.ts
+!public/*.js
+
+# Uploads
+uploads/
