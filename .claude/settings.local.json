@@ -21,7 +21,9 @@
 			"Bash(git commit:*)",
 			"Bash(git push:*)",
 			"Bash(command npx playwright test tests/bulk-operations.spec.ts)",
-			"Bash(command npx playwright test:*)"
+			"Bash(command npx playwright test:*)",
+			"Bash(command npm install:*)",
+			"Bash(command npm install --save-dev @types/xlsx)"
 		]
 	},
 	"sandbox": {
