@@ -7,6 +7,7 @@ export type Registration = {
 	participantId: string;
 	registeredAt: Date;
 	status: "confirmed" | "waitlist" | "cancelled";
+	missedLessonId?: string; // For substitution tracking
 };
 
 export class RegistrationManager {
@@ -81,6 +82,47 @@ export class RegistrationManager {
 		}
 
 		registration.status = "cancelled";
+	}
+
+	registerForSubstitution(
+		lessonId: string,
+		participant: Participant,
+		missedLessonId: string,
+	): Registration {
+		const lesson = this.calendar.getLessonById(lessonId);
+		if (!lesson) {
+			throw new Error(`Lesson ${lessonId} not found`);
+		}
+
+		const isFull = lesson.enrolledCount >= lesson.capacity;
+		const status = isFull ? "waitlist" : "confirmed";
+
+		const registration: Registration = {
+			id: this.generateId(),
+			lessonId,
+			participantId: participant.id,
+			registeredAt: new Date(),
+			status,
+			missedLessonId,
+		};
+
+		this.registrations.push(registration);
+
+		if (!isFull) {
+			this.calendar.updateLesson(lessonId, {
+				enrolledCount: lesson.enrolledCount + 1,
+			});
+		}
+
+		return registration;
+	}
+
+	getAvailableSubstitutionLessons(ageGroup: string) {
+		const allLessons = this.calendar.getAllLessons();
+		return allLessons.filter(
+			(lesson) =>
+				lesson.ageGroup === ageGroup && lesson.enrolledCount < lesson.capacity,
+		);
 	}
 
 	private generateId(): string {
