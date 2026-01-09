@@ -42,6 +42,7 @@ On each iteration:
 4. Commit the fix
 5. Run tests again
 6. Repeat until all pass
+7. Check UI locally
 
 If stuck after 15 iterations:
 - Document the blocker

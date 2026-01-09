@@ -20,7 +20,8 @@
 			"Bash(git add:*)",
 			"Bash(git commit:*)",
 			"Bash(git push:*)",
-			"Bash(command npx playwright test tests/bulk-operations.spec.ts)"
+			"Bash(command npx playwright test tests/bulk-operations.spec.ts)",
+			"Bash(command npx playwright test:*)"
 		]
 	},
 	"sandbox": {
