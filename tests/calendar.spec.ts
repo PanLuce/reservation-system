@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { LessonCalendar } from "../src/calendar";
 import type { Lesson } from "../src/lesson";
 
-test.describe("Calendar Management - TDD Red Phase", () => {
+test.describe("Calendar Management", () => {
 	test("should add lessons to calendar", () => {
 		// Arrange
 		const calendar = new LessonCalendar();

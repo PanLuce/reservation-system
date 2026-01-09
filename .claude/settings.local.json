@@ -1,27 +1,30 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(git config:*)",
-      "Bash(npm init:*)",
-      "Bash(npm install:*)",
-      "Bash(npm config:*)",
-      "Bash(/usr/local/bin/npm install --save-dev typescript @types/node @biomejs/biome @playwright/test)",
-      "Bash(command npm install --save-dev typescript @types/node @biomejs/biome @playwright/test)",
-      "Bash(command npx tsc --init)",
-      "Bash(command npx playwright install chromium)",
-      "Bash(command npx @biomejs/biome init)",
-      "Bash(npm test:*)",
-      "Bash(npm run lint)",
-      "Bash(command npx @biomejs/biome check .)",
-      "Bash(command npx @biomejs/biome check --write .)",
-      "WebFetch(domain:centrumrubacek.cz)",
-      "Bash(command npx playwright test tests/calendar.spec.ts)",
-      "Bash(command npx playwright test)",
-      "Bash(git add:*)"
-    ]
-  },
-  "sandbox": {
-    "enabled": false,
-    "autoAllowBashIfSandboxed": false
-  }
+	"permissions": {
+		"allow": [
+			"Bash(git config:*)",
+			"Bash(npm init:*)",
+			"Bash(npm install:*)",
+			"Bash(npm config:*)",
+			"Bash(/usr/local/bin/npm install --save-dev typescript @types/node @biomejs/biome @playwright/test)",
+			"Bash(command npm install --save-dev typescript @types/node @biomejs/biome @playwright/test)",
+			"Bash(command npx tsc --init)",
+			"Bash(command npx playwright install chromium)",
+			"Bash(command npx @biomejs/biome init)",
+			"Bash(npm test:*)",
+			"Bash(npm run lint)",
+			"Bash(command npx @biomejs/biome check .)",
+			"Bash(command npx @biomejs/biome check --write .)",
+			"WebFetch(domain:centrumrubacek.cz)",
+			"Bash(command npx playwright test tests/calendar.spec.ts)",
+			"Bash(command npx playwright test)",
+			"Bash(git add:*)",
+			"Bash(git commit:*)",
+			"Bash(git push:*)",
+			"Bash(command npx playwright test tests/bulk-operations.spec.ts)"
+		]
+	},
+	"sandbox": {
+		"enabled": false,
+		"autoAllowBashIfSandboxed": false
+	}
 }
