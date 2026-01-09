@@ -14,6 +14,7 @@ Build a reservation system with the following requirements:
 ## Phase 1: SKILLS and setup of the project
 - [ ] for the following task check the SKILLS folder in order to pick the right skill, display the selected one
 - [ ] install necessary tools for proper testing and linting
+- [ ] use TDD approach for the following implementation tasks 
 
 ## Phase 2: reservation basics
 - [ ] build the calendar with lessons for exercise

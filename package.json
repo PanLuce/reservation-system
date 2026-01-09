@@ -1,0 +1,33 @@
+{
+	"name": "reservation-system",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"test": "playwright test",
+		"test:ui": "playwright test --ui",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"format": "biome format --write .",
+		"build": "tsc",
+		"typecheck": "tsc --noEmit"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/PanLuce/reservation-system.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "commonjs",
+	"bugs": {
+		"url": "https://github.com/PanLuce/reservation-system/issues"
+	},
+	"homepage": "https://github.com/PanLuce/reservation-system#readme",
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.11",
+		"@playwright/test": "^1.57.0",
+		"@types/node": "^25.0.3",
+		"typescript": "^5.9.3"
+	}
+}

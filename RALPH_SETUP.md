@@ -25,7 +25,6 @@ Run Ralph from outside Claude Code:
 
 ```bash
 # 1. Create your prompt file
-cp prompt.example.md prompt.md
 # Edit prompt.md with your task
 
 # 2. Run ralph loop
@@ -43,7 +42,7 @@ Use this when already in a Claude Code session:
 
 ```bash
 # 1. Create your prompt file
-cp prompt.example.md my-task.md
+cp prompt.md my-task.md
 # Edit my-task.md with your task
 
 # 2. Run interactive script
@@ -213,7 +212,7 @@ pkill -f ralph.sh
 
 ## Next Steps
 
-1. Copy `prompt.example.md` to create your first prompt
+1. Copy `prompt.md` to create your first prompt
 2. Start with a simple task to test the setup
 3. Iterate on your prompt writing skills
 4. Scale up to larger tasks

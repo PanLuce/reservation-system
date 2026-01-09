@@ -1,1 +1,21 @@
 ralph-loop.log
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+*.min.js
+*.bundle.js
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.cache/
+
+# TypeScript
+*.tsbuildinfo
