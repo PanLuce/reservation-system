@@ -1,7 +1,8 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import bcrypt from "bcrypt";
 import Database from "better-sqlite3";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,6 +50,21 @@ export function initializeDatabase() {
     )
   `);
 
+	// Users table for authentication
+	db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      passwordHash TEXT NOT NULL,
+      name TEXT NOT NULL,
+      role TEXT NOT NULL CHECK(role IN ('admin', 'participant')),
+      participantId TEXT,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      lastLogin DATETIME,
+      FOREIGN KEY (participantId) REFERENCES participants(id) ON DELETE SET NULL
+    )
+  `);
+
 	// Registrations table
 	db.exec(`
     CREATE TABLE IF NOT EXISTS registrations (
@@ -67,6 +83,8 @@ export function initializeDatabase() {
 	db.exec(`
     CREATE INDEX IF NOT EXISTS idx_lessons_dayOfWeek ON lessons(dayOfWeek);
     CREATE INDEX IF NOT EXISTS idx_lessons_ageGroup ON lessons(ageGroup);
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
     CREATE INDEX IF NOT EXISTS idx_registrations_lessonId ON registrations(lessonId);
     CREATE INDEX IF NOT EXISTS idx_registrations_participantId ON registrations(participantId);
     CREATE INDEX IF NOT EXISTS idx_registrations_status ON registrations(status);
@@ -123,6 +141,32 @@ export function seedSampleData() {
 
 		for (const lesson of sampleLessons) {
 			insertLesson.run(...lesson);
+		}
+
+		// Create default admin user
+		const userCountStmt = db.prepare("SELECT COUNT(*) as count FROM users");
+		const userResult = userCountStmt.get() as { count: number };
+
+		if (userResult.count === 0) {
+			const adminPassword = "admin123"; // Change this in production!
+			const passwordHash = bcrypt.hashSync(adminPassword, 10);
+
+			const insertUser = db.prepare(`
+        INSERT INTO users (id, email, passwordHash, name, role)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+
+			insertUser.run(
+				"admin_1",
+				"admin@centrumrubacek.cz",
+				passwordHash,
+				"Admin",
+				"admin",
+			);
+
+			console.log("👤 Default admin user created:");
+			console.log("   Email: admin@centrumrubacek.cz");
+			console.log("   Password: admin123");
 		}
 
 		console.log("✅ Sample data seeded");
@@ -186,7 +230,10 @@ export const LessonDB = {
 		return stmt.run(id);
 	},
 
-	bulkUpdate(filter: Record<string, unknown>, updates: Record<string, unknown>) {
+	bulkUpdate(
+		filter: Record<string, unknown>,
+		updates: Record<string, unknown>,
+	) {
 		const whereClause = Object.keys(filter)
 			.map((key) => `${key} = ?`)
 			.join(" AND ");
@@ -287,5 +334,63 @@ export const RegistrationDB = {
 	getAll() {
 		const stmt = db.prepare("SELECT * FROM registrations");
 		return stmt.all();
+	},
+};
+
+// Database operations for Users
+export const UserDB = {
+	insert(user: {
+		id: string;
+		email: string;
+		passwordHash: string;
+		name: string;
+		role: string;
+		participantId?: string;
+	}) {
+		const stmt = db.prepare(`
+      INSERT INTO users (id, email, passwordHash, name, role, participantId)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+		return stmt.run(
+			user.id,
+			user.email,
+			user.passwordHash,
+			user.name,
+			user.role,
+			user.participantId || null,
+		);
+	},
+
+	getByEmail(email: string) {
+		const stmt = db.prepare("SELECT * FROM users WHERE email = ?");
+		return stmt.get(email);
+	},
+
+	getById(id: string) {
+		const stmt = db.prepare("SELECT * FROM users WHERE id = ?");
+		return stmt.get(id);
+	},
+
+	updateLastLogin(id: string) {
+		const stmt = db.prepare(
+			"UPDATE users SET lastLogin = CURRENT_TIMESTAMP WHERE id = ?",
+		);
+		return stmt.run(id);
+	},
+
+	getAll() {
+		const stmt = db.prepare(
+			"SELECT id, email, name, role, createdAt FROM users",
+		);
+		return stmt.all();
+	},
+
+	update(id: string, updates: Record<string, unknown>) {
+		const fields = Object.keys(updates)
+			.map((key) => `${key} = ?`)
+			.join(", ");
+		const values = [...Object.values(updates), id];
+		const stmt = db.prepare(`UPDATE users SET ${fields} WHERE id = ?`);
+		return stmt.run(...values);
 	},
 };

@@ -1,5 +1,5 @@
-import type { Lesson } from "./lesson.js";
 import { LessonDB } from "./database.js";
+import type { Lesson } from "./lesson.js";
 
 export class LessonCalendarDB {
 	addLesson(lesson: Lesson): void {
@@ -30,14 +30,5 @@ export class LessonCalendarDB {
 	bulkDeleteLessons(filter: Partial<Lesson>): number {
 		const result = LessonDB.bulkDelete(filter);
 		return result.changes;
-	}
-
-	private matchesFilter(lesson: Lesson, filter: Partial<Lesson>): boolean {
-		for (const key in filter) {
-			if (lesson[key as keyof Lesson] !== filter[key as keyof Lesson]) {
-				return false;
-			}
-		}
-		return true;
 	}
 }

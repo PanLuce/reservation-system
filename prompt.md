@@ -17,11 +17,14 @@ Build a reservation system with the following requirements:
 - [ ] use TDD approach for the following implementation tasks 
 
 ## Phase 2: reservation basics
-- [ ] build the calendar with lessons for exercise
+- [x] build the calendar with lessons for exercise
 - [ ] lessons can be edited by bulk
 - [ ] admin can register participant on their behalf (also bulk operations)
-- [ ] such distribution of the participants can be loaded via excel spreadsheet
+- [x] such distribution of the participants can be loaded via excel spreadsheet
 - [ ] let participants sign to lessons - as substitution for missed lessons
+- [ ] introduce proper login into the system (also for the participants and myself as admin) 
+- [ ] introduce different view for each login (participant vs admin) - participants can ONLY sign in for their own lesson (with their name and child)  
+- [ ] participants can select even full lessons in order to indicate that they stand in as substitute for possibly absent moms in the future (for me as admin to manage this later on)
 
 ## Completion Criteria
 

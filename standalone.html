@@ -488,7 +488,7 @@
             '3-4 years': '3-4 roky'
         };
 
-        function showTab(tabName) {
+        function _showTab(tabName) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             event.target.classList.add('active');
@@ -546,7 +546,7 @@
             }).join('');
         }
 
-        function showAddForm() {
+        function _showAddForm() {
             document.getElementById('add-form').style.display = 'block';
         }
 
@@ -554,7 +554,7 @@
             document.getElementById('add-form').style.display = 'none';
         }
 
-        function addLesson(event) {
+        function _addLesson(event) {
             event.preventDefault();
             const form = event.target;
             const data = new FormData(form);
@@ -566,7 +566,7 @@
                 time: data.get('time'),
                 location: data.get('location'),
                 ageGroup: data.get('ageGroup'),
-                capacity: parseInt(data.get('capacity')),
+                capacity: parseInt(data.get('capacity'), 10),
                 enrolled: 0
             };
 
@@ -577,7 +577,7 @@
             showNotification('Lekce byla úspěšně přidána!');
         }
 
-        function deleteLesson(id) {
+        function _deleteLesson(id) {
             if (confirm('Opravdu chcete smazat tuto lekci?')) {
                 lessons = lessons.filter(l => l.id !== id);
                 renderLessons();
@@ -599,7 +599,7 @@
             });
         }
 
-        function register(event) {
+        function _register(event) {
             event.preventDefault();
             const form = event.target;
             const data = new FormData(form);
@@ -619,7 +619,7 @@
             form.reset();
         }
 
-        function loadSubstitutions() {
+        function _loadSubstitutions() {
             const ageGroup = document.getElementById('sub-age').value;
             const container = document.getElementById('sub-list');
 
@@ -677,7 +677,7 @@
             `;
         }
 
-        function simulateExcelImport() {
+        function _simulateExcelImport() {
             const lessonId = document.getElementById('excel-lesson').value;
             if (!lessonId) {
                 alert('Prosím vyberte lekci');

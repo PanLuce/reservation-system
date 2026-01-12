@@ -1,17 +1,17 @@
-import express from "express";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import cors from "cors";
+import express from "express";
+import session from "express-session";
 import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from "fs";
+import { AuthService } from "./src/auth.js";
 import { LessonCalendarDB } from "./src/calendar-db.js";
-import { createLesson } from "./src/lesson.js";
-import type { Lesson } from "./src/lesson.js";
-import { RegistrationManagerDB } from "./src/registration-db.js";
-import { createParticipant } from "./src/participant.js";
-import type { Participant } from "./src/participant.js";
-import { ExcelParticipantLoader } from "./src/excel-loader.js";
 import { initializeDatabase, seedSampleData } from "./src/database.js";
+import { ExcelParticipantLoader } from "./src/excel-loader.js";
+import { createLesson } from "./src/lesson.js";
+import { createParticipant } from "./src/participant.js";
+import { RegistrationManagerDB } from "./src/registration-db.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,9 +29,35 @@ seedSampleData();
 const app = express();
 const PORT = 3000;
 
+// Extend session data type
+declare module "express-session" {
+	interface SessionData {
+		userId?: string;
+	}
+}
+
 // Middleware
-app.use(cors());
+app.use(
+	cors({
+		origin: true,
+		credentials: true,
+	}),
+);
 app.use(express.json());
+app.use(
+	session({
+		secret:
+			process.env.SESSION_SECRET ||
+			"reservation-system-secret-change-in-production",
+		resave: false,
+		saveUninitialized: false,
+		cookie: {
+			secure: false, // Set to true in production with HTTPS
+			httpOnly: true,
+			maxAge: 24 * 60 * 60 * 1000, // 24 hours
+		},
+	}),
+);
 app.use(express.static("public"));
 
 // File upload setup
@@ -41,11 +67,105 @@ const upload = multer({ dest: "uploads/" });
 const calendar = new LessonCalendarDB();
 const registrationManager = new RegistrationManagerDB();
 const excelLoader = new ExcelParticipantLoader();
+const authService = new AuthService();
+
+// Authentication middleware
+function requireAuth(
+	req: express.Request,
+	res: express.Response,
+	next: express.NextFunction,
+) {
+	if (!req.session.userId) {
+		return res.status(401).json({ error: "Authentication required" });
+	}
+	next();
+}
+
+function requireAdmin(
+	req: express.Request,
+	res: express.Response,
+	next: express.NextFunction,
+) {
+	if (!req.session.userId) {
+		return res.status(401).json({ error: "Authentication required" });
+	}
+
+	const user = authService.verifyToken(req.session.userId);
+	if (!user || user.role !== "admin") {
+		return res.status(403).json({ error: "Admin access required" });
+	}
+
+	next();
+}
 
 // API Routes
 
-// Lessons
-app.get("/api/lessons", (req, res) => {
+// Authentication
+app.post("/api/auth/login", async (req, res) => {
+	const { email, password } = req.body;
+
+	if (!email || !password) {
+		return res.status(400).json({ error: "Email and password required" });
+	}
+
+	const result = await authService.login(email, password);
+
+	if (!result.success) {
+		return res.status(401).json({ error: result.error });
+	}
+
+	req.session.userId = result.user.id;
+	res.json({ user: result.user });
+});
+
+app.post("/api/auth/register", async (req, res) => {
+	const { email, password, name, participantId } = req.body;
+
+	if (!email || !password || !name) {
+		return res
+			.status(400)
+			.json({ error: "Email, password, and name required" });
+	}
+
+	const result = await authService.register(
+		email,
+		password,
+		name,
+		"participant",
+		participantId,
+	);
+
+	if (!result.success) {
+		return res.status(400).json({ error: result.error });
+	}
+
+	req.session.userId = result.user.id;
+	res.status(201).json({ user: result.user });
+});
+
+app.get("/api/auth/me", requireAuth, (req, res) => {
+	const user = authService.verifyToken(req.session.userId!);
+
+	if (!user) {
+		return res.status(401).json({ error: "Invalid session" });
+	}
+
+	res.json({ user });
+});
+
+app.post("/api/auth/logout", (req, res) => {
+	req.session.destroy((err) => {
+		if (err) {
+			return res.status(500).json({ error: "Logout failed" });
+		}
+		res.json({ message: "Logged out successfully" });
+	});
+});
+
+// API Routes
+
+// Lessons (public read, admin write)
+app.get("/api/lessons", (_req, res) => {
 	res.json(calendar.getAllLessons());
 });
 
@@ -57,7 +177,7 @@ app.get("/api/lessons/:id", (req, res) => {
 	res.json(lesson);
 });
 
-app.post("/api/lessons", (req, res) => {
+app.post("/api/lessons", requireAdmin, (req, res) => {
 	const lessonData = req.body;
 	const lesson = createLesson({
 		title: lessonData.title,
@@ -71,7 +191,7 @@ app.post("/api/lessons", (req, res) => {
 	res.status(201).json(lesson);
 });
 
-app.put("/api/lessons/:id", (req, res) => {
+app.put("/api/lessons/:id", requireAdmin, (req, res) => {
 	const lesson = calendar.getLessonById(req.params.id);
 	if (!lesson) {
 		return res.status(404).json({ error: "Lesson not found" });
@@ -81,7 +201,7 @@ app.put("/api/lessons/:id", (req, res) => {
 	res.json(updated);
 });
 
-app.delete("/api/lessons/:id", (req, res) => {
+app.delete("/api/lessons/:id", requireAdmin, (req, res) => {
 	const count = calendar.bulkDeleteLessons({ id: req.params.id });
 	if (count === 0) {
 		return res.status(404).json({ error: "Lesson not found" });
@@ -108,15 +228,17 @@ app.post("/api/registrations", (req, res) => {
 });
 
 app.get("/api/registrations/lesson/:lessonId", (req, res) => {
-	const registrations =
-		registrationManager.getRegistrationsForLesson(req.params.lessonId);
+	const registrations = registrationManager.getRegistrationsForLesson(
+		req.params.lessonId,
+	);
 	res.json(registrations);
 });
 
 // Substitutions
 app.get("/api/substitutions/:ageGroup", (req, res) => {
-	const availableLessons =
-		registrationManager.getAvailableSubstitutionLessons(req.params.ageGroup);
+	const availableLessons = registrationManager.getAvailableSubstitutionLessons(
+		req.params.ageGroup,
+	);
 	res.json(availableLessons);
 });
 
@@ -165,7 +287,19 @@ app.post("/api/excel/import", upload.single("file"), (req, res) => {
 
 // Serve frontend
 app.get("/", (req, res) => {
+	// Check if user is authenticated
+	if (!req.session.userId) {
+		return res.redirect("/login.html");
+	}
 	res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+app.get("/login.html", (req, res) => {
+	// Redirect to main page if already logged in
+	if (req.session.userId) {
+		return res.redirect("/");
+	}
+	res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
 // Start server

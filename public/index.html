@@ -9,8 +9,15 @@
 <body>
     <div class="container">
         <header>
-            <h1>🎯 Centrum Rubáček</h1>
-            <p>Rezervační Systém pro Lekce</p>
+            <div>
+                <h1>🎯 Centrum Rubáček</h1>
+                <p>Rezervační Systém pro Lekce</p>
+            </div>
+            <div class="user-info" style="text-align: right;">
+                <span id="user-name" style="margin-right: 10px; font-weight: bold;"></span>
+                <span id="user-role" style="margin-right: 10px; padding: 4px 8px; background: #e8f5e9; border-radius: 4px; font-size: 12px;"></span>
+                <button class="btn btn-secondary" onclick="handleLogout()" style="font-size: 14px;">Odhlásit se</button>
+            </div>
         </header>
 
         <nav class="tabs">

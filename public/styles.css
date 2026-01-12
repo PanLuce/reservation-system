@@ -1,324 +1,328 @@
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    padding: 20px;
+	font-family:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+		Cantarell, sans-serif;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	min-height: 100vh;
+	padding: 20px;
 }
 
 .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    overflow: hidden;
+	max-width: 1200px;
+	margin: 0 auto;
+	background: white;
+	border-radius: 20px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	overflow: hidden;
 }
 
 header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 30px;
-    text-align: center;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	padding: 30px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
 
 header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
+	font-size: 2.5rem;
+	margin-bottom: 10px;
 }
 
 header p {
-    font-size: 1.1rem;
-    opacity: 0.9;
+	font-size: 1.1rem;
+	opacity: 0.9;
 }
 
 .tabs {
-    display: flex;
-    background: #f5f5f5;
-    border-bottom: 2px solid #ddd;
+	display: flex;
+	background: #f5f5f5;
+	border-bottom: 2px solid #ddd;
 }
 
 .tab {
-    flex: 1;
-    padding: 15px 20px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: all 0.3s;
-    border-bottom: 3px solid transparent;
+	flex: 1;
+	padding: 15px 20px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font-size: 1rem;
+	font-weight: 500;
+	transition: all 0.3s;
+	border-bottom: 3px solid transparent;
 }
 
 .tab:hover {
-    background: #e8e8e8;
+	background: #e8e8e8;
 }
 
 .tab.active {
-    background: white;
-    color: #667eea;
-    border-bottom-color: #667eea;
+	background: white;
+	color: #667eea;
+	border-bottom-color: #667eea;
 }
 
 .tab-content {
-    display: none;
-    padding: 30px;
+	display: none;
+	padding: 30px;
 }
 
 .tab-content.active {
-    display: block;
+	display: block;
 }
 
 .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 25px;
 }
 
 .section-header h2 {
-    color: #333;
-    font-size: 1.8rem;
+	color: #333;
+	font-size: 1.8rem;
 }
 
 .btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 600;
-    transition: all 0.3s;
+	padding: 12px 24px;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 1rem;
+	font-weight: 600;
+	transition: all 0.3s;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .btn-secondary {
-    background: #6c757d;
-    color: white;
+	background: #6c757d;
+	color: white;
 }
 
 .btn-secondary:hover {
-    background: #5a6268;
+	background: #5a6268;
 }
 
 .btn-danger {
-    background: #dc3545;
-    color: white;
-    padding: 8px 16px;
-    font-size: 0.9rem;
+	background: #dc3545;
+	color: white;
+	padding: 8px 16px;
+	font-size: 0.9rem;
 }
 
 .btn-danger:hover {
-    background: #c82333;
+	background: #c82333;
 }
 
 .form-card {
-    background: #f9f9f9;
-    padding: 25px;
-    border-radius: 12px;
-    margin-bottom: 25px;
+	background: #f9f9f9;
+	padding: 25px;
+	border-radius: 12px;
+	margin-bottom: 25px;
 }
 
 .form-group {
-    margin-bottom: 20px;
+	margin-bottom: 20px;
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #555;
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 600;
+	color: #555;
 }
 
 .form-group input,
 .form-group select {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s;
+	width: 100%;
+	padding: 12px;
+	border: 2px solid #ddd;
+	border-radius: 8px;
+	font-size: 1rem;
+	transition: border-color 0.3s;
 }
 
 .form-group input:focus,
 .form-group select:focus {
-    outline: none;
-    border-color: #667eea;
+	outline: none;
+	border-color: #667eea;
 }
 
 .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 15px;
 }
 
 .form-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
+	display: flex;
+	gap: 10px;
+	margin-top: 20px;
 }
 
 .lessons-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 20px;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+	gap: 20px;
 }
 
 .lesson-card {
-    background: white;
-    border: 2px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 20px;
-    transition: all 0.3s;
+	background: white;
+	border: 2px solid #e0e0e0;
+	border-radius: 12px;
+	padding: 20px;
+	transition: all 0.3s;
 }
 
 .lesson-card:hover {
-    border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-    transform: translateY(-2px);
+	border-color: #667eea;
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+	transform: translateY(-2px);
 }
 
 .lesson-card h3 {
-    color: #333;
-    margin-bottom: 15px;
-    font-size: 1.3rem;
+	color: #333;
+	margin-bottom: 15px;
+	font-size: 1.3rem;
 }
 
 .lesson-info {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 15px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-bottom: 15px;
 }
 
 .lesson-info-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #666;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: #666;
 }
 
 .lesson-info-item strong {
-    color: #333;
-    min-width: 90px;
+	color: #333;
+	min-width: 90px;
 }
 
 .capacity-bar {
-    margin: 15px 0;
+	margin: 15px 0;
 }
 
 .capacity-bar-label {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 5px;
-    font-size: 0.9rem;
-    color: #666;
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 5px;
+	font-size: 0.9rem;
+	color: #666;
 }
 
 .capacity-bar-track {
-    height: 8px;
-    background: #e0e0e0;
-    border-radius: 4px;
-    overflow: hidden;
+	height: 8px;
+	background: #e0e0e0;
+	border-radius: 4px;
+	overflow: hidden;
 }
 
 .capacity-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    transition: width 0.3s;
+	height: 100%;
+	background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+	transition: width 0.3s;
 }
 
 .capacity-bar-fill.full {
-    background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+	background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
 }
 
 .lesson-actions {
-    display: flex;
-    gap: 10px;
+	display: flex;
+	gap: 10px;
 }
 
 .info-box {
-    background: #e3f2fd;
-    border-left: 4px solid #2196f3;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
+	background: #e3f2fd;
+	border-left: 4px solid #2196f3;
+	padding: 15px;
+	border-radius: 8px;
+	margin-bottom: 20px;
 }
 
 .info-box h3 {
-    color: #1976d2;
-    margin-bottom: 10px;
+	color: #1976d2;
+	margin-bottom: 10px;
 }
 
 .info-box ul {
-    margin-left: 20px;
-    color: #555;
+	margin-left: 20px;
+	color: #555;
 }
 
 .info-box ul li {
-    margin-bottom: 5px;
+	margin-bottom: 5px;
 }
 
 .notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 25px;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateX(400px);
-    transition: transform 0.3s;
-    z-index: 1000;
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	padding: 15px 25px;
+	border-radius: 8px;
+	color: white;
+	font-weight: 600;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	transform: translateX(400px);
+	transition: transform 0.3s;
+	z-index: 1000;
 }
 
 .notification.show {
-    transform: translateX(0);
+	transform: translateX(0);
 }
 
 .notification.success {
-    background: #28a745;
+	background: #28a745;
 }
 
 .notification.error {
-    background: #dc3545;
+	background: #dc3545;
 }
 
 .notification.info {
-    background: #17a2b8;
+	background: #17a2b8;
 }
 
 @media (max-width: 768px) {
-    .lessons-grid {
-        grid-template-columns: 1fr;
-    }
+	.lessons-grid {
+		grid-template-columns: 1fr;
+	}
 
-    .form-row {
-        grid-template-columns: 1fr;
-    }
+	.form-row {
+		grid-template-columns: 1fr;
+	}
 
-    .tabs {
-        flex-wrap: wrap;
-    }
+	.tabs {
+		flex-wrap: wrap;
+	}
 
-    .tab {
-        flex: 1 1 50%;
-        font-size: 0.9rem;
-        padding: 12px 10px;
-    }
+	.tab {
+		flex: 1 1 50%;
+		font-size: 0.9rem;
+		padding: 12px 10px;
+	}
 }

@@ -1,6 +1,6 @@
+import { LessonDB, ParticipantDB, RegistrationDB } from "./database.js";
 import type { Participant } from "./participant.js";
 import type { Registration } from "./registration.js";
-import { LessonDB, ParticipantDB, RegistrationDB } from "./database.js";
 
 export class RegistrationManagerDB {
 	registerParticipant(
