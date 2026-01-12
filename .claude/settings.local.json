@@ -36,7 +36,8 @@
       "Bash(echo \"To run Playwright with UI enabled, use one of these commands:\n\n1. Run ALL tests with UI:\n   npm run test:ui\n\n2. Run specific test file with UI:\n   npx playwright test tests/auth.spec.ts --ui\n\n3. Run tests in headed mode \\(see browser\\):\n   npx playwright test --headed\n\n4. Run tests in debug mode:\n   npx playwright test --debug\n\nThe test:ui command opens an interactive interface where you can:\n- See tests running in real browser\n- Step through tests one by one\n- See detailed logs and timeline\n- Rerun failed tests\n- Filter tests by name\n\")",
       "Bash(npx --yes playwright test:*)",
       "Bash(npm run test:headed:*)",
-      "Bash(./node_modules/.bin/playwright test:*)"
+      "Bash(./node_modules/.bin/playwright test:*)",
+      "Bash(timeout 5 npx tsx:*)"
     ]
   },
   "sandbox": {

@@ -14,14 +14,7 @@ For the following task check the SKILLS folder in order to pick the right skill,
 Build a reservation system with the following requirements:
 
 ## Phase 1: reservation basics
-- [x] build the calendar with lessons for exercise
-- [ ] lessons can be edited by bulk
-- [ ] admin can register participant on their behalf (also bulk operations)
-- [x] such distribution of the participants can be loaded via excel spreadsheet
-- [ ] let participants sign to lessons - as substitution for missed lessons
-- [ ] introduce proper login into the system (also for the participants and myself as admin) 
-- [ ] introduce different view for each login (participant vs admin) - participants can ONLY sign in for their own lesson (with their name and child)  
-- [ ] participants can select even full lessons in order to indicate that they stand in as substitute for possibly absent moms in the future (for me as admin to manage this later on)
+- [ ] ...TBD by Miri
 
 ## Completion Criteria
 
