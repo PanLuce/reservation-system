@@ -36,13 +36,27 @@ declare module "express-session" {
 	}
 }
 
+// Environment configuration
+const isProduction = process.env.NODE_ENV === "production";
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+	? process.env.ALLOWED_ORIGINS.split(",")
+	: ["https://centrumrubacek.cz"];
+
 // Middleware
 app.use(
 	cors({
-		origin: true,
+		origin: isProduction ? allowedOrigins : true,
 		credentials: true,
 	}),
 );
+
+// Allow iframe embedding
+app.use((req, res, next) => {
+	// Remove X-Frame-Options to allow iframe embedding
+	res.removeHeader("X-Frame-Options");
+	next();
+});
+
 app.use(express.json());
 app.use(
 	session({
@@ -52,9 +66,10 @@ app.use(
 		resave: false,
 		saveUninitialized: false,
 		cookie: {
-			secure: false, // Set to true in production with HTTPS
+			secure: isProduction, // HTTPS required in production
 			httpOnly: true,
 			maxAge: 24 * 60 * 60 * 1000, // 24 hours
+			sameSite: isProduction ? "none" : "lax", // 'none' required for cross-site iframe
 		},
 	}),
 );
