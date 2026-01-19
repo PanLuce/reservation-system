@@ -41,7 +41,8 @@
       "Bash(wc:*)",
       "Bash(ls:*)",
       "Bash(npx tsc:*)",
-      "Bash(npx @biomejs/biome:*)"
+      "Bash(npx @biomejs/biome:*)",
+      "Bash(python3:*)"
     ]
   },
   "sandbox": {

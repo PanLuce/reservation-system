@@ -1,0 +1,9 @@
+{
+  "lessonId": "lesson_1",
+  "participant": {
+    "name": "Jana Nováková",
+    "email": "jana@example.com",
+    "phone": "+420 777 888 999",
+    "ageGroup": "3-12 months"
+  }
+}
