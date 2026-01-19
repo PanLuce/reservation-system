@@ -1,8 +1,11 @@
 import { LessonDB, ParticipantDB, RegistrationDB } from "./database.js";
+import type { EmailServiceInterface } from "./email-factory.js";
 import type { Participant } from "./participant.js";
 import type { Registration } from "./registration.js";
 
 export class RegistrationManagerDB {
+	constructor(private emailService?: EmailServiceInterface) {}
+
 	registerParticipant(
 		lessonId: string,
 		participant: Participant,
@@ -37,7 +40,48 @@ export class RegistrationManagerDB {
 			});
 		}
 
+		// Send emails asynchronously (don't block registration)
+		if (this.emailService) {
+			const updatedLesson = LessonDB.getById(lessonId);
+			if (updatedLesson) {
+				this.sendRegistrationEmails(participant, updatedLesson, status).catch(
+					(err) => {
+						console.error("Email sending failed:", err);
+					},
+				);
+			}
+		}
+
 		return registration;
+	}
+
+	private async sendRegistrationEmails(
+		participant: Participant,
+		lesson: Record<string, unknown>,
+		status: "confirmed" | "waitlist",
+	): Promise<void> {
+		if (!this.emailService) return;
+
+		// Convert lesson from DB record to Lesson type
+		const lessonData = {
+			id: lesson.id as string,
+			title: lesson.title as string,
+			dayOfWeek: lesson.dayOfWeek as string,
+			time: lesson.time as string,
+			location: lesson.location as string,
+			ageGroup: lesson.ageGroup as string,
+			capacity: lesson.capacity as number,
+			enrolledCount: lesson.enrolledCount as number,
+		};
+
+		await Promise.all([
+			this.emailService.sendParticipantConfirmation(
+				participant,
+				lessonData,
+				status,
+			),
+			this.emailService.sendAdminNotification(participant, lessonData, status),
+		]);
 	}
 
 	bulkRegisterParticipants(

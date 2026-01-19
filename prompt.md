@@ -13,8 +13,24 @@ For the following task check the SKILLS folder in order to pick the right skill,
 
 Build a reservation system with the following requirements:
 
-## Phase 1: reservation basics
-- [ ] ...TBD by Miri
+## Phase 1: formulář
+- [ ] vyplní rezervační formulář
+- [ ] přijde email mi i přihlášenému
+- [ ] SPÁROVÁNÍ S PLATBOU - optional (leave as the last point)
+
+## Phase 2: rozvrh
+- [ ] Přihlášení osoby přes email do rozvrhu - vytvoří si své heslo
+- [ ] Osoba jde přiřadit do skupiny (kurzu - rozdělit i barevně)
+- [ ] Do rozvrhu přidám hromadně 10 lekcí z jednoho kurzu
+- [ ] Do kurzu (10 lekcí) přidám hromadně celou skupinu 10 lidí
+- [ ] Každý email (osoba) vidí své rezervace (datum, čas, počet osob na lekci, poznámku pro koho je cvičení (věk))
+- [ ] Osoba se může sama odhlásit z lekce a přihlásit se do jiné (ideálně jen do své věkové kategorie)
+- [ ] Já (admin) můžu přihlásit nebo odhlásit jakoukoliv osobu kamkoliv a kdykoliv
+- [ ] Osoby se můžou z lekce odhlásit nejpozději do půlnoci před lekcí.
+- [ ] Každá osoba má u svého "profilu" zobrazen počet NÁHRAD - (podle toho z kolika lekci se včas odhlásil) - nebo jsem ho po omluvení odhlásila já (číslo lze měnit adminem).
+- [ ] Já mohu kdykoliv prodloužit nebo zkrátit časovou platnost náhrad.
+- [ ] Náhrada za lekci má platnost 3 měsíce
+
 
 ## Completion Criteria
 

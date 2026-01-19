@@ -8,6 +8,7 @@ import multer from "multer";
 import { AuthService } from "./src/auth.js";
 import { LessonCalendarDB } from "./src/calendar-db.js";
 import { initializeDatabase, seedSampleData } from "./src/database.js";
+import { createEmailService } from "./src/email-factory.js";
 import { ExcelParticipantLoader } from "./src/excel-loader.js";
 import { createLesson } from "./src/lesson.js";
 import { createParticipant } from "./src/participant.js";
@@ -78,9 +79,12 @@ app.use(express.static("public"));
 // File upload setup
 const upload = multer({ dest: "uploads/" });
 
+// Initialize email service
+const emailService = createEmailService();
+
 // Initialize data stores with database
 const calendar = new LessonCalendarDB();
-const registrationManager = new RegistrationManagerDB();
+const registrationManager = new RegistrationManagerDB(emailService);
 const excelLoader = new ExcelParticipantLoader();
 const authService = new AuthService();
 

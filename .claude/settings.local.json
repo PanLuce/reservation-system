@@ -37,7 +37,11 @@
       "Bash(npx --yes playwright test:*)",
       "Bash(npm run test:headed:*)",
       "Bash(./node_modules/.bin/playwright test:*)",
-      "Bash(timeout 5 npx tsx:*)"
+      "Bash(timeout 5 npx tsx:*)",
+      "Bash(wc:*)",
+      "Bash(ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx @biomejs/biome:*)"
     ]
   },
   "sandbox": {
