@@ -23,6 +23,18 @@ db.pragma("foreign_keys = ON");
 
 // Initialize database schema
 export function initializeDatabase() {
+	// Courses table
+	db.exec(`
+    CREATE TABLE IF NOT EXISTS courses (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      ageGroup TEXT NOT NULL,
+      color TEXT NOT NULL,
+      description TEXT,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
 	// Lessons table
 	db.exec(`
     CREATE TABLE IF NOT EXISTS lessons (
@@ -34,7 +46,9 @@ export function initializeDatabase() {
       ageGroup TEXT NOT NULL,
       capacity INTEGER NOT NULL,
       enrolledCount INTEGER NOT NULL DEFAULT 0,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      courseId TEXT,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (courseId) REFERENCES courses(id) ON DELETE SET NULL
     )
   `);
 
@@ -46,7 +60,9 @@ export function initializeDatabase() {
       email TEXT NOT NULL,
       phone TEXT NOT NULL,
       ageGroup TEXT NOT NULL,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      courseId TEXT,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (courseId) REFERENCES courses(id) ON DELETE SET NULL
     )
   `);
 
@@ -81,8 +97,11 @@ export function initializeDatabase() {
 
 	// Indexes for performance
 	db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_courses_ageGroup ON courses(ageGroup);
     CREATE INDEX IF NOT EXISTS idx_lessons_dayOfWeek ON lessons(dayOfWeek);
     CREATE INDEX IF NOT EXISTS idx_lessons_ageGroup ON lessons(ageGroup);
+    CREATE INDEX IF NOT EXISTS idx_lessons_courseId ON lessons(courseId);
+    CREATE INDEX IF NOT EXISTS idx_participants_courseId ON participants(courseId);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
     CREATE INDEX IF NOT EXISTS idx_registrations_lessonId ON registrations(lessonId);
@@ -172,6 +191,75 @@ export function seedSampleData() {
 		console.log("✅ Sample data seeded");
 	}
 }
+
+// Database operations for Courses
+export const CourseDB = {
+	getAll() {
+		const stmt = db.prepare("SELECT * FROM courses ORDER BY name");
+		return stmt.all();
+	},
+
+	getById(id: string) {
+		const stmt = db.prepare("SELECT * FROM courses WHERE id = ?");
+		return stmt.get(id);
+	},
+
+	getByAgeGroup(ageGroup: string) {
+		const stmt = db.prepare("SELECT * FROM courses WHERE ageGroup = ?");
+		return stmt.all(ageGroup);
+	},
+
+	insert(course: {
+		id: string;
+		name: string;
+		ageGroup: string;
+		color: string;
+		description?: string;
+	}) {
+		const stmt = db.prepare(`
+      INSERT INTO courses (id, name, ageGroup, color, description)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+		return stmt.run(
+			course.id,
+			course.name,
+			course.ageGroup,
+			course.color,
+			course.description || null,
+		);
+	},
+
+	update(
+		id: string,
+		updates: {
+			name?: string;
+			ageGroup?: string;
+			color?: string;
+			description?: string;
+		},
+	) {
+		const fields: string[] = [];
+		const values: unknown[] = [];
+
+		for (const [key, value] of Object.entries(updates)) {
+			if (value !== undefined) {
+				fields.push(`${key} = ?`);
+				values.push(value);
+			}
+		}
+
+		if (fields.length === 0) return;
+
+		values.push(id);
+		const stmt = db.prepare(`UPDATE courses SET ${fields.join(", ")} WHERE id = ?`);
+		return stmt.run(...values);
+	},
+
+	delete(id: string) {
+		const stmt = db.prepare("DELETE FROM courses WHERE id = ?");
+		return stmt.run(id);
+	},
+};
 
 // Database operations for Lessons
 export const LessonDB = {
