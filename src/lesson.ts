@@ -1,6 +1,7 @@
 export type Lesson = {
 	id: string;
 	title: string;
+	date: string; // YYYY-MM-DD format
 	dayOfWeek: string;
 	time: string;
 	location: string;

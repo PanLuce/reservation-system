@@ -11,6 +11,7 @@ test.describe("Registration Management", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
+			date: "2026-02-01",
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -52,6 +53,7 @@ test.describe("Registration Management", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
+			date: "2026-02-01",
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -109,6 +111,7 @@ test.describe("Registration Management", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
+			date: "2026-02-01",
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -147,6 +150,7 @@ test.describe("Registration Management", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
+			date: "2026-02-01",
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -171,9 +175,10 @@ test.describe("Registration Management", () => {
 		);
 
 		// Act
-		registrationManager.cancelRegistration(registration.id);
+		const result = registrationManager.cancelRegistration(registration.id);
 
 		// Assert
+		expect(result.success).toBe(true);
 		const registrations =
 			registrationManager.getRegistrationsForLesson("lesson_1");
 		const cancelledReg = registrations.find((r) => r.id === registration.id);
