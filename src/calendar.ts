@@ -1,4 +1,4 @@
-import type { Lesson } from "./lesson";
+import type { Lesson } from "./lesson.js";
 
 export class LessonCalendar {
 	private lessons: Lesson[] = [];

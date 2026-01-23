@@ -36,6 +36,7 @@ export class AuthService {
 		UserDB.updateLastLogin(user.id as string);
 
 		// Return user without password
+		const participantId = user.participantId as string | undefined;
 		return {
 			success: true,
 			user: {
@@ -43,7 +44,7 @@ export class AuthService {
 				email: user.email as string,
 				name: user.name as string,
 				role: user.role as "admin" | "participant",
-				participantId: user.participantId as string | undefined,
+				...(participantId !== undefined && { participantId }),
 			},
 		};
 	}
@@ -73,7 +74,7 @@ export class AuthService {
 			passwordHash,
 			name,
 			role,
-			participantId,
+			...(participantId !== undefined && { participantId }),
 		});
 
 		return {
@@ -83,7 +84,7 @@ export class AuthService {
 				email,
 				name,
 				role,
-				participantId,
+				...(participantId !== undefined && { participantId }),
 			},
 		};
 	}
@@ -95,12 +96,13 @@ export class AuthService {
 			return null;
 		}
 
+		const participantId = user.participantId as string | undefined;
 		return {
 			id: user.id as string,
 			email: user.email as string,
 			name: user.name as string,
 			role: user.role as "admin" | "participant",
-			participantId: user.participantId as string | undefined,
+			...(participantId !== undefined && { participantId }),
 		};
 	}
 }

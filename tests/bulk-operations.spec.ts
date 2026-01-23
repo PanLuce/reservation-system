@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { LessonCalendar } from "../src/calendar";
-import type { Lesson } from "../src/lesson";
+import { LessonCalendar } from "../src/calendar.js";
+import type { Lesson } from "../src/lesson.js";
 
 test.describe("Bulk Operations - TDD Red Phase", () => {
 	test("should update a single lesson", () => {

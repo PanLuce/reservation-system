@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
 	createEmailService,
 	type EmailServiceInterface,
-} from "../src/email-factory";
+} from "../src/email-factory.js";
 
 test.describe("Email Factory", () => {
 	// Store original env vars to restore after tests

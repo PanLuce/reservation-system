@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import * as XLSX from "xlsx";
-import { ExcelParticipantLoader } from "../src/excel-loader";
+import { ExcelParticipantLoader } from "../src/excel-loader.js";
 
 // Helper function to create Excel buffer from data
 function createExcelBuffer(data: Record<string, unknown>[]): Buffer {

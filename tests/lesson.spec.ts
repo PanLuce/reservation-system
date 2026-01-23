@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createLesson } from "../src/lesson";
+import { createLesson } from "../src/lesson.js";
 
 test.describe("Lesson Management", () => {
 	test("should create a lesson with valid data", () => {

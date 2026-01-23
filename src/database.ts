@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import bcrypt from "bcrypt";
-import Database from "better-sqlite3";
+import Database, { type Database as DatabaseType } from "better-sqlite3";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,7 +16,7 @@ if (!fs.existsSync(dataDir)) {
 }
 
 // Initialize database
-export const db = new Database(dbPath);
+export const db: DatabaseType = new Database(dbPath);
 
 // Enable foreign keys
 db.pragma("foreign_keys = ON");

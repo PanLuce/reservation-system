@@ -1,7 +1,8 @@
 import * as XLSX from "xlsx";
-import type { Participant } from "./participant";
-import { createParticipant } from "./participant";
-import type { RegistrationManager } from "./registration";
+import type { Participant } from "./participant.js";
+import { createParticipant } from "./participant.js";
+import type { RegistrationManager } from "./registration.js";
+import type { RegistrationManagerDB } from "./registration-db.js";
 
 export class ExcelParticipantLoader {
 	parseParticipantsFromFile(filePath: string): Participant[] {
@@ -17,7 +18,7 @@ export class ExcelParticipantLoader {
 	bulkLoadAndRegister(
 		filePath: string,
 		lessonId: string,
-		registrationManager: RegistrationManager,
+		registrationManager: RegistrationManager | RegistrationManagerDB,
 	): number {
 		const participants = this.parseParticipantsFromFile(filePath);
 		const registrations = registrationManager.bulkRegisterParticipants(
@@ -34,6 +35,9 @@ export class ExcelParticipantLoader {
 		}
 
 		const worksheet = workbook.Sheets[sheetName];
+		if (!worksheet) {
+			return [];
+		}
 		const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
 		const participants: Participant[] = [];

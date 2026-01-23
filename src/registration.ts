@@ -1,5 +1,5 @@
-import type { LessonCalendar } from "./calendar";
-import type { Participant } from "./participant";
+import type { LessonCalendar } from "./calendar.js";
+import type { Participant } from "./participant.js";
 
 export type Registration = {
 	id: string;

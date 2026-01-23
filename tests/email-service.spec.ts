@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import type { Lesson } from "../src/lesson";
-import type { Participant } from "../src/participant";
-import { EmailService } from "../src/email-service";
+import type { Lesson } from "../src/lesson.js";
+import type { Participant } from "../src/participant.js";
+import { EmailService } from "../src/email-service.js";
 import type nodemailer from "nodemailer";
 
 // Mock nodemailer transporter

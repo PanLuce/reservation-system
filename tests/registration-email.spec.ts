@@ -1,15 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { RegistrationManagerDB } from "../src/registration-db";
+import { RegistrationManagerDB } from "../src/registration-db.js";
 import {
 	LessonDB,
 	ParticipantDB,
 	RegistrationDB,
 	db,
 	initializeDatabase,
-} from "../src/database";
-import type { Participant } from "../src/participant";
-import type { Lesson } from "../src/lesson";
-import type { EmailServiceInterface } from "../src/email-factory";
+} from "../src/database.js";
+import type { Participant } from "../src/participant.js";
+import type { Lesson } from "../src/lesson.js";
+import type { EmailServiceInterface } from "../src/email-factory.js";
 
 // Helper to clean up test data
 function cleanupTestData() {

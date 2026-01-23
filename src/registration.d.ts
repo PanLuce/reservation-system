@@ -15,7 +15,10 @@ export declare class RegistrationManager {
     registerParticipant(lessonId: string, participant: Participant): Registration;
     bulkRegisterParticipants(lessonId: string, participants: Participant[]): Registration[];
     getRegistrationsForLesson(lessonId: string): Registration[];
-    cancelRegistration(registrationId: string): void;
+    cancelRegistration(registrationId: string, currentTime?: Date): {
+        success: boolean;
+        error?: string;
+    };
     registerForSubstitution(lessonId: string, participant: Participant, missedLessonId: string): Registration;
     getAvailableSubstitutionLessons(ageGroup: string): any;
     private generateId;

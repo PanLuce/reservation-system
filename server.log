@@ -1,7 +1,22 @@
-✅ Database initialized
-Email service enabled. Admin email: admin@centrumrubacek.cz
-🚀 Reservation System running at http://localhost:3000
-📅 Sample lessons loaded
 
-✨ Open http://localhost:3000 in your browser
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+Error [TransformError]: The package "@esbuild/darwin-arm64" could not be found, and is needed by esbuild.
 
+If you are installing esbuild with npm, make sure that you don't specify the
+"--no-optional" or "--omit=optional" flags. The "optionalDependencies" feature
+of "package.json" is used by esbuild to install the correct binary executable
+for your current platform.
+    at generateBinPath (/Users/lukasvitala/GIT/reservation-system/node_modules/esbuild/lib/main.js:1750:15)
+    at esbuildCommandAndArgs (/Users/lukasvitala/GIT/reservation-system/node_modules/esbuild/lib/main.js:1820:33)
+    at ensureServiceIsRunning (/Users/lukasvitala/GIT/reservation-system/node_modules/esbuild/lib/main.js:1977:25)
+    at transform (/Users/lukasvitala/GIT/reservation-system/node_modules/esbuild/lib/main.js:1878:37)
+    at file:///Users/lukasvitala/GIT/reservation-system/node_modules/tsx/dist/index-7AaEi15b.mjs:14:2865
+    at applyTransformers (file:///Users/lukasvitala/GIT/reservation-system/node_modules/tsx/dist/index-7AaEi15b.mjs:14:1266)
+    at transform (file:///Users/lukasvitala/GIT/reservation-system/node_modules/tsx/dist/index-7AaEi15b.mjs:14:2812)
+    at load (file:///Users/lukasvitala/GIT/reservation-system/node_modules/tsx/dist/esm/index.mjs?1769118516750:2:2348)
+    at async nextLoad (node:internal/modules/esm/hooks:864:22)
+    at async Hooks.load (node:internal/modules/esm/hooks:451:20)
+
+Node.js v20.19.0

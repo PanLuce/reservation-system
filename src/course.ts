@@ -38,12 +38,14 @@ export function createCourse(input: CourseInput): Course {
 	// Generate unique ID
 	const id = `course_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+	const trimmedDescription = input.description?.trim();
+
 	return {
 		id,
 		name: input.name.trim(),
 		ageGroup: input.ageGroup.trim(),
 		color: input.color,
-		description: input.description?.trim(),
+		...(trimmedDescription !== undefined && { description: trimmedDescription }),
 		createdAt: new Date(),
 	};
 }

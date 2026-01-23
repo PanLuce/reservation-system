@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { LessonCalendar } from "../src/calendar";
-import type { Lesson } from "../src/lesson";
+import { LessonCalendar } from "../src/calendar.js";
+import type { Lesson } from "../src/lesson.js";
 
 test.describe("Calendar Management", () => {
 	test("should add lessons to calendar", () => {

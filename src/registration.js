@@ -36,20 +36,32 @@ export class RegistrationManager {
     getRegistrationsForLesson(lessonId) {
         return this.registrations.filter((r) => r.lessonId === lessonId);
     }
-    cancelRegistration(registrationId) {
+    cancelRegistration(registrationId, currentTime = new Date()) {
         const registration = this.registrations.find((r) => r.id === registrationId);
         if (!registration) {
             throw new Error(`Registration ${registrationId} not found`);
         }
+        const lesson = this.calendar.getLessonById(registration.lessonId);
+        if (!lesson) {
+            throw new Error(`Lesson ${registration.lessonId} not found`);
+        }
+        // Check if cancellation is before midnight of lesson day
+        const lessonDate = new Date(lesson.date);
+        const midnightOfLessonDay = new Date(lessonDate);
+        midnightOfLessonDay.setHours(0, 0, 0, 0);
+        if (currentTime >= midnightOfLessonDay) {
+            return {
+                success: false,
+                error: "Cannot cancel after midnight before the lesson",
+            };
+        }
         if (registration.status === "confirmed") {
-            const lesson = this.calendar.getLessonById(registration.lessonId);
-            if (lesson) {
-                this.calendar.updateLesson(registration.lessonId, {
-                    enrolledCount: Math.max(0, lesson.enrolledCount - 1),
-                });
-            }
+            this.calendar.updateLesson(registration.lessonId, {
+                enrolledCount: Math.max(0, lesson.enrolledCount - 1),
+            });
         }
         registration.status = "cancelled";
+        return { success: true };
     }
     registerForSubstitution(lessonId, participant, missedLessonId) {
         const lesson = this.calendar.getLessonById(lessonId);

@@ -14,12 +14,14 @@ export class RegistrationManagerDB {
 		ParticipantDB.insert(participant);
 
 		// Get lesson
-		const lesson = LessonDB.getById(lessonId);
+		const lesson = LessonDB.getById(lessonId) as Record<string, unknown> | undefined;
 		if (!lesson) {
 			throw new Error(`Lesson ${lessonId} not found`);
 		}
 
-		const isFull = lesson.enrolledCount >= lesson.capacity;
+		const enrolledCount = lesson.enrolledCount as number;
+		const capacity = lesson.capacity as number;
+		const isFull = enrolledCount >= capacity;
 		const status = isFull ? "waitlist" : "confirmed";
 
 		const registration: Registration = {
@@ -36,13 +38,13 @@ export class RegistrationManagerDB {
 		// Update lesson enrolled count if confirmed
 		if (!isFull) {
 			LessonDB.update(lessonId, {
-				enrolledCount: lesson.enrolledCount + 1,
+				enrolledCount: enrolledCount + 1,
 			});
 		}
 
 		// Send emails asynchronously (don't block registration)
 		if (this.emailService) {
-			const updatedLesson = LessonDB.getById(lessonId);
+			const updatedLesson = LessonDB.getById(lessonId) as Record<string, unknown> | undefined;
 			if (updatedLesson) {
 				this.sendRegistrationEmails(participant, updatedLesson, status).catch(
 					(err) => {
@@ -66,6 +68,7 @@ export class RegistrationManagerDB {
 		const lessonData = {
 			id: lesson.id as string,
 			title: lesson.title as string,
+			date: lesson.date as string,
 			dayOfWeek: lesson.dayOfWeek as string,
 			time: lesson.time as string,
 			location: lesson.location as string,
@@ -100,16 +103,19 @@ export class RegistrationManagerDB {
 	}
 
 	cancelRegistration(registrationId: string): void {
-		const registration = RegistrationDB.getById(registrationId);
+		const registration = RegistrationDB.getById(registrationId) as Record<string, unknown> | undefined;
 		if (!registration) {
 			throw new Error(`Registration ${registrationId} not found`);
 		}
 
-		if (registration.status === "confirmed") {
-			const lesson = LessonDB.getById(registration.lessonId);
+		const status = registration.status as string;
+		if (status === "confirmed") {
+			const regLessonId = registration.lessonId as string;
+			const lesson = LessonDB.getById(regLessonId) as Record<string, unknown> | undefined;
 			if (lesson) {
-				LessonDB.update(registration.lessonId, {
-					enrolledCount: Math.max(0, lesson.enrolledCount - 1),
+				const enrolledCount = lesson.enrolledCount as number;
+				LessonDB.update(regLessonId, {
+					enrolledCount: Math.max(0, enrolledCount - 1),
 				});
 			}
 		}
@@ -126,12 +132,14 @@ export class RegistrationManagerDB {
 		ParticipantDB.insert(participant);
 
 		// Get lesson
-		const lesson = LessonDB.getById(lessonId);
+		const lesson = LessonDB.getById(lessonId) as Record<string, unknown> | undefined;
 		if (!lesson) {
 			throw new Error(`Lesson ${lessonId} not found`);
 		}
 
-		const isFull = lesson.enrolledCount >= lesson.capacity;
+		const enrolledCount = lesson.enrolledCount as number;
+		const capacity = lesson.capacity as number;
+		const isFull = enrolledCount >= capacity;
 		const status = isFull ? "waitlist" : "confirmed";
 
 		const registration: Registration = {
@@ -149,17 +157,17 @@ export class RegistrationManagerDB {
 		// Update lesson enrolled count if confirmed
 		if (!isFull) {
 			LessonDB.update(lessonId, {
-				enrolledCount: lesson.enrolledCount + 1,
+				enrolledCount: enrolledCount + 1,
 			});
 		}
 
 		return registration;
 	}
 
-	getAvailableSubstitutionLessons(ageGroup: string) {
-		const allLessons = LessonDB.getAll();
+	getAvailableSubstitutionLessons(ageGroup: string): Array<Record<string, unknown>> {
+		const allLessons = LessonDB.getAll() as Array<Record<string, unknown>>;
 		return allLessons.filter(
-			(lesson: Record<string, unknown>) =>
+			(lesson) =>
 				lesson.ageGroup === ageGroup &&
 				(lesson.enrolledCount as number) < (lesson.capacity as number),
 		);

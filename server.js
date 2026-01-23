@@ -1,70 +1,132 @@
-import express from "express";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import cors from "cors";
+import express from "express";
+import session from "express-session";
 import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
-import { LessonCalendar } from "./src/calendar.js";
-import { createLesson } from "./src/lesson.js";
-import { RegistrationManager } from "./src/registration.js";
-import { createParticipant } from "./src/participant.js";
+import { AuthService } from "./src/auth.js";
+import { LessonCalendarDB } from "./src/calendar-db.js";
+import { initializeDatabase, seedSampleData } from "./src/database.js";
+import { createEmailService } from "./src/email-factory.js";
 import { ExcelParticipantLoader } from "./src/excel-loader.js";
+import { createLesson } from "./src/lesson.js";
+import { createParticipant } from "./src/participant.js";
+import { RegistrationManagerDB } from "./src/registration-db.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// Ensure data directory exists
+const dataDir = path.join(__dirname, "data");
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
+// Initialize database
+initializeDatabase();
+seedSampleData();
 const app = express();
 const PORT = 3000;
+// Environment configuration
+const isProduction = process.env.NODE_ENV === "production";
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",")
+    : ["https://centrumrubacek.cz"];
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: isProduction ? allowedOrigins : true,
+    credentials: true,
+}));
+// Allow iframe embedding
+app.use((req, res, next) => {
+    // Remove X-Frame-Options to allow iframe embedding
+    res.removeHeader("X-Frame-Options");
+    next();
+});
 app.use(express.json());
+app.use(session({
+    secret: process.env.SESSION_SECRET ||
+        "reservation-system-secret-change-in-production",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: isProduction, // HTTPS required in production
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: isProduction ? "none" : "lax", // 'none' required for cross-site iframe
+    },
+}));
 app.use(express.static("public"));
 // File upload setup
 const upload = multer({ dest: "uploads/" });
-// Initialize data stores (in-memory for now)
-const calendar = new LessonCalendar();
-const registrationManager = new RegistrationManager(calendar);
+// Initialize email service
+const emailService = createEmailService();
+// Initialize data stores with database
+const calendar = new LessonCalendarDB();
+const registrationManager = new RegistrationManagerDB(emailService);
 const excelLoader = new ExcelParticipantLoader();
-// Sample data for demo
-function initializeSampleData() {
-    const sampleLessons = [
-        {
-            id: "lesson_1",
-            title: "Cvičení pro maminky s dětmi - Pondělí dopoledne",
-            dayOfWeek: "Monday",
-            time: "10:00",
-            location: "CVČ Vietnamská",
-            ageGroup: "3-12 months",
-            capacity: 10,
-            enrolledCount: 3,
-        },
-        {
-            id: "lesson_2",
-            title: "Cvičení pro maminky s dětmi - Úterý odpoledne",
-            dayOfWeek: "Tuesday",
-            time: "14:00",
-            location: "CVČ Jeremiáše",
-            ageGroup: "1-2 years",
-            capacity: 12,
-            enrolledCount: 8,
-        },
-        {
-            id: "lesson_3",
-            title: "Cvičení pro maminky s dětmi - Středa dopoledne",
-            dayOfWeek: "Wednesday",
-            time: "10:00",
-            location: "DK Poklad",
-            ageGroup: "2-3 years",
-            capacity: 15,
-            enrolledCount: 12,
-        },
-    ];
-    for (const lesson of sampleLessons) {
-        calendar.addLesson(lesson);
+const authService = new AuthService();
+// Authentication middleware
+function requireAuth(req, res, next) {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: "Authentication required" });
     }
+    next();
 }
-// Initialize with sample data
-initializeSampleData();
+function requireAdmin(req, res, next) {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+    }
+    const user = authService.verifyToken(req.session.userId);
+    if (!user || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+    }
+    next();
+}
 // API Routes
-// Lessons
-app.get("/api/lessons", (req, res) => {
+// Authentication
+app.post("/api/auth/login", async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ error: "Email and password required" });
+    }
+    const result = await authService.login(email, password);
+    if (!result.success) {
+        return res.status(401).json({ error: result.error });
+    }
+    req.session.userId = result.user.id;
+    res.json({ user: result.user });
+});
+app.post("/api/auth/register", async (req, res) => {
+    const { email, password, name, participantId } = req.body;
+    if (!email || !password || !name) {
+        return res
+            .status(400)
+            .json({ error: "Email, password, and name required" });
+    }
+    const result = await authService.register(email, password, name, "participant", participantId);
+    if (!result.success) {
+        return res.status(400).json({ error: result.error });
+    }
+    req.session.userId = result.user.id;
+    res.status(201).json({ user: result.user });
+});
+app.get("/api/auth/me", requireAuth, (req, res) => {
+    const user = authService.verifyToken(req.session.userId);
+    if (!user) {
+        return res.status(401).json({ error: "Invalid session" });
+    }
+    res.json({ user });
+});
+app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ error: "Logout failed" });
+        }
+        res.json({ message: "Logged out successfully" });
+    });
+});
+// API Routes
+// Lessons (public read, admin write)
+app.get("/api/lessons", (_req, res) => {
     res.json(calendar.getAllLessons());
 });
 app.get("/api/lessons/:id", (req, res) => {
@@ -74,7 +136,7 @@ app.get("/api/lessons/:id", (req, res) => {
     }
     res.json(lesson);
 });
-app.post("/api/lessons", (req, res) => {
+app.post("/api/lessons", requireAdmin, (req, res) => {
     const lessonData = req.body;
     const lesson = createLesson({
         title: lessonData.title,
@@ -87,7 +149,7 @@ app.post("/api/lessons", (req, res) => {
     calendar.addLesson(lesson);
     res.status(201).json(lesson);
 });
-app.put("/api/lessons/:id", (req, res) => {
+app.put("/api/lessons/:id", requireAdmin, (req, res) => {
     const lesson = calendar.getLessonById(req.params.id);
     if (!lesson) {
         return res.status(404).json({ error: "Lesson not found" });
@@ -96,7 +158,7 @@ app.put("/api/lessons/:id", (req, res) => {
     const updated = calendar.getLessonById(req.params.id);
     res.json(updated);
 });
-app.delete("/api/lessons/:id", (req, res) => {
+app.delete("/api/lessons/:id", requireAdmin, (req, res) => {
     const count = calendar.bulkDeleteLessons({ id: req.params.id });
     if (count === 0) {
         return res.status(404).json({ error: "Lesson not found" });
@@ -156,7 +218,18 @@ app.post("/api/excel/import", upload.single("file"), (req, res) => {
 });
 // Serve frontend
 app.get("/", (req, res) => {
+    // Check if user is authenticated
+    if (!req.session.userId) {
+        return res.redirect("/login.html");
+    }
     res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+app.get("/login.html", (req, res) => {
+    // Redirect to main page if already logged in
+    if (req.session.userId) {
+        return res.redirect("/");
+    }
+    res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 // Start server
 app.listen(PORT, () => {

@@ -42,7 +42,21 @@
       "Bash(ls:*)",
       "Bash(npx tsc:*)",
       "Bash(npx @biomejs/biome:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(npm rebuild:*)",
+      "Bash(xargs rm:*)",
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)",
+      "Bash(ralph-loop)",
+      "Bash(npm run typecheck:*)",
+      "Bash(./node_modules/.bin/tsc:*)",
+      "Bash(npm run dev:*)",
+      "Bash(./node_modules/.bin/tsx server.ts)",
+      "Bash(node:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(bash:*)",
+      "Bash(npm run build:*)",
+      "Bash(find:*)"
     ]
   },
   "sandbox": {

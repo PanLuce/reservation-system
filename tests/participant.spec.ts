@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createParticipant } from "../src/participant";
+import { createParticipant } from "../src/participant.js";
 
 test.describe("Participant Management", () => {
 	test("should create a participant with valid data", () => {

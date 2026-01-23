@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { LessonCalendar } from "../src/calendar";
-import type { Lesson } from "../src/lesson";
-import type { Participant } from "../src/participant";
-import { RegistrationManager } from "../src/registration";
+import { LessonCalendar } from "../src/calendar.js";
+import type { Lesson } from "../src/lesson.js";
+import type { Participant } from "../src/participant.js";
+import { RegistrationManager } from "../src/registration.js";
 
 test.describe("Registration Management", () => {
 	test("should register a participant to a lesson", () => {

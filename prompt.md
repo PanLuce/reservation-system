@@ -16,7 +16,6 @@ Build a reservation system with the following requirements:
 ## Phase 1: formulář
 - [ ] vyplní rezervační formulář
 - [ ] přijde email mi i přihlášenému
-- [ ] SPÁROVÁNÍ S PLATBOU - optional (leave as the last point)
 
 ## Phase 2: rozvrh
 - [ ] Přihlášení osoby přes email do rozvrhu - vytvoří si své heslo
@@ -30,6 +29,9 @@ Build a reservation system with the following requirements:
 - [ ] Každá osoba má u svého "profilu" zobrazen počet NÁHRAD - (podle toho z kolika lekci se včas odhlásil) - nebo jsem ho po omluvení odhlásila já (číslo lze měnit adminem).
 - [ ] Já mohu kdykoliv prodloužit nebo zkrátit časovou platnost náhrad.
 - [ ] Náhrada za lekci má platnost 3 měsíce
+
+## Phase 3: platba
+- [ ] SPÁROVÁNÍ S PLATBOU - optional (leave as the last point)
 
 
 ## Completion Criteria

@@ -4,8 +4,8 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"start": "tsx server.ts",
-		"dev": "tsx watch server.ts",
+		"start": "node --import tsx/esm start.mjs",
+		"dev": "node --watch --import tsx/esm start.mjs",
 		"test": "./node_modules/.bin/playwright test",
 		"test:ui": "./node_modules/.bin/playwright test --ui",
 		"test:headed": "./node_modules/.bin/playwright test --headed",
@@ -55,5 +55,8 @@
 		"multer": "^2.0.2",
 		"nodemailer": "^7.0.12",
 		"xlsx": "^0.18.5"
+	},
+	"optionalDependencies": {
+		"@esbuild/darwin-arm64": "^0.24.2"
 	}
 }

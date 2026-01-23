@@ -200,6 +200,7 @@ app.post("/api/lessons", requireAdmin, (req, res) => {
 	const lessonData = req.body;
 	const lesson = createLesson({
 		title: lessonData.title,
+		date: lessonData.date,
 		dayOfWeek: lessonData.dayOfWeek,
 		time: lessonData.time,
 		location: lessonData.location,
@@ -211,17 +212,25 @@ app.post("/api/lessons", requireAdmin, (req, res) => {
 });
 
 app.put("/api/lessons/:id", requireAdmin, (req, res) => {
-	const lesson = calendar.getLessonById(req.params.id);
+	const lessonId = req.params.id;
+	if (!lessonId) {
+		return res.status(400).json({ error: "Lesson ID is required" });
+	}
+	const lesson = calendar.getLessonById(lessonId);
 	if (!lesson) {
 		return res.status(404).json({ error: "Lesson not found" });
 	}
-	calendar.updateLesson(req.params.id, req.body);
-	const updated = calendar.getLessonById(req.params.id);
+	calendar.updateLesson(lessonId, req.body);
+	const updated = calendar.getLessonById(lessonId);
 	res.json(updated);
 });
 
 app.delete("/api/lessons/:id", requireAdmin, (req, res) => {
-	const count = calendar.bulkDeleteLessons({ id: req.params.id });
+	const lessonId = req.params.id;
+	if (!lessonId) {
+		return res.status(400).json({ error: "Lesson ID is required" });
+	}
+	const count = calendar.bulkDeleteLessons({ id: lessonId });
 	if (count === 0) {
 		return res.status(404).json({ error: "Lesson not found" });
 	}
