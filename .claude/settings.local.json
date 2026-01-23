@@ -56,7 +56,9 @@
       "Bash(npm uninstall:*)",
       "Bash(bash:*)",
       "Bash(npm run build:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(xargs:*)",
+      "Bash(lsof:*)"
     ]
   },
   "sandbox": {

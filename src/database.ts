@@ -40,6 +40,7 @@ export function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS lessons (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
+      date TEXT NOT NULL,
       dayOfWeek TEXT NOT NULL,
       time TEXT NOT NULL,
       location TEXT NOT NULL,
@@ -281,6 +282,7 @@ export const LessonDB = {
 	insert(lesson: {
 		id: string;
 		title: string;
+		date: string;
 		dayOfWeek: string;
 		time: string;
 		location: string;
@@ -289,12 +291,13 @@ export const LessonDB = {
 		enrolledCount: number;
 	}) {
 		const stmt = db.prepare(`
-      INSERT INTO lessons (id, title, dayOfWeek, time, location, ageGroup, capacity, enrolledCount)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 		return stmt.run(
 			lesson.id,
 			lesson.title,
+			lesson.date,
 			lesson.dayOfWeek,
 			lesson.time,
 			lesson.location,
@@ -375,6 +378,35 @@ export const ParticipantDB = {
 	getAll() {
 		const stmt = db.prepare("SELECT * FROM participants");
 		return stmt.all();
+	},
+
+	getRegistrationsByParticipantId(participantId: string) {
+		const stmt = db.prepare(`
+			SELECT * FROM registrations
+			WHERE participantId = ?
+			ORDER BY id DESC
+		`);
+		return stmt.all(participantId);
+	},
+
+	getRegistrationsWithLessonDetails(participantId: string) {
+		const stmt = db.prepare(`
+			SELECT
+				r.*,
+				l.title as lessonTitle,
+				l.date as lessonDate,
+				l.time as lessonTime,
+				l.dayOfWeek as lessonDayOfWeek,
+				l.location as lessonLocation,
+				l.ageGroup as lessonAgeGroup,
+				l.capacity as lessonCapacity,
+				l.enrolledCount as lessonEnrolledCount
+			FROM registrations r
+			INNER JOIN lessons l ON r.lessonId = l.id
+			WHERE r.participantId = ?
+			ORDER BY l.date ASC, l.time ASC
+		`);
+		return stmt.all(participantId);
 	},
 };
 

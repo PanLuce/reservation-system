@@ -262,6 +262,15 @@ app.get("/api/registrations/lesson/:lessonId", (req, res) => {
 	res.json(registrations);
 });
 
+app.get("/api/participants/:participantId/registrations", (req, res) => {
+	const participantId = req.params.participantId;
+	if (!participantId) {
+		return res.status(400).json({ error: "Participant ID is required" });
+	}
+	const registrations = ParticipantDB.getRegistrationsWithLessonDetails(participantId);
+	res.json(registrations);
+});
+
 // Substitutions
 app.get("/api/substitutions/:ageGroup", (req, res) => {
 	const availableLessons = registrationManager.getAvailableSubstitutionLessons(
