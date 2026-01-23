@@ -528,6 +528,15 @@ export const RegistrationDB = {
 		return stmt.get(participantId, lessonId);
 	},
 
+	getByParticipantId(participantId: string) {
+		const stmt = db.prepare(`
+			SELECT * FROM registrations
+			WHERE participantId = ?
+			ORDER BY registeredAt DESC
+		`);
+		return stmt.all(participantId);
+	},
+
 	getAll() {
 		const stmt = db.prepare("SELECT * FROM registrations");
 		return stmt.all();

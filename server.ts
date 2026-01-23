@@ -374,6 +374,96 @@ app.get("/api/participants/:participantId/registrations", (req, res) => {
 	res.json(registrations);
 });
 
+// Participant Self-Service
+app.post("/api/participants/:participantId/cancel-registration", (req, res) => {
+	const participantId = req.params.participantId;
+	const { registrationId } = req.body;
+
+	if (!participantId) {
+		return res.status(400).json({ error: "Participant ID is required" });
+	}
+
+	if (!registrationId) {
+		return res.status(400).json({ error: "Registration ID is required" });
+	}
+
+	const result = registrationManager.participantCancelRegistration(
+		registrationId,
+		participantId,
+	);
+
+	if (result.success) {
+		res.json(result);
+	} else {
+		res.status(403).json(result);
+	}
+});
+
+app.post("/api/participants/:participantId/register-lesson", (req, res) => {
+	const participantId = req.params.participantId;
+	const { lessonId } = req.body;
+
+	if (!participantId) {
+		return res.status(400).json({ error: "Participant ID is required" });
+	}
+
+	if (!lessonId) {
+		return res.status(400).json({ error: "Lesson ID is required" });
+	}
+
+	const result = registrationManager.participantSelfRegister(
+		lessonId,
+		participantId,
+	);
+
+	if (result.success) {
+		res.status(201).json(result);
+	} else {
+		res.status(400).json(result);
+	}
+});
+
+app.post("/api/participants/:participantId/transfer-lesson", (req, res) => {
+	const participantId = req.params.participantId;
+	const { currentRegistrationId, newLessonId } = req.body;
+
+	if (!participantId) {
+		return res.status(400).json({ error: "Participant ID is required" });
+	}
+
+	if (!currentRegistrationId || !newLessonId) {
+		return res.status(400).json({
+			error: "Both currentRegistrationId and newLessonId are required",
+		});
+	}
+
+	const result = registrationManager.participantTransferLesson(
+		currentRegistrationId,
+		newLessonId,
+		participantId,
+	);
+
+	if (result.success) {
+		res.json(result);
+	} else {
+		res.status(400).json(result);
+	}
+});
+
+app.get("/api/participants/:participantId/available-lessons", (req, res) => {
+	const participantId = req.params.participantId;
+
+	if (!participantId) {
+		return res.status(400).json({ error: "Participant ID is required" });
+	}
+
+	const lessons = registrationManager.getAvailableLessonsForParticipant(
+		participantId,
+	);
+
+	res.json(lessons);
+});
+
 // Substitutions
 app.get("/api/substitutions/:ageGroup", (req, res) => {
 	const availableLessons = registrationManager.getAvailableSubstitutionLessons(
