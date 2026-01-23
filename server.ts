@@ -211,6 +211,66 @@ app.post("/api/lessons", requireAdmin, (req, res) => {
 	res.status(201).json(lesson);
 });
 
+app.post("/api/courses/:courseId/bulk-lessons", requireAdmin, (req, res) => {
+	const courseId = req.params.courseId;
+	if (!courseId) {
+		return res.status(400).json({ error: "Course ID is required" });
+	}
+
+	const { title, location, time, dayOfWeek, capacity, dates, startDate, weeksCount } = req.body;
+
+	try {
+		let lessons;
+		if (dates && Array.isArray(dates)) {
+			// Create lessons for specific dates
+			lessons = calendar.bulkCreateLessons({
+				courseId,
+				title,
+				location,
+				time,
+				dayOfWeek,
+				capacity: Number(capacity),
+				dates,
+			});
+		} else if (startDate && weeksCount) {
+			// Create recurring lessons
+			lessons = calendar.bulkCreateLessonsRecurring({
+				courseId,
+				title,
+				location,
+				time,
+				dayOfWeek,
+				capacity: Number(capacity),
+				startDate,
+				weeksCount: Number(weeksCount),
+			});
+		} else {
+			return res.status(400).json({
+				error: "Either dates array or (startDate + weeksCount) is required"
+			});
+		}
+
+		res.status(201).json({
+			message: `Created ${lessons.length} lessons`,
+			lessons
+		});
+	} catch (error) {
+		res.status(400).json({
+			error: error instanceof Error ? error.message : "Failed to create lessons"
+		});
+	}
+});
+
+app.get("/api/courses/:courseId/lessons", (req, res) => {
+	const courseId = req.params.courseId;
+	if (!courseId) {
+		return res.status(400).json({ error: "Course ID is required" });
+	}
+
+	const lessons = calendar.getLessonsByCourse(courseId);
+	res.json(lessons);
+});
+
 app.put("/api/lessons/:id", requireAdmin, (req, res) => {
 	const lessonId = req.params.id;
 	if (!lessonId) {

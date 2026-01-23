@@ -346,6 +346,43 @@ export const LessonDB = {
 		const stmt = db.prepare(`DELETE FROM lessons WHERE ${whereClause}`);
 		return stmt.run(...values);
 	},
+
+	insertWithCourse(
+		lesson: {
+			id: string;
+			title: string;
+			date: string;
+			dayOfWeek: string;
+			time: string;
+			location: string;
+			ageGroup: string;
+			capacity: number;
+			enrolledCount: number;
+		},
+		courseId: string,
+	) {
+		const stmt = db.prepare(`
+      INSERT INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount, courseId)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+		return stmt.run(
+			lesson.id,
+			lesson.title,
+			lesson.date,
+			lesson.dayOfWeek,
+			lesson.time,
+			lesson.location,
+			lesson.ageGroup,
+			lesson.capacity,
+			lesson.enrolledCount,
+			courseId,
+		);
+	},
+
+	getByCourse(courseId: string) {
+		const stmt = db.prepare("SELECT * FROM lessons WHERE courseId = ? ORDER BY date, time");
+		return stmt.all(courseId);
+	},
 };
 
 // Database operations for Participants
