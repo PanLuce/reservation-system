@@ -4,18 +4,58 @@ import { fileURLToPath } from "node:url";
 import cors from "cors";
 import express from "express";
 import session from "express-session";
+import helmet from "helmet";
 import multer from "multer";
+import { randomUUID } from "node:crypto";
 import { AuthService } from "./src/auth.js";
 import { LessonCalendarDB } from "./src/calendar-db.js";
-import { initializeDatabase, seedSampleData } from "./src/database.js";
+import {
+	db,
+	initializeDatabase,
+	ParticipantDB,
+	seedSampleData,
+} from "./src/database.js";
 import { createEmailService } from "./src/email-factory.js";
 import { ExcelParticipantLoader } from "./src/excel-loader.js";
 import { createLesson } from "./src/lesson.js";
+import { logger } from "./src/logger.js";
 import { createParticipant } from "./src/participant.js";
 import { RegistrationManagerDB } from "./src/registration-db.js";
 
+// Extend session data type
+declare module "express-session" {
+	interface SessionData {
+		userId?: string;
+	}
+}
+
+// Extend Express Request type for correlation ID
+declare module "express" {
+	interface Request {
+		correlationId?: string;
+	}
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Environment configuration
+const isProduction = process.env.NODE_ENV === "production";
+const PORT = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 3000;
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+	? process.env.ALLOWED_ORIGINS.split(",")
+	: ["https://centrumrubacek.cz"];
+
+// Validate required environment variables in production
+if (isProduction) {
+	if (!process.env.SESSION_SECRET) {
+		logger.error("SESSION_SECRET environment variable is required in production");
+		process.exit(1);
+	}
+	if (!process.env.ALLOWED_ORIGINS) {
+		logger.warn("ALLOWED_ORIGINS not set, using default: https://centrumrubacek.cz");
+	}
+}
 
 // Ensure data directory exists
 const dataDir = path.join(__dirname, "data");
@@ -28,22 +68,80 @@ initializeDatabase();
 seedSampleData();
 
 const app = express();
-const PORT = 3000;
-
-// Extend session data type
-declare module "express-session" {
-	interface SessionData {
-		userId?: string;
-	}
-}
-
-// Environment configuration
-const isProduction = process.env.NODE_ENV === "production";
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-	? process.env.ALLOWED_ORIGINS.split(",")
-	: ["https://centrumrubacek.cz"];
 
 // Middleware
+
+// Correlation ID middleware - add to every request for tracing
+app.use((req, res, next) => {
+	req.correlationId = randomUUID();
+	res.setHeader("X-Correlation-ID", req.correlationId);
+	next();
+});
+
+// Request logging middleware
+app.use((req, res, next) => {
+	const start = Date.now();
+
+	// Log request
+	logger.info("Incoming request", {
+		correlationId: req.correlationId,
+		method: req.method,
+		path: req.path,
+		ip: req.ip,
+	});
+
+	// Log response when finished
+	res.on("finish", () => {
+		const duration = Date.now() - start;
+		const logLevel = res.statusCode >= 400 ? "warn" : "info";
+
+		logger[logLevel]("Request completed", {
+			correlationId: req.correlationId,
+			method: req.method,
+			path: req.path,
+			statusCode: res.statusCode,
+			duration: `${duration}ms`,
+		});
+	});
+
+	next();
+});
+
+// Security headers middleware (helmet)
+app.use(
+	helmet({
+		// Configure Content Security Policy
+		contentSecurityPolicy: {
+			directives: {
+				defaultSrc: ["'self'"],
+				styleSrc: ["'self'", "'unsafe-inline'"],
+				scriptSrc: ["'self'", "'unsafe-inline'"],
+				imgSrc: ["'self'", "data:", "https:"],
+				connectSrc: ["'self'"],
+				fontSrc: ["'self'"],
+				objectSrc: ["'none'"],
+				mediaSrc: ["'self'"],
+				frameSrc: ["'none'"],
+			},
+		},
+		// Allow iframe embedding from allowed origins
+		frameguard: isProduction
+			? {
+					action: "allow-from",
+					domain: allowedOrigins[0], // WordPress domain
+			  }
+			: false, // Allow in development
+		// Other security headers
+		hsts: {
+			maxAge: 31536000, // 1 year
+			includeSubDomains: true,
+			preload: true,
+		},
+		noSniff: true,
+		xssFilter: true,
+	}),
+);
+
 app.use(
 	cors({
 		origin: isProduction ? allowedOrigins : true,
@@ -51,19 +149,10 @@ app.use(
 	}),
 );
 
-// Allow iframe embedding
-app.use((req, res, next) => {
-	// Remove X-Frame-Options to allow iframe embedding
-	res.removeHeader("X-Frame-Options");
-	next();
-});
-
 app.use(express.json());
 app.use(
 	session({
-		secret:
-			process.env.SESSION_SECRET ||
-			"reservation-system-secret-change-in-production",
+		secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
 		resave: false,
 		saveUninitialized: false,
 		cookie: {
@@ -87,6 +176,45 @@ const calendar = new LessonCalendarDB();
 const registrationManager = new RegistrationManagerDB(emailService);
 const excelLoader = new ExcelParticipantLoader();
 const authService = new AuthService();
+
+// Track server start time for uptime
+const serverStartTime = Date.now();
+
+// Health Check Endpoints
+
+// Basic health check - just confirms server is running
+app.get("/health", (_req, res) => {
+	res.json({
+		status: "ok",
+		timestamp: new Date().toISOString(),
+		uptime: Math.floor((Date.now() - serverStartTime) / 1000), // in seconds
+	});
+});
+
+// Readiness check - verifies dependencies (database) are available
+app.get("/ready", (_req, res) => {
+	try {
+		// Test database connectivity with a simple query
+		db.prepare("SELECT 1").get();
+
+		res.json({
+			status: "ready",
+			database: "connected",
+			timestamp: new Date().toISOString(),
+		});
+	} catch (error) {
+		logger.error("Readiness check failed", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+
+		res.status(503).json({
+			status: "not_ready",
+			database: "disconnected",
+			error: error instanceof Error ? error.message : "Unknown error",
+			timestamp: new Date().toISOString(),
+		});
+	}
+});
 
 // Authentication middleware
 function requireAuth(
@@ -588,9 +716,118 @@ app.get("/login.html", (req, res) => {
 	res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
+// Global Error Handling Middleware
+
+// 404 handler - must come after all routes
+app.use((req, res) => {
+	logger.warn("Route not found", {
+		method: req.method,
+		path: req.path,
+		correlationId: req.correlationId,
+	});
+
+	res.status(404).json({
+		error: "Not Found",
+		message: `Cannot ${req.method} ${req.path}`,
+		correlationId: req.correlationId,
+	});
+});
+
+// Global error handler - must be last middleware
+app.use(
+	(
+		err: Error,
+		req: express.Request,
+		res: express.Response,
+		_next: express.NextFunction,
+	) => {
+		logger.error("Unhandled error in request", {
+			error: err.message,
+			stack: err.stack,
+			method: req.method,
+			path: req.path,
+			correlationId: req.correlationId,
+		});
+
+		// Don't leak error details in production
+		const errorMessage = isProduction
+			? "Internal Server Error"
+			: err.message || "Internal Server Error";
+
+		res.status(500).json({
+			error: "Internal Server Error",
+			message: errorMessage,
+			correlationId: req.correlationId,
+		});
+	},
+);
+
 // Start server
-app.listen(PORT, () => {
-	console.log(`🚀 Reservation System running at http://localhost:${PORT}`);
-	console.log(`📅 Sample lessons loaded`);
-	console.log(`\n✨ Open http://localhost:${PORT} in your browser\n`);
+const server = app.listen(PORT, () => {
+	logger.info("Reservation System started", {
+		port: PORT,
+		environment: isProduction ? "production" : "development",
+		url: `http://localhost:${PORT}`,
+	});
+});
+
+// Graceful shutdown handler
+function gracefulShutdown(signal: string) {
+	logger.info(`Received ${signal}, starting graceful shutdown`);
+
+	server.close(() => {
+		logger.info("HTTP server closed");
+
+		// Close database connection
+		try {
+			db.close();
+			logger.info("Database connection closed");
+		} catch (error) {
+			logger.error("Error closing database", {
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
+
+		logger.info("Graceful shutdown complete");
+		process.exit(0);
+	});
+
+	// Force shutdown after 10 seconds if graceful shutdown hangs
+	setTimeout(() => {
+		logger.error("Graceful shutdown timeout, forcing exit");
+		process.exit(1);
+	}, 10000);
+}
+
+// Listen for termination signals
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+// Process-level error handlers
+
+// Handle uncaught exceptions
+process.on("uncaughtException", (error: Error) => {
+	logger.error("Uncaught exception", {
+		error: error.message,
+		stack: error.stack,
+	});
+
+	// Give logger time to flush, then exit
+	setTimeout(() => {
+		process.exit(1);
+	}, 1000);
+});
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (reason: unknown, promise: Promise<unknown>) => {
+	logger.error("Unhandled promise rejection", {
+		reason: reason instanceof Error ? reason.message : String(reason),
+		stack: reason instanceof Error ? reason.stack : undefined,
+		promise: String(promise),
+	});
+
+	// Give logger time to flush, then exit
+	setTimeout(() => {
+		process.exit(1);
+	}, 1000);
 });

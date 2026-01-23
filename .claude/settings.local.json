@@ -58,7 +58,11 @@
       "Bash(npm run build:*)",
       "Bash(find:*)",
       "Bash(xargs:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(grep:*)",
+      "Bash(timeout 3 npm start:*)",
+      "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=test123 timeout 3 npm start:*)",
+      "Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 timeout 2 node:*)"
     ]
   },
   "sandbox": {

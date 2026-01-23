@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import bcrypt from "bcrypt";
 import Database, { type Database as DatabaseType } from "better-sqlite3";
+import { logger } from "./logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -122,7 +123,7 @@ export function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_registrations_status ON registrations(status);
   `);
 
-	console.log("✅ Database initialized");
+	logger.info("Database initialized successfully");
 }
 
 // Seed sample data
@@ -131,17 +132,27 @@ export function seedSampleData() {
 	const result = countStmt.get() as { count: number };
 
 	if (result.count === 0) {
-		console.log("📝 Seeding sample data...");
+		logger.info("Seeding sample data...");
 
 		const insertLesson = db.prepare(`
-      INSERT INTO lessons (id, title, dayOfWeek, time, location, ageGroup, capacity, enrolledCount)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
+
+		// Sample lessons with dates (using a future Monday, Tuesday, Wednesday)
+		const today = new Date();
+		const nextMonday = new Date(today);
+		nextMonday.setDate(today.getDate() + ((1 + 7 - today.getDay()) % 7));
+		const nextTuesday = new Date(nextMonday);
+		nextTuesday.setDate(nextMonday.getDate() + 1);
+		const nextWednesday = new Date(nextMonday);
+		nextWednesday.setDate(nextMonday.getDate() + 2);
 
 		const sampleLessons = [
 			[
 				"lesson_1",
 				"Cvičení pro maminky s dětmi - Pondělí dopoledne",
+				nextMonday.toISOString().split("T")[0],
 				"Monday",
 				"10:00",
 				"CVČ Vietnamská",
@@ -152,6 +163,7 @@ export function seedSampleData() {
 			[
 				"lesson_2",
 				"Cvičení pro maminky s dětmi - Úterý odpoledne",
+				nextTuesday.toISOString().split("T")[0],
 				"Tuesday",
 				"14:00",
 				"CVČ Jeremiáše",
@@ -162,6 +174,7 @@ export function seedSampleData() {
 			[
 				"lesson_3",
 				"Cvičení pro maminky s dětmi - Středa dopoledne",
+				nextWednesday.toISOString().split("T")[0],
 				"Wednesday",
 				"10:00",
 				"DK Poklad",
@@ -175,33 +188,42 @@ export function seedSampleData() {
 			insertLesson.run(...lesson);
 		}
 
-		// Create default admin user
+		// Create default admin user from environment variables
 		const userCountStmt = db.prepare("SELECT COUNT(*) as count FROM users");
 		const userResult = userCountStmt.get() as { count: number };
 
 		if (userResult.count === 0) {
-			const adminPassword = "admin123"; // Change this in production!
-			const passwordHash = bcrypt.hashSync(adminPassword, 10);
+			const adminEmail = process.env.ADMIN_EMAIL_SEED;
+			const adminPassword = process.env.ADMIN_PASSWORD_SEED;
 
-			const insertUser = db.prepare(`
-        INSERT INTO users (id, email, passwordHash, name, role)
-        VALUES (?, ?, ?, ?, ?)
-      `);
+			// Only create admin user if environment variables are provided
+			if (adminEmail && adminPassword) {
+				const passwordHash = bcrypt.hashSync(adminPassword, 10);
 
-			insertUser.run(
-				"admin_1",
-				"admin@centrumrubacek.cz",
-				passwordHash,
-				"Admin",
-				"admin",
-			);
+				const insertUser = db.prepare(`
+          INSERT INTO users (id, email, passwordHash, name, role)
+          VALUES (?, ?, ?, ?, ?)
+        `);
 
-			console.log("👤 Default admin user created:");
-			console.log("   Email: admin@centrumrubacek.cz");
-			console.log("   Password: admin123");
+				insertUser.run(
+					"admin_1",
+					adminEmail,
+					passwordHash,
+					"Admin",
+					"admin",
+				);
+
+				logger.info("Admin user created from environment variables", {
+					email: adminEmail,
+				});
+			} else {
+				logger.warn(
+					"No admin user created. Set ADMIN_EMAIL_SEED and ADMIN_PASSWORD_SEED to create an admin account.",
+				);
+			}
 		}
 
-		console.log("✅ Sample data seeded");
+		logger.info("Sample data seeded successfully");
 	}
 }
 

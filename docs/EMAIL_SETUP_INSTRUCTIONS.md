@@ -58,7 +58,7 @@ ADMIN_EMAIL=admin@centrumrubacek.cz
 FROM_EMAIL=info@centrumrubacek.cz
 \`\`\`
 
-For testing: See [EMAIL_TESTING.md](./EMAIL_TESTING.md) for setup instructions with Ethereal Email (free test SMTP).
+For testing: See [EMAIL_TESTING.md](EMAIL_TESTING.md) for setup instructions with Ethereal Email (free test SMTP).
 
 For production: Use a real SMTP provider like Gmail, SendGrid, Mailgun, or AWS SES.
 

@@ -16,4 +16,15 @@ export default defineConfig({
 			use: { ...devices["Desktop Chrome"] },
 		},
 	],
+	// Start the development server before running tests
+	webServer: {
+		command: "npm start",
+		port: 3000,
+		timeout: 120 * 1000,
+		reuseExistingServer: !process.env.CI,
+		env: {
+			ADMIN_EMAIL_SEED: "admin@test.com",
+			ADMIN_PASSWORD_SEED: "test123",
+		},
+	},
 });
