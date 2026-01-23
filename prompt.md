@@ -14,15 +14,15 @@ For the following task check the SKILLS folder in order to pick the right skill,
 Build a reservation system with the following requirements:
 
 ## Phase 1: formulář
-- [ ] vyplní rezervační formulář
-- [ ] přijde email mi i přihlášenému
+- [x] vyplní rezervační formulář
+- [x] přijde email mi i přihlášenému
 
 ## Phase 2: rozvrh
-- [ ] Přihlášení osoby přes email do rozvrhu - vytvoří si své heslo
-- [ ] Osoba jde přiřadit do skupiny (kurzu - rozdělit i barevně)
-- [ ] Do rozvrhu přidám hromadně 10 lekcí z jednoho kurzu
+- [x] Přihlášení osoby přes email do rozvrhu - vytvoří si své heslo
+- [x] Osoba jde přiřadit do skupiny (kurzu - rozdělit i barevně)
+- [x] Do rozvrhu přidám hromadně 10 lekcí z jednoho kurzu
 - [ ] Do kurzu (10 lekcí) přidám hromadně celou skupinu 10 lidí
-- [ ] Každý email (osoba) vidí své rezervace (datum, čas, počet osob na lekci, poznámku pro koho je cvičení (věk))
+- [x] Každý email (osoba) vidí své rezervace (datum, čas, počet osob na lekci, poznámku pro koho je cvičení (věk))
 - [ ] Osoba se může sama odhlásit z lekce a přihlásit se do jiné (ideálně jen do své věkové kategorie)
 - [ ] Já (admin) můžu přihlásit nebo odhlásit jakoukoliv osobu kamkoliv a kdykoliv
 - [x] Osoby se můžou z lekce odhlásit nejpozději do půlnoci před lekcí.
