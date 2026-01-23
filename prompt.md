@@ -21,7 +21,7 @@ Build a reservation system with the following requirements:
 - [x] Přihlášení osoby přes email do rozvrhu - vytvoří si své heslo
 - [x] Osoba jde přiřadit do skupiny (kurzu - rozdělit i barevně)
 - [x] Do rozvrhu přidám hromadně 10 lekcí z jednoho kurzu
-- [ ] Do kurzu (10 lekcí) přidám hromadně celou skupinu 10 lidí
+- [x] Do kurzu (10 lekcí) přidám hromadně celou skupinu 10 lidí
 - [x] Každý email (osoba) vidí své rezervace (datum, čas, počet osob na lekci, poznámku pro koho je cvičení (věk))
 - [ ] Osoba se může sama odhlásit z lekce a přihlásit se do jiné (ideálně jen do své věkové kategorie)
 - [ ] Já (admin) můžu přihlásit nebo odhlásit jakoukoliv osobu kamkoliv a kdykoliv
