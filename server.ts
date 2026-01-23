@@ -464,6 +464,62 @@ app.get("/api/participants/:participantId/available-lessons", (req, res) => {
 	res.json(lessons);
 });
 
+// Admin Override
+app.post("/api/admin/register-participant", requireAdmin, (req, res) => {
+	const { lessonId, participantId, forceCapacity } = req.body;
+
+	if (!lessonId || !participantId) {
+		return res.status(400).json({
+			error: "Both lessonId and participantId are required",
+		});
+	}
+
+	const result = registrationManager.adminRegisterParticipant(
+		lessonId,
+		participantId,
+		{ forceCapacity: forceCapacity || false },
+	);
+
+	if (result.success) {
+		res.status(201).json(result);
+	} else {
+		res.status(400).json(result);
+	}
+});
+
+app.post("/api/admin/cancel-registration", requireAdmin, (req, res) => {
+	const { registrationId } = req.body;
+
+	if (!registrationId) {
+		return res.status(400).json({ error: "Registration ID is required" });
+	}
+
+	const result = registrationManager.adminCancelRegistration(registrationId);
+
+	if (result.success) {
+		res.json(result);
+	} else {
+		res.status(404).json(result);
+	}
+});
+
+app.post("/api/admin/bulk-register-participant", requireAdmin, (req, res) => {
+	const { participantId, lessonIds } = req.body;
+
+	if (!participantId || !lessonIds || !Array.isArray(lessonIds)) {
+		return res.status(400).json({
+			error: "participantId and lessonIds array are required",
+		});
+	}
+
+	const result = registrationManager.adminBulkRegisterParticipant(
+		participantId,
+		lessonIds,
+	);
+
+	res.status(result.success ? 201 : 400).json(result);
+});
+
 // Substitutions
 app.get("/api/substitutions/:ageGroup", (req, res) => {
 	const availableLessons = registrationManager.getAvailableSubstitutionLessons(

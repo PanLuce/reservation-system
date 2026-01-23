@@ -487,6 +487,168 @@ export class RegistrationManagerDB {
 		return availableLessons;
 	}
 
+	// Admin Override Methods
+	adminRegisterParticipant(
+		lessonId: string,
+		participantId: string,
+		options?: { forceCapacity?: boolean },
+	): {
+		success: boolean;
+		registration?: Registration;
+		error?: string;
+		adminOverride?: { reason: string };
+	} {
+		// Get participant
+		const participant = ParticipantDB.getById(participantId) as Record<string, unknown> | undefined;
+		if (!participant) {
+			return { success: false, error: "Participant not found" };
+		}
+
+		// Get lesson
+		const lesson = LessonDB.getById(lessonId) as Record<string, unknown> | undefined;
+		if (!lesson) {
+			return { success: false, error: "Lesson not found" };
+		}
+
+		// Check if already registered
+		const existingReg = RegistrationDB.getByParticipantAndLesson(
+			participantId,
+			lessonId,
+		);
+		if (existingReg) {
+			return {
+				success: false,
+				error: "Participant is already registered for this lesson",
+			};
+		}
+
+		// Track override reasons
+		let overrideReason = "";
+
+		// Check age group mismatch (don't block, just note)
+		if (lesson.ageGroup !== participant.ageGroup) {
+			overrideReason = `Age group override: participant is ${participant.ageGroup}, lesson is for ${lesson.ageGroup}`;
+		}
+
+		// Check capacity
+		const enrolledCount = lesson.enrolledCount as number;
+		const capacity = lesson.capacity as number;
+		const isFull = enrolledCount >= capacity;
+
+		let status: "confirmed" | "waitlist" | "cancelled" = "confirmed";
+
+		// Admin can force capacity, otherwise respect capacity limits
+		if (isFull && !options?.forceCapacity) {
+			status = "waitlist";
+		} else if (isFull && options?.forceCapacity) {
+			// Force capacity override
+			if (overrideReason) {
+				overrideReason += "; Capacity override: lesson is full but admin forced registration";
+			} else {
+				overrideReason = "Capacity override: lesson is full but admin forced registration";
+			}
+		}
+
+		// Create registration
+		const registration: Registration = {
+			id: this.generateId(),
+			lessonId,
+			participantId,
+			registeredAt: new Date(),
+			status,
+		};
+
+		try {
+			RegistrationDB.insert(registration);
+
+			// Update lesson enrolled count if confirmed
+			if (status === "confirmed") {
+				LessonDB.update(lessonId, {
+					enrolledCount: enrolledCount + 1,
+				});
+			}
+
+			const result: {
+				success: boolean;
+				registration: Registration;
+				adminOverride?: { reason: string };
+			} = {
+				success: true,
+				registration,
+			};
+
+			if (overrideReason) {
+				result.adminOverride = { reason: overrideReason };
+			}
+
+			return result;
+		} catch (error) {
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Registration failed",
+			};
+		}
+	}
+
+	adminCancelRegistration(
+		registrationId: string,
+	): { success: boolean; message?: string; error?: string } {
+		// Get registration
+		const registration = RegistrationDB.getById(registrationId) as Record<string, unknown> | undefined;
+
+		if (!registration) {
+			return { success: false, error: "Registration not found" };
+		}
+
+		// Admin can cancel any registration without checks
+		this.cancelRegistration(registrationId);
+
+		return {
+			success: true,
+			message: "Registration successfully cancelled by admin",
+		};
+	}
+
+	adminBulkRegisterParticipant(
+		participantId: string,
+		lessonIds: string[],
+	): {
+		success: boolean;
+		registrations: Registration[];
+		successful: number;
+		failed: number;
+		errors: Array<{ lessonId: string; error: string }>;
+	} {
+		const result = {
+			success: true,
+			registrations: [] as Registration[],
+			successful: 0,
+			failed: 0,
+			errors: [] as Array<{ lessonId: string; error: string }>,
+		};
+
+		for (const lessonId of lessonIds) {
+			const regResult = this.adminRegisterParticipant(lessonId, participantId);
+
+			if (regResult.success && regResult.registration) {
+				result.registrations.push(regResult.registration);
+				result.successful++;
+			} else {
+				result.failed++;
+				result.errors.push({
+					lessonId,
+					error: regResult.error || "Unknown error",
+				});
+			}
+		}
+
+		if (result.failed > 0 && result.successful === 0) {
+			result.success = false;
+		}
+
+		return result;
+	}
+
 	private generateId(): string {
 		return `registration_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 	}
