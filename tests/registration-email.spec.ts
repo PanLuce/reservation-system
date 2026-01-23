@@ -83,6 +83,7 @@ test.describe("Registration with Email Integration", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Ranní cvičení",
+			date: "2024-03-15",
 			dayOfWeek: "Pondělí",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -141,6 +142,7 @@ test.describe("Registration with Email Integration", () => {
 
 		const lesson: Lesson = {
 			id: "lesson_2",
+			date: "2024-03-16",
 			title: "Plný kurz",
 			dayOfWeek: "Úterý",
 			time: "14:00",
@@ -193,6 +195,7 @@ test.describe("Registration with Email Integration", () => {
 
 		const lesson: Lesson = {
 			id: "lesson_3",
+			date: "2024-03-17",
 			title: "Test Lesson",
 			dayOfWeek: "Wednesday",
 			time: "10:00",
@@ -236,6 +239,7 @@ test.describe("Registration with Email Integration", () => {
 
 		const lesson: Lesson = {
 			id: "lesson_4",
+			date: "2024-03-18",
 			title: "No Email Lesson",
 			dayOfWeek: "Thursday",
 			time: "10:00",
@@ -274,6 +278,7 @@ test.describe("Registration with Email Integration", () => {
 
 		const lesson: Lesson = {
 			id: "lesson_5",
+			date: "2024-03-19",
 			title: "Bulk Test",
 			dayOfWeek: "Friday",
 			time: "10:00",

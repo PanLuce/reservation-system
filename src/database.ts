@@ -96,6 +96,18 @@ export function initializeDatabase() {
     )
   `);
 
+	// Course-Participants junction table (many-to-many)
+	db.exec(`
+    CREATE TABLE IF NOT EXISTS course_participants (
+      courseId TEXT NOT NULL,
+      participantId TEXT NOT NULL,
+      addedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (courseId, participantId),
+      FOREIGN KEY (courseId) REFERENCES courses(id) ON DELETE CASCADE,
+      FOREIGN KEY (participantId) REFERENCES participants(id) ON DELETE CASCADE
+    )
+  `);
+
 	// Indexes for performance
 	db.exec(`
     CREATE INDEX IF NOT EXISTS idx_courses_ageGroup ON courses(ageGroup);
@@ -445,6 +457,25 @@ export const ParticipantDB = {
 		`);
 		return stmt.all(participantId);
 	},
+
+	linkToCourse(participantId: string, courseId: string) {
+		// Using a simple approach - we'll add a courseParticipants table later if needed
+		// For now, store in a mapping table
+		const stmt = db.prepare(`
+			INSERT OR IGNORE INTO course_participants (courseId, participantId)
+			VALUES (?, ?)
+		`);
+		return stmt.run(courseId, participantId);
+	},
+
+	getByCourse(courseId: string) {
+		const stmt = db.prepare(`
+			SELECT p.* FROM participants p
+			INNER JOIN course_participants cp ON p.id = cp.participantId
+			WHERE cp.courseId = ?
+		`);
+		return stmt.all(courseId);
+	},
 };
 
 // Database operations for Registrations
@@ -486,6 +517,15 @@ export const RegistrationDB = {
 		const values = [...Object.values(updates), id];
 		const stmt = db.prepare(`UPDATE registrations SET ${fields} WHERE id = ?`);
 		return stmt.run(...values);
+	},
+
+	getByParticipantAndLesson(participantId: string, lessonId: string) {
+		const stmt = db.prepare(`
+			SELECT * FROM registrations
+			WHERE participantId = ? AND lessonId = ?
+			LIMIT 1
+		`);
+		return stmt.get(participantId, lessonId);
 	},
 
 	getAll() {

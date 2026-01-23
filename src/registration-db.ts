@@ -10,8 +10,11 @@ export class RegistrationManagerDB {
 		lessonId: string,
 		participant: Participant,
 	): Registration {
-		// Save participant first
-		ParticipantDB.insert(participant);
+		// Save participant first (only if doesn't exist)
+		const existingParticipant = ParticipantDB.getById(participant.id);
+		if (!existingParticipant) {
+			ParticipantDB.insert(participant);
+		}
 
 		// Get lesson
 		const lesson = LessonDB.getById(lessonId) as Record<string, unknown> | undefined;
@@ -171,6 +174,99 @@ export class RegistrationManagerDB {
 				lesson.ageGroup === ageGroup &&
 				(lesson.enrolledCount as number) < (lesson.capacity as number),
 		);
+	}
+
+	bulkAssignGroupToLessons(config: {
+		participantIds: string[];
+		lessonIds: string[];
+	}): {
+		totalRegistrations: number;
+		successful: number;
+		skipped: number;
+		waitlisted: number;
+		errors: Array<{ participantId: string; lessonId: string; error: string }>;
+	} {
+		const result = {
+			totalRegistrations: config.participantIds.length * config.lessonIds.length,
+			successful: 0,
+			skipped: 0,
+			waitlisted: 0,
+			errors: [] as Array<{ participantId: string; lessonId: string; error: string }>,
+		};
+
+		for (const participantId of config.participantIds) {
+			// Get participant
+			const participant = ParticipantDB.getById(participantId) as Record<string, unknown> | undefined;
+			if (!participant) {
+				for (const lessonId of config.lessonIds) {
+					result.errors.push({
+						participantId,
+						lessonId,
+						error: `Participant ${participantId} not found`,
+					});
+				}
+				continue;
+			}
+
+			for (const lessonId of config.lessonIds) {
+				try {
+					// Check if already registered
+					const existingReg = RegistrationDB.getByParticipantAndLesson(
+						participantId,
+						lessonId,
+					);
+
+					if (existingReg) {
+						result.skipped++;
+						continue;
+					}
+
+					// Get lesson to check capacity
+					const lesson = LessonDB.getById(lessonId) as Record<string, unknown> | undefined;
+					if (!lesson) {
+						result.errors.push({
+							participantId,
+							lessonId,
+							error: `Lesson ${lessonId} not found`,
+						});
+						continue;
+					}
+
+					const enrolledCount = lesson.enrolledCount as number;
+					const capacity = lesson.capacity as number;
+					const isFull = enrolledCount >= capacity;
+					const status = isFull ? "waitlist" : "confirmed";
+
+					// Create registration
+					const registration = {
+						id: this.generateId(),
+						lessonId,
+						participantId,
+						status,
+					};
+
+					RegistrationDB.insert(registration);
+
+					// Update lesson enrolled count if confirmed
+					if (!isFull) {
+						LessonDB.update(lessonId, {
+							enrolledCount: enrolledCount + 1,
+						});
+						result.successful++;
+					} else {
+						result.waitlisted++;
+					}
+				} catch (error) {
+					result.errors.push({
+						participantId,
+						lessonId,
+						error: error instanceof Error ? error.message : "Unknown error",
+					});
+				}
+			}
+		}
+
+		return result;
 	}
 
 	private generateId(): string {

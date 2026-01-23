@@ -271,6 +271,49 @@ app.get("/api/courses/:courseId/lessons", (req, res) => {
 	res.json(lessons);
 });
 
+app.post("/api/courses/:courseId/bulk-register", requireAdmin, (req, res) => {
+	const courseId = req.params.courseId;
+	if (!courseId) {
+		return res.status(400).json({ error: "Course ID is required" });
+	}
+
+	const { participantIds, lessonIds } = req.body;
+
+	if (!participantIds || !Array.isArray(participantIds) || participantIds.length === 0) {
+		return res.status(400).json({ error: "participantIds array is required" });
+	}
+
+	if (!lessonIds || !Array.isArray(lessonIds) || lessonIds.length === 0) {
+		return res.status(400).json({ error: "lessonIds array is required" });
+	}
+
+	try {
+		const result = registrationManager.bulkAssignGroupToLessons({
+			participantIds,
+			lessonIds,
+		});
+
+		res.status(201).json({
+			message: `Bulk registration completed`,
+			...result,
+		});
+	} catch (error) {
+		res.status(500).json({
+			error: error instanceof Error ? error.message : "Failed to process bulk registration",
+		});
+	}
+});
+
+app.get("/api/courses/:courseId/participants", (req, res) => {
+	const courseId = req.params.courseId;
+	if (!courseId) {
+		return res.status(400).json({ error: "Course ID is required" });
+	}
+
+	const participants = ParticipantDB.getByCourse(courseId);
+	res.json(participants);
+});
+
 app.put("/api/lessons/:id", requireAdmin, (req, res) => {
 	const lessonId = req.params.id;
 	if (!lessonId) {
