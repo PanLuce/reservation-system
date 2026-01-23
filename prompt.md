@@ -24,7 +24,7 @@ Build a reservation system with the following requirements:
 - [x] Do kurzu (10 lekcí) přidám hromadně celou skupinu 10 lidí
 - [x] Každý email (osoba) vidí své rezervace (datum, čas, počet osob na lekci, poznámku pro koho je cvičení (věk))
 - [x] Osoba se může sama odhlásit z lekce a přihlásit se do jiné (ideálně jen do své věkové kategorie)
-- [ ] Já (admin) můžu přihlásit nebo odhlásit jakoukoliv osobu kamkoliv a kdykoliv
+- [x] Já (admin) můžu přihlásit nebo odhlásit jakoukoliv osobu kamkoliv a kdykoliv
 - [x] Osoby se můžou z lekce odhlásit nejpozději do půlnoci před lekcí.
 - [ ] Každá osoba má u svého "profilu" zobrazen počet NÁHRAD - (podle toho z kolika lekci se včas odhlásil) - nebo jsem ho po omluvení odhlásila já (číslo lze měnit adminem).
 - [ ] Já mohu kdykoliv prodloužit nebo zkrátit časovou platnost náhrad.
