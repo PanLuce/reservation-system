@@ -62,7 +62,13 @@
       "Bash(grep:*)",
       "Bash(timeout 3 npm start:*)",
       "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=test123 timeout 3 npm start:*)",
-      "Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 timeout 2 node:*)"
+      "Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 timeout 2 node:*)",
+      "Bash(test:*)",
+      "Bash(git -C /Users/lukasvitala/GIT/reservation-system status --porcelain)",
+      "Bash(git -C /Users/lukasvitala/GIT/reservation-system ls-files)",
+      "Bash(git -C /Users/lukasvitala/GIT/reservation-system check-ignore -v /Users/lukasvitala/GIT/reservation-system/.idea)",
+      "Bash(git rm:*)",
+      "Bash(git mv:*)"
     ]
   },
   "sandbox": {
