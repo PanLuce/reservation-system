@@ -35,3 +35,13 @@ uploads/
 data/
 *.db
 *.db-journal
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Test artifacts
+screenshots/
