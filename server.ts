@@ -163,7 +163,7 @@ app.use(
 		},
 	}),
 );
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 
 // File upload setup
 const upload = multer({ dest: "uploads/" });

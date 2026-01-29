@@ -68,7 +68,9 @@
       "Bash(git -C /Users/lukasvitala/GIT/reservation-system ls-files)",
       "Bash(git -C /Users/lukasvitala/GIT/reservation-system check-ignore -v /Users/lukasvitala/GIT/reservation-system/.idea)",
       "Bash(git rm:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(chp)",
+      "Bash(npm start)"
     ]
   },
   "sandbox": {

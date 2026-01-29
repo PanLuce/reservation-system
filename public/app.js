@@ -51,7 +51,7 @@ function hideAdminFeatures() {
 }
 
 // Logout function
-async function _handleLogout() {
+async function handleLogout() {
 	try {
 		await fetch(`${API_URL}/auth/logout`, {
 			method: "POST",
@@ -196,7 +196,7 @@ function translateAgeGroup(ageGroup) {
 }
 
 // Show/hide add lesson form
-function _showAddLessonForm() {
+function showAddLessonForm() {
 	document.getElementById("add-lesson-form").style.display = "block";
 }
 
@@ -206,7 +206,7 @@ function hideAddLessonForm() {
 }
 
 // Add lesson
-async function _addLesson(event) {
+async function addLesson(event) {
 	event.preventDefault();
 	const form = event.target;
 	const formData = new FormData(form);
@@ -241,7 +241,7 @@ async function _addLesson(event) {
 }
 
 // Delete lesson
-async function _deleteLesson(lessonId) {
+async function deleteLesson(lessonId) {
 	if (!confirm("Opravdu chcete smazat tuto lekci?")) {
 		return;
 	}
@@ -304,7 +304,7 @@ async function loadExcelLessonSelect() {
 }
 
 // Register participant
-async function _registerParticipant(event) {
+async function registerParticipant(event) {
 	event.preventDefault();
 	const form = event.target;
 	const formData = new FormData(form);
@@ -349,7 +349,7 @@ async function _registerParticipant(event) {
 }
 
 // Load substitution lessons
-async function _loadSubstitutionLessons() {
+async function loadSubstitutionLessons() {
 	const ageGroup = document.getElementById("sub-age-group").value;
 	const container = document.getElementById("substitution-lessons");
 
@@ -418,7 +418,7 @@ async function _loadSubstitutionLessons() {
 }
 
 // Upload Excel
-async function _uploadExcel(event) {
+async function uploadExcel(event) {
 	event.preventDefault();
 	const form = event.target;
 	const formData = new FormData(form);
