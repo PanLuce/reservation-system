@@ -70,7 +70,14 @@
       "Bash(git rm:*)",
       "Bash(git mv:*)",
       "Bash(chp)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_network_requests",
+      "Bash(git stash:*)",
+      "Bash(npm run test)",
+      "Bash(done)",
+      "Bash(NODE_OPTIONS=\"--loader tsx\" npx playwright test:*)"
     ]
   },
   "sandbox": {

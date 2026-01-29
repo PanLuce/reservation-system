@@ -5,6 +5,7 @@ import { createParticipant } from "../src/participant.js";
 import { createCourse } from "../src/course.js";
 import {
 	initializeDatabase,
+	resetDatabaseForTests,
 	CourseDB,
 	ParticipantDB,
 	LessonDB,
@@ -13,6 +14,7 @@ import {
 test.describe("Participant Self-Service - TDD", () => {
 	test.beforeEach(() => {
 		initializeDatabase();
+		resetDatabaseForTests();
 	});
 
 	test("should allow participant to cancel their own registration", () => {

@@ -126,6 +126,20 @@ export function initializeDatabase() {
 	logger.info("Database initialized successfully");
 }
 
+/**
+ * Reset database for tests by deleting all data
+ * Deletes in correct order to respect foreign key constraints
+ */
+export function resetDatabaseForTests() {
+	// Delete in order that respects foreign key constraints
+	db.exec("DELETE FROM registrations");
+	db.exec("DELETE FROM course_participants");
+	db.exec("DELETE FROM users");
+	db.exec("DELETE FROM lessons");
+	db.exec("DELETE FROM participants");
+	db.exec("DELETE FROM courses");
+}
+
 // Seed sample data
 export function seedSampleData() {
 	const countStmt = db.prepare("SELECT COUNT(*) as count FROM lessons");

@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 import bcrypt from "bcrypt";
 import { AuthService } from "../src/auth.js";
 import {
-	db,
 	initializeDatabase,
+	resetDatabaseForTests,
 	ParticipantDB,
 	UserDB,
 } from "../src/database.js";
@@ -15,9 +15,8 @@ test.describe("Authentication Service", () => {
 	test.beforeEach(() => {
 		// Initialize database schema
 		initializeDatabase();
-		// Clear tables for clean test state
-		db.exec("DELETE FROM users");
-		db.exec("DELETE FROM participants");
+		// Clear all data for clean test state
+		resetDatabaseForTests();
 	});
 
 	test.describe("login", () => {

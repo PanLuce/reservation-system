@@ -5,6 +5,7 @@ import { createParticipant } from "../src/participant.js";
 import { createCourse } from "../src/course.js";
 import {
 	initializeDatabase,
+	resetDatabaseForTests,
 	CourseDB,
 	ParticipantDB,
 } from "../src/database.js";
@@ -12,6 +13,7 @@ import {
 test.describe("Admin Override - TDD", () => {
 	test.beforeEach(() => {
 		initializeDatabase();
+		resetDatabaseForTests();
 	});
 
 	test("should allow admin to register participant with different age group", () => {
