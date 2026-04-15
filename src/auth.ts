@@ -90,7 +90,9 @@ export class AuthService {
 	}
 
 	async verifyToken(userId: string): Promise<User | null> {
-		const user = (await UserDB.getById(userId)) as Record<string, unknown> | undefined;
+		const user = (await UserDB.getById(userId)) as
+			| Record<string, unknown>
+			| undefined;
 
 		if (!user) {
 			return null;

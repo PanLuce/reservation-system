@@ -1,14 +1,14 @@
 import { expect, test } from "@playwright/test";
-import { RegistrationManagerDB } from "../src/registration-db.js";
 import { LessonCalendarDB } from "../src/calendar-db.js";
-import { createParticipant } from "../src/participant.js";
 import { createCourse } from "../src/course.js";
 import {
-	initializeDatabase,
-	resetDatabaseForTests,
 	CourseDB,
+	initializeDatabase,
 	ParticipantDB,
+	resetDatabaseForTests,
 } from "../src/database.js";
+import { createParticipant } from "../src/participant.js";
+import { RegistrationManagerDB } from "../src/registration-db.js";
 
 test.describe("Admin Override - TDD", () => {
 	test.beforeEach(async () => {
@@ -94,7 +94,9 @@ test.describe("Admin Override - TDD", () => {
 		);
 
 		// Act - admin cancels any participant's registration
-		const result = await registrationManager.adminCancelRegistration(registration.id);
+		const result = await registrationManager.adminCancelRegistration(
+			registration.id,
+		);
 
 		// Assert
 		expect(result.success).toBe(true);
@@ -119,7 +121,7 @@ test.describe("Admin Override - TDD", () => {
 		// Create lesson in the past (deadline has passed)
 		const yesterday = new Date();
 		yesterday.setDate(yesterday.getDate() - 1);
-		const yesterdayStr = yesterday.toISOString().split('T')[0];
+		const yesterdayStr = yesterday.toISOString().split("T")[0];
 
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
@@ -146,7 +148,9 @@ test.describe("Admin Override - TDD", () => {
 		);
 
 		// Act - admin cancels past deadline
-		const result = await registrationManager.adminCancelRegistration(registration.id);
+		const result = await registrationManager.adminCancelRegistration(
+			registration.id,
+		);
 
 		// Assert - should succeed (admin override)
 		expect(result.success).toBe(true);

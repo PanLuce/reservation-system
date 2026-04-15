@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-import { createCourse, type Course } from "../src/course.js";
+import { expect, test } from "@playwright/test";
+import { type Course, createCourse } from "../src/course.js";
 import { CourseDB, initializeDatabase } from "../src/database.js";
 
 test.describe("Course/Group Management - TDD", () => {
@@ -9,7 +9,8 @@ test.describe("Course/Group Management - TDD", () => {
 			name: "Pond\u011bl\u00ed dopoledne - Batolata",
 			ageGroup: "1-2 years",
 			color: "#4CAF50",
-			description: "Cvi\u010den\u00ed pro batolata v pond\u011bl\u00ed dopoledne",
+			description:
+				"Cvi\u010den\u00ed pro batolata v pond\u011bl\u00ed dopoledne",
 		};
 
 		// Act
@@ -54,126 +55,127 @@ test.describe("Course/Group Management - TDD", () => {
 	});
 });
 
-test.describe.serial("Course Database Operations - TDD", () => {
-	test.beforeEach(async () => {
-		// Arrange - Initialize database and clean up for each test
-		await initializeDatabase();
-		// Clean up all courses before each test
-		const courses = await CourseDB.getAll();
-		for (const course of courses) {
+test.describe
+	.serial("Course Database Operations - TDD", () => {
+		test.beforeEach(async () => {
+			// Arrange - Initialize database and clean up for each test
+			await initializeDatabase();
+			// Clean up all courses before each test
+			const courses = await CourseDB.getAll();
+			for (const course of courses) {
+				await CourseDB.delete(course.id);
+			}
+		});
+
+		test("should insert and retrieve course from database", async () => {
+			// Arrange
+			const course = createCourse({
+				name: "Pond\u011bl\u00ed dopoledne - Batolata",
+				ageGroup: "1-2 years",
+				color: "#4CAF50",
+				description: "Cvi\u010den\u00ed pro batolata",
+			});
+
+			// Act
+			await CourseDB.insert(course);
+			const retrieved = await CourseDB.getById(course.id);
+
+			// Assert
+			expect(retrieved).toBeDefined();
+			expect(retrieved.name).toBe(course.name);
+			expect(retrieved.ageGroup).toBe(course.ageGroup);
+			expect(retrieved.color).toBe(course.color);
+		});
+
+		test("should get all courses ordered by name", async () => {
+			// Arrange
+			const course1 = createCourse({
+				name: "Zebra Course",
+				ageGroup: "1-2 years",
+				color: "#FF0000",
+			});
+			const course2 = createCourse({
+				name: "Alpha Course",
+				ageGroup: "2-3 years",
+				color: "#00FF00",
+			});
+
+			// Act
+			await CourseDB.insert(course1);
+			await CourseDB.insert(course2);
+			const courses = await CourseDB.getAll();
+
+			// Assert
+			expect(courses).toHaveLength(2);
+			expect(courses[0].name).toBe("Alpha Course");
+			expect(courses[1].name).toBe("Zebra Course");
+		});
+
+		test("should get courses by age group", async () => {
+			// Arrange
+			const course1 = createCourse({
+				name: "Course 1",
+				ageGroup: "1-2 years",
+				color: "#FF0000",
+			});
+			const course2 = createCourse({
+				name: "Course 2",
+				ageGroup: "2-3 years",
+				color: "#00FF00",
+			});
+			const course3 = createCourse({
+				name: "Course 3",
+				ageGroup: "1-2 years",
+				color: "#0000FF",
+			});
+
+			// Act
+			await CourseDB.insert(course1);
+			await CourseDB.insert(course2);
+			await CourseDB.insert(course3);
+			const courses = await CourseDB.getByAgeGroup("1-2 years");
+
+			// Assert
+			expect(courses).toHaveLength(2);
+			expect(courses.every((c) => c.ageGroup === "1-2 years")).toBe(true);
+		});
+
+		test("should update course", async () => {
+			// Arrange
+			const course = createCourse({
+				name: "Original Name",
+				ageGroup: "1-2 years",
+				color: "#FF0000",
+			});
+			await CourseDB.insert(course);
+
+			// Act
+			await CourseDB.update(course.id, {
+				name: "Updated Name",
+				color: "#00FF00",
+			});
+			const updated = await CourseDB.getById(course.id);
+
+			// Assert
+			expect(updated.name).toBe("Updated Name");
+			expect(updated.color).toBe("#00FF00");
+			expect(updated.ageGroup).toBe("1-2 years"); // Unchanged
+		});
+
+		test("should delete course", async () => {
+			// Arrange
+			const course = createCourse({
+				name: "To Delete",
+				ageGroup: "1-2 years",
+				color: "#FF0000",
+			});
+			await CourseDB.insert(course);
+
+			// Act
 			await CourseDB.delete(course.id);
-		}
+			const deleted = await CourseDB.getById(course.id);
+
+			// Assert
+			expect(deleted).toBeUndefined();
+		});
 	});
-
-	test("should insert and retrieve course from database", async () => {
-		// Arrange
-		const course = createCourse({
-			name: "Pond\u011bl\u00ed dopoledne - Batolata",
-			ageGroup: "1-2 years",
-			color: "#4CAF50",
-			description: "Cvi\u010den\u00ed pro batolata",
-		});
-
-		// Act
-		await CourseDB.insert(course);
-		const retrieved = await CourseDB.getById(course.id);
-
-		// Assert
-		expect(retrieved).toBeDefined();
-		expect(retrieved.name).toBe(course.name);
-		expect(retrieved.ageGroup).toBe(course.ageGroup);
-		expect(retrieved.color).toBe(course.color);
-	});
-
-	test("should get all courses ordered by name", async () => {
-		// Arrange
-		const course1 = createCourse({
-			name: "Zebra Course",
-			ageGroup: "1-2 years",
-			color: "#FF0000",
-		});
-		const course2 = createCourse({
-			name: "Alpha Course",
-			ageGroup: "2-3 years",
-			color: "#00FF00",
-		});
-
-		// Act
-		await CourseDB.insert(course1);
-		await CourseDB.insert(course2);
-		const courses = await CourseDB.getAll();
-
-		// Assert
-		expect(courses).toHaveLength(2);
-		expect(courses[0].name).toBe("Alpha Course");
-		expect(courses[1].name).toBe("Zebra Course");
-	});
-
-	test("should get courses by age group", async () => {
-		// Arrange
-		const course1 = createCourse({
-			name: "Course 1",
-			ageGroup: "1-2 years",
-			color: "#FF0000",
-		});
-		const course2 = createCourse({
-			name: "Course 2",
-			ageGroup: "2-3 years",
-			color: "#00FF00",
-		});
-		const course3 = createCourse({
-			name: "Course 3",
-			ageGroup: "1-2 years",
-			color: "#0000FF",
-		});
-
-		// Act
-		await CourseDB.insert(course1);
-		await CourseDB.insert(course2);
-		await CourseDB.insert(course3);
-		const courses = await CourseDB.getByAgeGroup("1-2 years");
-
-		// Assert
-		expect(courses).toHaveLength(2);
-		expect(courses.every((c) => c.ageGroup === "1-2 years")).toBe(true);
-	});
-
-	test("should update course", async () => {
-		// Arrange
-		const course = createCourse({
-			name: "Original Name",
-			ageGroup: "1-2 years",
-			color: "#FF0000",
-		});
-		await CourseDB.insert(course);
-
-		// Act
-		await CourseDB.update(course.id, {
-			name: "Updated Name",
-			color: "#00FF00",
-		});
-		const updated = await CourseDB.getById(course.id);
-
-		// Assert
-		expect(updated.name).toBe("Updated Name");
-		expect(updated.color).toBe("#00FF00");
-		expect(updated.ageGroup).toBe("1-2 years"); // Unchanged
-	});
-
-	test("should delete course", async () => {
-		// Arrange
-		const course = createCourse({
-			name: "To Delete",
-			ageGroup: "1-2 years",
-			color: "#FF0000",
-		});
-		await CourseDB.insert(course);
-
-		// Act
-		await CourseDB.delete(course.id);
-		const deleted = await CourseDB.getById(course.id);
-
-		// Assert
-		expect(deleted).toBeUndefined();
-	});
-});

@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
+import type nodemailer from "nodemailer";
+import { EmailService } from "../src/email-service.js";
 import type { Lesson } from "../src/lesson.js";
 import type { Participant } from "../src/participant.js";
-import { EmailService } from "../src/email-service.js";
-import type nodemailer from "nodemailer";
 
 // Mock nodemailer transporter
 const createMockTransporter = () => {
@@ -42,6 +42,7 @@ test.describe("Email Service", () => {
 	const mockLesson: Lesson = {
 		id: "lesson_1",
 		title: "Ranní cvičení",
+		date: "2024-03-15",
 		dayOfWeek: "Pondělí",
 		time: "10:00",
 		location: "CVČ Vietnamská",
@@ -78,7 +79,9 @@ test.describe("Email Service", () => {
 
 		// Check Czech content
 		expect(email.text).toContain("Dobrý den Jana Nováková");
-		expect(email.text).toContain("Vaše registrace na lekci byla úspěšně potvrzena");
+		expect(email.text).toContain(
+			"Vaše registrace na lekci byla úspěšně potvrzena",
+		);
 		expect(email.text).toContain("Ranní cvičení");
 		expect(email.text).toContain("Pondělí");
 		expect(email.text).toContain("10:00");

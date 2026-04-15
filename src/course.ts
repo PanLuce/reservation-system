@@ -45,7 +45,9 @@ export function createCourse(input: CourseInput): Course {
 		name: input.name.trim(),
 		ageGroup: input.ageGroup.trim(),
 		color: input.color,
-		...(trimmedDescription !== undefined && { description: trimmedDescription }),
+		...(trimmedDescription !== undefined && {
+			description: trimmedDescription,
+		}),
 		createdAt: new Date(),
 	};
 }

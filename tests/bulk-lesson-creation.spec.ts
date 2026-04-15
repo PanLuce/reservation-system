@@ -1,11 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { LessonCalendarDB } from "../src/calendar-db.js";
-import { CourseDB, initializeDatabase } from "../src/database.js";
 import { createCourse } from "../src/course.js";
+import {
+	CourseDB,
+	initializeDatabase,
+	resetDatabaseForTests,
+} from "../src/database.js";
 
 test.describe("Bulk Lesson Creation - TDD", () => {
 	test.beforeEach(async () => {
 		await initializeDatabase();
+		await resetDatabaseForTests();
 	});
 
 	test("should create multiple lessons from course template", async () => {
@@ -115,7 +120,8 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		};
 
 		// Act
-		const createdLessons = await calendar.bulkCreateLessonsRecurring(bulkConfig);
+		const createdLessons =
+			await calendar.bulkCreateLessonsRecurring(bulkConfig);
 
 		// Assert
 		expect(createdLessons).toHaveLength(4);

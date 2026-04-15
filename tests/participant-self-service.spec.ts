@@ -1,15 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { RegistrationManagerDB } from "../src/registration-db.js";
 import { LessonCalendarDB } from "../src/calendar-db.js";
-import { createParticipant } from "../src/participant.js";
 import { createCourse } from "../src/course.js";
 import {
-	initializeDatabase,
-	resetDatabaseForTests,
 	CourseDB,
-	ParticipantDB,
+	initializeDatabase,
 	LessonDB,
+	ParticipantDB,
+	resetDatabaseForTests,
 } from "../src/database.js";
+import { createParticipant } from "../src/participant.js";
+import { RegistrationManagerDB } from "../src/registration-db.js";
 
 test.describe("Participant Self-Service - TDD", () => {
 	test.beforeEach(async () => {
@@ -281,7 +281,7 @@ test.describe("Participant Self-Service - TDD", () => {
 		// Create lessons for different age groups (future dates)
 		const futureDate = new Date();
 		futureDate.setDate(futureDate.getDate() + 7); // 1 week from now
-		const futureDateStr = futureDate.toISOString().split('T')[0];
+		const futureDateStr = futureDate.toISOString().split("T")[0];
 
 		await calendar.bulkCreateLessons({
 			courseId: course1.id,
@@ -314,9 +314,10 @@ test.describe("Participant Self-Service - TDD", () => {
 		const registrationManager = new RegistrationManagerDB();
 
 		// Act
-		const availableLessons = await registrationManager.getAvailableLessonsForParticipant(
-			participant.id,
-		);
+		const availableLessons =
+			await registrationManager.getAvailableLessonsForParticipant(
+				participant.id,
+			);
 
 		// Assert
 		expect(availableLessons.length).toBe(1);
@@ -355,7 +356,10 @@ test.describe("Participant Self-Service - TDD", () => {
 		const registrationManager = new RegistrationManagerDB();
 
 		// First registration
-		await registrationManager.participantSelfRegister(lessons[0].id, participant.id);
+		await registrationManager.participantSelfRegister(
+			lessons[0].id,
+			participant.id,
+		);
 
 		// Act - try to register again
 		const result = await registrationManager.participantSelfRegister(

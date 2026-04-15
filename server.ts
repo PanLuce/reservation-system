@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,7 +7,6 @@ import express from "express";
 import session from "express-session";
 import helmet from "helmet";
 import multer from "multer";
-import { randomUUID } from "node:crypto";
 import { AuthService } from "./src/auth.js";
 import { LessonCalendarDB } from "./src/calendar-db.js";
 import {
@@ -49,11 +49,15 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 // Validate required environment variables in production
 if (isProduction) {
 	if (!process.env.SESSION_SECRET) {
-		logger.error("SESSION_SECRET environment variable is required in production");
+		logger.error(
+			"SESSION_SECRET environment variable is required in production",
+		);
 		process.exit(1);
 	}
 	if (!process.env.ALLOWED_ORIGINS) {
-		logger.warn("ALLOWED_ORIGINS not set, using default: https://centrumrubacek.cz");
+		logger.warn(
+			"ALLOWED_ORIGINS not set, using default: https://centrumrubacek.cz",
+		);
 	}
 }
 
@@ -129,7 +133,7 @@ app.use(
 			? {
 					action: "allow-from",
 					domain: allowedOrigins[0], // WordPress domain
-			  }
+				}
 			: false, // Allow in development
 		// Other security headers
 		hsts: {
@@ -339,55 +343,69 @@ app.post("/api/lessons", requireAdmin, async (req, res) => {
 	res.status(201).json(lesson);
 });
 
-app.post("/api/courses/:courseId/bulk-lessons", requireAdmin, async (req, res) => {
-	const courseId = req.params.courseId;
-	if (!courseId) {
-		return res.status(400).json({ error: "Course ID is required" });
-	}
-
-	const { title, location, time, dayOfWeek, capacity, dates, startDate, weeksCount } = req.body;
-
-	try {
-		let lessons;
-		if (dates && Array.isArray(dates)) {
-			// Create lessons for specific dates
-			lessons = await calendar.bulkCreateLessons({
-				courseId,
-				title,
-				location,
-				time,
-				dayOfWeek,
-				capacity: Number(capacity),
-				dates,
-			});
-		} else if (startDate && weeksCount) {
-			// Create recurring lessons
-			lessons = await calendar.bulkCreateLessonsRecurring({
-				courseId,
-				title,
-				location,
-				time,
-				dayOfWeek,
-				capacity: Number(capacity),
-				startDate,
-				weeksCount: Number(weeksCount),
-			});
-		} else {
-			return res.status(400).json({
-				error: "Either dates array or (startDate + weeksCount) is required"
-			});
+app.post(
+	"/api/courses/:courseId/bulk-lessons",
+	requireAdmin,
+	async (req, res) => {
+		const courseId = req.params.courseId;
+		if (!courseId) {
+			return res.status(400).json({ error: "Course ID is required" });
 		}
 
-		res.status(201).json({
-			message: `Created ${lessons.length} lessons`,
-			lessons
-		});
-	} catch (error) {
-		res.status(400).json({
-			error: error instanceof Error ? error.message : "Failed to create lessons"
-		});
-	}
-});
+		const {
+			title,
+			location,
+			time,
+			dayOfWeek,
+			capacity,
+			dates,
+			startDate,
+			weeksCount,
+		} = req.body;
+
+		try {
+			let lessons;
+			if (dates && Array.isArray(dates)) {
+				// Create lessons for specific dates
+				lessons = await calendar.bulkCreateLessons({
+					courseId,
+					title,
+					location,
+					time,
+					dayOfWeek,
+					capacity: Number(capacity),
+					dates,
+				});
+			} else if (startDate && weeksCount) {
+				// Create recurring lessons
+				lessons = await calendar.bulkCreateLessonsRecurring({
+					courseId,
+					title,
+					location,
+					time,
+					dayOfWeek,
+					capacity: Number(capacity),
+					startDate,
+					weeksCount: Number(weeksCount),
+				});
+			} else {
+				return res.status(400).json({
+					error: "Either dates array or (startDate + weeksCount) is required",
+				});
+			}
+
+			res.status(201).json({
+				message: `Created ${lessons.length} lessons`,
+				lessons,
+			});
+		} catch (error) {
+			res.status(400).json({
+				error:
+					error instanceof Error ? error.message : "Failed to create lessons",
+			});
+		}
+	},
+);
 
 app.get("/api/courses/:courseId/lessons", async (req, res) => {
 	const courseId = req.params.courseId;
@@ -399,38 +417,51 @@ app.get("/api/courses/:courseId/lessons", async (req, res) => {
 	res.json(lessons);
 });
 
-app.post("/api/courses/:courseId/bulk-register", requireAdmin, async (req, res) => {
-	const courseId = req.params.courseId;
-	if (!courseId) {
-		return res.status(400).json({ error: "Course ID is required" });
-	}
+app.post(
+	"/api/courses/:courseId/bulk-register",
+	requireAdmin,
+	async (req, res) => {
+		const courseId = req.params.courseId;
+		if (!courseId) {
+			return res.status(400).json({ error: "Course ID is required" });
+		}
 
-	const { participantIds, lessonIds } = req.body;
+		const { participantIds, lessonIds } = req.body;
 
-	if (!participantIds || !Array.isArray(participantIds) || participantIds.length === 0) {
-		return res.status(400).json({ error: "participantIds array is required" });
-	}
+		if (
+			!participantIds ||
+			!Array.isArray(participantIds) ||
+			participantIds.length === 0
+		) {
+			return res
+				.status(400)
+				.json({ error: "participantIds array is required" });
+		}
 
-	if (!lessonIds || !Array.isArray(lessonIds) || lessonIds.length === 0) {
-		return res.status(400).json({ error: "lessonIds array is required" });
-	}
+		if (!lessonIds || !Array.isArray(lessonIds) || lessonIds.length === 0) {
+			return res.status(400).json({ error: "lessonIds array is required" });
+		}
 
-	try {
-		const result = await registrationManager.bulkAssignGroupToLessons({
-			participantIds,
-			lessonIds,
-		});
+		try {
+			const result = await registrationManager.bulkAssignGroupToLessons({
+				participantIds,
+				lessonIds,
+			});
 
-		res.status(201).json({
-			message: `Bulk registration completed`,
-			...result,
-		});
-	} catch (error) {
-		res.status(500).json({
-			error: error instanceof Error ? error.message : "Failed to process bulk registration",
-		});
-	}
-});
+			res.status(201).json({
+				message: `Bulk registration completed`,
+				...result,
+			});
+		} catch (error) {
+			res.status(500).json({
+				error:
+					error instanceof Error
+						? error.message
+						: "Failed to process bulk registration",
+			});
+		}
+	},
+);
 
 app.get("/api/courses/:courseId/participants", async (req, res) => {
 	const courseId = req.params.courseId;
@@ -498,99 +529,113 @@ app.get("/api/participants/:participantId/registrations", async (req, res) => {
 	if (!participantId) {
 		return res.status(400).json({ error: "Participant ID is required" });
 	}
-	const registrations = await ParticipantDB.getRegistrationsWithLessonDetails(participantId);
+	const registrations =
+		await ParticipantDB.getRegistrationsWithLessonDetails(participantId);
 	res.json(registrations);
 });
 
 // Participant Self-Service
-app.post("/api/participants/:participantId/cancel-registration", async (req, res) => {
-	const participantId = req.params.participantId;
-	const { registrationId } = req.body;
+app.post(
+	"/api/participants/:participantId/cancel-registration",
+	async (req, res) => {
+		const participantId = req.params.participantId;
+		const { registrationId } = req.body;
 
-	if (!participantId) {
-		return res.status(400).json({ error: "Participant ID is required" });
-	}
+		if (!participantId) {
+			return res.status(400).json({ error: "Participant ID is required" });
+		}
 
-	if (!registrationId) {
-		return res.status(400).json({ error: "Registration ID is required" });
-	}
+		if (!registrationId) {
+			return res.status(400).json({ error: "Registration ID is required" });
+		}
 
-	const result = await registrationManager.participantCancelRegistration(
-		registrationId,
-		participantId,
-	);
+		const result = await registrationManager.participantCancelRegistration(
+			registrationId,
+			participantId,
+		);
 
-	if (result.success) {
-		res.json(result);
-	} else {
-		res.status(403).json(result);
-	}
-});
+		if (result.success) {
+			res.json(result);
+		} else {
+			res.status(403).json(result);
+		}
+	},
+);
 
-app.post("/api/participants/:participantId/register-lesson", async (req, res) => {
-	const participantId = req.params.participantId;
-	const { lessonId } = req.body;
+app.post(
+	"/api/participants/:participantId/register-lesson",
+	async (req, res) => {
+		const participantId = req.params.participantId;
+		const { lessonId } = req.body;
 
-	if (!participantId) {
-		return res.status(400).json({ error: "Participant ID is required" });
-	}
+		if (!participantId) {
+			return res.status(400).json({ error: "Participant ID is required" });
+		}
 
-	if (!lessonId) {
-		return res.status(400).json({ error: "Lesson ID is required" });
-	}
+		if (!lessonId) {
+			return res.status(400).json({ error: "Lesson ID is required" });
+		}
 
-	const result = await registrationManager.participantSelfRegister(
-		lessonId,
-		participantId,
-	);
+		const result = await registrationManager.participantSelfRegister(
+			lessonId,
+			participantId,
+		);
 
-	if (result.success) {
-		res.status(201).json(result);
-	} else {
-		res.status(400).json(result);
-	}
-});
+		if (result.success) {
+			res.status(201).json(result);
+		} else {
+			res.status(400).json(result);
+		}
+	},
+);
 
-app.post("/api/participants/:participantId/transfer-lesson", async (req, res) => {
-	const participantId = req.params.participantId;
-	const { currentRegistrationId, newLessonId } = req.body;
+app.post(
+	"/api/participants/:participantId/transfer-lesson",
+	async (req, res) => {
+		const participantId = req.params.participantId;
+		const { currentRegistrationId, newLessonId } = req.body;
 
-	if (!participantId) {
-		return res.status(400).json({ error: "Participant ID is required" });
-	}
+		if (!participantId) {
+			return res.status(400).json({ error: "Participant ID is required" });
+		}
 
-	if (!currentRegistrationId || !newLessonId) {
-		return res.status(400).json({
-			error: "Both currentRegistrationId and newLessonId are required",
-		});
-	}
+		if (!currentRegistrationId || !newLessonId) {
+			return res.status(400).json({
+				error: "Both currentRegistrationId and newLessonId are required",
+			});
+		}
 
-	const result = await registrationManager.participantTransferLesson(
-		currentRegistrationId,
-		newLessonId,
-		participantId,
-	);
+		const result = await registrationManager.participantTransferLesson(
+			currentRegistrationId,
+			newLessonId,
+			participantId,
+		);
 
-	if (result.success) {
-		res.json(result);
-	} else {
-		res.status(400).json(result);
-	}
-});
+		if (result.success) {
+			res.json(result);
+		} else {
+			res.status(400).json(result);
+		}
+	},
+);
 
-app.get("/api/participants/:participantId/available-lessons", async (req, res) => {
-	const participantId = req.params.participantId;
+app.get(
+	"/api/participants/:participantId/available-lessons",
+	async (req, res) => {
+		const participantId = req.params.participantId;
 
-	if (!participantId) {
-		return res.status(400).json({ error: "Participant ID is required" });
-	}
+		if (!participantId) {
+			return res.status(400).json({ error: "Participant ID is required" });
+		}
 
-	const lessons = await registrationManager.getAvailableLessonsForParticipant(
-		participantId,
-	);
+		const lessons =
+			await registrationManager.getAvailableLessonsForParticipant(
+				participantId,
+			);
 
-	res.json(lessons);
-});
+		res.json(lessons);
+	},
+);
 
 // Admin Override
 app.post("/api/admin/register-participant", requireAdmin, async (req, res) => {
@@ -622,7 +667,8 @@ app.post("/api/admin/cancel-registration", requireAdmin, async (req, res) => {
 		return res.status(400).json({ error: "Registration ID is required" });
 	}
 
-	const result = await registrationManager.adminCancelRegistration(registrationId);
+	const result =
+		await registrationManager.adminCancelRegistration(registrationId);
 
 	if (result.success) {
 		res.json(result);
@@ -631,28 +677,33 @@ app.post("/api/admin/cancel-registration", requireAdmin, async (req, res) => {
 	}
 });
 
-app.post("/api/admin/bulk-register-participant", requireAdmin, async (req, res) => {
-	const { participantId, lessonIds } = req.body;
+app.post(
+	"/api/admin/bulk-register-participant",
+	requireAdmin,
+	async (req, res) => {
+		const { participantId, lessonIds } = req.body;
 
-	if (!participantId || !lessonIds || !Array.isArray(lessonIds)) {
-		return res.status(400).json({
-			error: "participantId and lessonIds array are required",
-		});
-	}
+		if (!participantId || !lessonIds || !Array.isArray(lessonIds)) {
+			return res.status(400).json({
+				error: "participantId and lessonIds array are required",
+			});
+		}
 
-	const result = await registrationManager.adminBulkRegisterParticipant(
-		participantId,
-		lessonIds,
-	);
+		const result = await registrationManager.adminBulkRegisterParticipant(
+			participantId,
+			lessonIds,
+		);
 
-	res.status(result.success ? 201 : 400).json(result);
-});
+		res.status(result.success ? 201 : 400).json(result);
+	},
+);
 
 // Substitutions
 app.get("/api/substitutions/:ageGroup", async (req, res) => {
-	const availableLessons = await registrationManager.getAvailableSubstitutionLessons(
-		req.params.ageGroup,
-	);
+	const availableLessons =
+		await registrationManager.getAvailableSubstitutionLessons(
+			req.params.ageGroup,
+		);
 	res.json(availableLessons);
 });
 
@@ -819,15 +870,18 @@ process.on("uncaughtException", (error: Error) => {
 });
 
 // Handle unhandled promise rejections
-process.on("unhandledRejection", (reason: unknown, promise: Promise<unknown>) => {
-	logger.error("Unhandled promise rejection", {
-		reason: reason instanceof Error ? reason.message : String(reason),
-		stack: reason instanceof Error ? reason.stack : undefined,
-		promise: String(promise),
-	});
+process.on(
+	"unhandledRejection",
+	(reason: unknown, promise: Promise<unknown>) => {
+		logger.error("Unhandled promise rejection", {
+			reason: reason instanceof Error ? reason.message : String(reason),
+			stack: reason instanceof Error ? reason.stack : undefined,
+			promise: String(promise),
+		});
 
-	// Give logger time to flush, then exit
-	setTimeout(() => {
-		process.exit(1);
-	}, 1000);
-});
+		// Give logger time to flush, then exit
+		setTimeout(() => {
+			process.exit(1);
+		}, 1000);
+	},
+);

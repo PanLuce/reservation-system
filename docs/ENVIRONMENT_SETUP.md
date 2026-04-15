@@ -59,7 +59,8 @@ This document explains how to configure the reservation system for different env
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `DATABASE_PATH` | No | `./data/reservations.db` | Path to SQLite database file |
+| `TURSO_DATABASE_URL` | No | `file:./data/reservations.db` | Turso database URL. Local dev uses `file:` protocol, production uses remote Turso URL |
+| `TURSO_AUTH_TOKEN` | **Yes (Production)** | - | Authentication token for remote Turso database |
 
 ### Logging
 
@@ -168,7 +169,8 @@ SESSION_SECRET=<64-character-hex-string>
 ALLOWED_ORIGINS=https://centrumrubacek.cz
 ADMIN_EMAIL_SEED=admin@centrumrubacek.cz
 ADMIN_PASSWORD_SEED=<strong-password>
-DATABASE_PATH=/var/lib/reservations/reservations.db
+TURSO_DATABASE_URL=libsql://your-db.turso.io
+TURSO_AUTH_TOKEN=<your-turso-auth-token>
 LOG_LEVEL=info
 
 # SMTP (optional)

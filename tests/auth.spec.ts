@@ -3,8 +3,8 @@ import bcrypt from "bcrypt";
 import { AuthService } from "../src/auth.js";
 import {
 	initializeDatabase,
-	resetDatabaseForTests,
 	ParticipantDB,
+	resetDatabaseForTests,
 	UserDB,
 } from "../src/database.js";
 
@@ -109,7 +109,10 @@ test.describe("Authentication Service", () => {
 
 			// Assert
 			expect(loginResult.success).toBe(true);
-			const user = await UserDB.getById("user_lastlogin") as Record<string, unknown>;
+			const user = (await UserDB.getById("user_lastlogin")) as Record<
+				string,
+				unknown
+			>;
 			expect(user).toBeDefined();
 			expect(user.lastLogin).toBeDefined();
 			expect(user.lastLogin).not.toBeNull();
@@ -221,7 +224,10 @@ test.describe("Authentication Service", () => {
 
 			// Assert
 			if (result.success) {
-				const user = await UserDB.getByEmail(email) as Record<string, unknown>;
+				const user = (await UserDB.getByEmail(email)) as Record<
+					string,
+					unknown
+				>;
 				expect(user.passwordHash).toBeDefined();
 				expect(user.passwordHash).not.toBe(password); // Password should be hashed
 				// Verify the hash can be compared

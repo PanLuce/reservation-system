@@ -1,17 +1,19 @@
 import { expect, test } from "@playwright/test";
-import { RegistrationManagerDB } from "../src/registration-db.js";
 import { LessonCalendarDB } from "../src/calendar-db.js";
-import { createParticipant } from "../src/participant.js";
-import { createLesson } from "../src/lesson.js";
 import {
 	initializeDatabase,
 	ParticipantDB,
 	RegistrationDB,
+	resetDatabaseForTests,
 } from "../src/database.js";
+import { createLesson } from "../src/lesson.js";
+import { createParticipant } from "../src/participant.js";
+import { RegistrationManagerDB } from "../src/registration-db.js";
 
 test.describe("Participant View - Get Own Registrations", () => {
 	test.beforeEach(async () => {
 		await initializeDatabase();
+		await resetDatabaseForTests();
 	});
 
 	test("should get all registrations for a specific participant", async () => {

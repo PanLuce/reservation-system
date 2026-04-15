@@ -5,13 +5,17 @@ import type { Participant } from "../src/participant.js";
 import { RegistrationManager } from "../src/registration.js";
 
 test.describe("Registration Management", () => {
+	const tomorrow = new Date();
+	tomorrow.setDate(tomorrow.getDate() + 1);
+	const futureDate = tomorrow.toISOString().split("T")[0] as string;
+
 	test("should register a participant to a lesson", () => {
 		// Arrange
 		const calendar = new LessonCalendar();
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
-			date: "2026-02-01",
+			date: futureDate,
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -53,7 +57,7 @@ test.describe("Registration Management", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
-			date: "2026-02-01",
+			date: futureDate,
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -111,7 +115,7 @@ test.describe("Registration Management", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
-			date: "2026-02-01",
+			date: futureDate,
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -150,7 +154,7 @@ test.describe("Registration Management", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
-			date: "2026-02-01",
+			date: futureDate,
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",

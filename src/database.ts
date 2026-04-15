@@ -1,14 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type Client, type InValue, createClient } from "@libsql/client";
+import { type Client, createClient, type InValue } from "@libsql/client";
 import bcrypt from "bcrypt";
 import { logger } from "./logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const url = process.env.TURSO_DATABASE_URL || `file:${path.join(__dirname, "..", "data", "reservations.db")}`;
+const url =
+	process.env.TURSO_DATABASE_URL ||
+	`file:${path.join(__dirname, "..", "data", "reservations.db")}`;
 const authToken = process.env.TURSO_AUTH_TOKEN;
 
 // Ensure data directory exists for local file mode
@@ -29,9 +31,10 @@ export async function initializeDatabase() {
 	await client.execute("PRAGMA journal_mode = WAL");
 	await client.execute("PRAGMA busy_timeout = 5000");
 
-	await client.batch([
-		{
-			sql: `CREATE TABLE IF NOT EXISTS courses (
+	await client.batch(
+		[
+			{
+				sql: `CREATE TABLE IF NOT EXISTS courses (
 				id TEXT PRIMARY KEY,
 				name TEXT NOT NULL,
 				ageGroup TEXT NOT NULL,
@@ -39,10 +42,10 @@ export async function initializeDatabase() {
 				description TEXT,
 				createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 			)`,
-			args: [],
-		},
-		{
-			sql: `CREATE TABLE IF NOT EXISTS lessons (
+				args: [],
+			},
+			{
+				sql: `CREATE TABLE IF NOT EXISTS lessons (
 				id TEXT PRIMARY KEY,
 				title TEXT NOT NULL,
 				date TEXT NOT NULL,
@@ -56,10 +59,10 @@ export async function initializeDatabase() {
 				createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
 				FOREIGN KEY (courseId) REFERENCES courses(id) ON DELETE SET NULL
 			)`,
-			args: [],
-		},
-		{
-			sql: `CREATE TABLE IF NOT EXISTS participants (
+				args: [],
+			},
+			{
+				sql: `CREATE TABLE IF NOT EXISTS participants (
 				id TEXT PRIMARY KEY,
 				name TEXT NOT NULL,
 				email TEXT NOT NULL,
@@ -69,10 +72,10 @@ export async function initializeDatabase() {
 				createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
 				FOREIGN KEY (courseId) REFERENCES courses(id) ON DELETE SET NULL
 			)`,
-			args: [],
-		},
-		{
-			sql: `CREATE TABLE IF NOT EXISTS users (
+				args: [],
+			},
+			{
+				sql: `CREATE TABLE IF NOT EXISTS users (
 				id TEXT PRIMARY KEY,
 				email TEXT UNIQUE NOT NULL,
 				passwordHash TEXT NOT NULL,
@@ -83,10 +86,10 @@ export async function initializeDatabase() {
 				lastLogin DATETIME,
 				FOREIGN KEY (participantId) REFERENCES participants(id) ON DELETE SET NULL
 			)`,
-			args: [],
-		},
-		{
-			sql: `CREATE TABLE IF NOT EXISTS registrations (
+				args: [],
+			},
+			{
+				sql: `CREATE TABLE IF NOT EXISTS registrations (
 				id TEXT PRIMARY KEY,
 				lessonId TEXT NOT NULL,
 				participantId TEXT NOT NULL,
@@ -96,10 +99,10 @@ export async function initializeDatabase() {
 				FOREIGN KEY (lessonId) REFERENCES lessons(id) ON DELETE CASCADE,
 				FOREIGN KEY (participantId) REFERENCES participants(id) ON DELETE CASCADE
 			)`,
-			args: [],
-		},
-		{
-			sql: `CREATE TABLE IF NOT EXISTS course_participants (
+				args: [],
+			},
+			{
+				sql: `CREATE TABLE IF NOT EXISTS course_participants (
 				courseId TEXT NOT NULL,
 				participantId TEXT NOT NULL,
 				addedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -107,36 +110,74 @@ export async function initializeDatabase() {
 				FOREIGN KEY (courseId) REFERENCES courses(id) ON DELETE CASCADE,
 				FOREIGN KEY (participantId) REFERENCES participants(id) ON DELETE CASCADE
 			)`,
-			args: [],
-		},
-		{ sql: "CREATE INDEX IF NOT EXISTS idx_courses_ageGroup ON courses(ageGroup)", args: [] },
-		{ sql: "CREATE INDEX IF NOT EXISTS idx_lessons_dayOfWeek ON lessons(dayOfWeek)", args: [] },
-		{ sql: "CREATE INDEX IF NOT EXISTS idx_lessons_ageGroup ON lessons(ageGroup)", args: [] },
-		{ sql: "CREATE INDEX IF NOT EXISTS idx_lessons_courseId ON lessons(courseId)", args: [] },
-		{ sql: "CREATE INDEX IF NOT EXISTS idx_participants_courseId ON participants(courseId)", args: [] },
-		{ sql: "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)", args: [] },
-		{ sql: "CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)", args: [] },
-		{ sql: "CREATE INDEX IF NOT EXISTS idx_registrations_lessonId ON registrations(lessonId)", args: [] },
-		{ sql: "CREATE INDEX IF NOT EXISTS idx_registrations_participantId ON registrations(participantId)", args: [] },
-		{ sql: "CREATE INDEX IF NOT EXISTS idx_registrations_status ON registrations(status)", args: [] },
-	], "write");
+				args: [],
+			},
+			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_courses_ageGroup ON courses(ageGroup)",
+				args: [],
+			},
+			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_lessons_dayOfWeek ON lessons(dayOfWeek)",
+				args: [],
+			},
+			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_lessons_ageGroup ON lessons(ageGroup)",
+				args: [],
+			},
+			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_lessons_courseId ON lessons(courseId)",
+				args: [],
+			},
+			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_participants_courseId ON participants(courseId)",
+				args: [],
+			},
+			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
+				args: [],
+			},
+			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)",
+				args: [],
+			},
+			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_registrations_lessonId ON registrations(lessonId)",
+				args: [],
+			},
+			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_registrations_participantId ON registrations(participantId)",
+				args: [],
+			},
+			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_registrations_status ON registrations(status)",
+				args: [],
+			},
+		],
+		"write",
+	);
 
 	logger.info("Database initialized successfully");
 }
 
 export async function resetDatabaseForTests() {
-	await client.batch([
-		{ sql: "DELETE FROM registrations", args: [] },
-		{ sql: "DELETE FROM course_participants", args: [] },
-		{ sql: "DELETE FROM users", args: [] },
-		{ sql: "DELETE FROM lessons", args: [] },
-		{ sql: "DELETE FROM participants", args: [] },
-		{ sql: "DELETE FROM courses", args: [] },
-	], "write");
+	await client.batch(
+		[
+			{ sql: "DELETE FROM registrations", args: [] },
+			{ sql: "DELETE FROM course_participants", args: [] },
+			{ sql: "DELETE FROM users", args: [] },
+			{ sql: "DELETE FROM lessons", args: [] },
+			{ sql: "DELETE FROM participants", args: [] },
+			{ sql: "DELETE FROM courses", args: [] },
+		],
+		"write",
+	);
 }
 
 export async function seedSampleData() {
-	const result = await client.execute({ sql: "SELECT COUNT(*) as count FROM lessons", args: [] });
+	const result = await client.execute({
+		sql: "SELECT COUNT(*) as count FROM lessons",
+		args: [],
+	});
 	const count = Number(result.rows[0]?.count ?? 0);
 
 	if (count === 0) {
@@ -155,9 +196,39 @@ export async function seedSampleData() {
 		const wednesdayDate = nextWednesday.toISOString().split("T")[0]!;
 
 		const sampleLessons: InValue[][] = [
-			["lesson_1", "Cvičení pro maminky s dětmi - Pondělí dopoledne", mondayDate, "Monday", "10:00", "CVČ Vietnamská", "3-12 months", 10, 3],
-			["lesson_2", "Cvičení pro maminky s dětmi - Úterý odpoledne", tuesdayDate, "Tuesday", "14:00", "CVČ Jeremiáše", "1-2 years", 12, 8],
-			["lesson_3", "Cvičení pro maminky s dětmi - Středa dopoledne", wednesdayDate, "Wednesday", "10:00", "DK Poklad", "2-3 years", 15, 12],
+			[
+				"lesson_1",
+				"Cvičení pro maminky s dětmi - Pondělí dopoledne",
+				mondayDate,
+				"Monday",
+				"10:00",
+				"CVČ Vietnamská",
+				"3-12 months",
+				10,
+				3,
+			],
+			[
+				"lesson_2",
+				"Cvičení pro maminky s dětmi - Úterý odpoledne",
+				tuesdayDate,
+				"Tuesday",
+				"14:00",
+				"CVČ Jeremiáše",
+				"1-2 years",
+				12,
+				8,
+			],
+			[
+				"lesson_3",
+				"Cvičení pro maminky s dětmi - Středa dopoledne",
+				wednesdayDate,
+				"Wednesday",
+				"10:00",
+				"DK Poklad",
+				"2-3 years",
+				15,
+				12,
+			],
 		];
 
 		for (const lesson of sampleLessons) {
@@ -167,7 +238,10 @@ export async function seedSampleData() {
 			});
 		}
 
-		const userResult = await client.execute({ sql: "SELECT COUNT(*) as count FROM users", args: [] });
+		const userResult = await client.execute({
+			sql: "SELECT COUNT(*) as count FROM users",
+			args: [],
+		});
 		const userCount = Number(userResult.rows[0]?.count ?? 0);
 
 		if (userCount === 0) {
@@ -182,9 +256,13 @@ export async function seedSampleData() {
 					args: ["admin_1", adminEmail, passwordHash, "Admin", "admin"],
 				});
 
-				logger.info("Admin user created from environment variables", { email: adminEmail });
+				logger.info("Admin user created from environment variables", {
+					email: adminEmail,
+				});
 			} else {
-				logger.warn("No admin user created. Set ADMIN_EMAIL_SEED and ADMIN_PASSWORD_SEED to create an admin account.");
+				logger.warn(
+					"No admin user created. Set ADMIN_EMAIL_SEED and ADMIN_PASSWORD_SEED to create an admin account.",
+				);
 			}
 		}
 
@@ -195,17 +273,26 @@ export async function seedSampleData() {
 // Database operations for Courses
 export const CourseDB = {
 	async getAll() {
-		const result = await client.execute({ sql: "SELECT * FROM courses ORDER BY name", args: [] });
+		const result = await client.execute({
+			sql: "SELECT * FROM courses ORDER BY name",
+			args: [],
+		});
 		return result.rows;
 	},
 
 	async getById(id: string) {
-		const result = await client.execute({ sql: "SELECT * FROM courses WHERE id = ?", args: [id] });
+		const result = await client.execute({
+			sql: "SELECT * FROM courses WHERE id = ?",
+			args: [id],
+		});
 		return result.rows[0];
 	},
 
 	async getByAgeGroup(ageGroup: string) {
-		const result = await client.execute({ sql: "SELECT * FROM courses WHERE ageGroup = ?", args: [ageGroup] });
+		const result = await client.execute({
+			sql: "SELECT * FROM courses WHERE ageGroup = ?",
+			args: [ageGroup],
+		});
 		return result.rows;
 	},
 
@@ -218,7 +305,13 @@ export const CourseDB = {
 	}) {
 		const result = await client.execute({
 			sql: "INSERT INTO courses (id, name, ageGroup, color, description) VALUES (?, ?, ?, ?, ?)",
-			args: [course.id, course.name, course.ageGroup, course.color, course.description || null],
+			args: [
+				course.id,
+				course.name,
+				course.ageGroup,
+				course.color,
+				course.description || null,
+			],
 		});
 		return { changes: result.rowsAffected };
 	},
@@ -253,7 +346,10 @@ export const CourseDB = {
 	},
 
 	async delete(id: string) {
-		const result = await client.execute({ sql: "DELETE FROM courses WHERE id = ?", args: [id] });
+		const result = await client.execute({
+			sql: "DELETE FROM courses WHERE id = ?",
+			args: [id],
+		});
 		return { changes: result.rowsAffected };
 	},
 };
@@ -261,17 +357,26 @@ export const CourseDB = {
 // Database operations for Lessons
 export const LessonDB = {
 	async getAll() {
-		const result = await client.execute({ sql: "SELECT * FROM lessons ORDER BY dayOfWeek, time", args: [] });
+		const result = await client.execute({
+			sql: "SELECT * FROM lessons ORDER BY dayOfWeek, time",
+			args: [],
+		});
 		return result.rows;
 	},
 
 	async getById(id: string) {
-		const result = await client.execute({ sql: "SELECT * FROM lessons WHERE id = ?", args: [id] });
+		const result = await client.execute({
+			sql: "SELECT * FROM lessons WHERE id = ?",
+			args: [id],
+		});
 		return result.rows[0];
 	},
 
 	async getByDay(dayOfWeek: string) {
-		const result = await client.execute({ sql: "SELECT * FROM lessons WHERE dayOfWeek = ?", args: [dayOfWeek] });
+		const result = await client.execute({
+			sql: "SELECT * FROM lessons WHERE dayOfWeek = ?",
+			args: [dayOfWeek],
+		});
 		return result.rows;
 	},
 
@@ -288,13 +393,25 @@ export const LessonDB = {
 	}) {
 		const result = await client.execute({
 			sql: "INSERT INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-			args: [lesson.id, lesson.title, lesson.date, lesson.dayOfWeek, lesson.time, lesson.location, lesson.ageGroup, lesson.capacity, lesson.enrolledCount],
+			args: [
+				lesson.id,
+				lesson.title,
+				lesson.date,
+				lesson.dayOfWeek,
+				lesson.time,
+				lesson.location,
+				lesson.ageGroup,
+				lesson.capacity,
+				lesson.enrolledCount,
+			],
 		});
 		return { changes: result.rowsAffected };
 	},
 
 	async update(id: string, updates: Partial<Record<string, unknown>>) {
-		const fields = Object.keys(updates).map((key) => `${key} = ?`).join(", ");
+		const fields = Object.keys(updates)
+			.map((key) => `${key} = ?`)
+			.join(", ");
 		const values = [...Object.values(updates), id];
 		const result = await client.execute({
 			sql: `UPDATE lessons SET ${fields} WHERE id = ?`,
@@ -304,7 +421,10 @@ export const LessonDB = {
 	},
 
 	async delete(id: string) {
-		const result = await client.execute({ sql: "DELETE FROM lessons WHERE id = ?", args: [id] });
+		const result = await client.execute({
+			sql: "DELETE FROM lessons WHERE id = ?",
+			args: [id],
+		});
 		return { changes: result.rowsAffected };
 	},
 
@@ -312,8 +432,12 @@ export const LessonDB = {
 		filter: Record<string, unknown>,
 		updates: Record<string, unknown>,
 	) {
-		const whereClause = Object.keys(filter).map((key) => `${key} = ?`).join(" AND ");
-		const setClause = Object.keys(updates).map((key) => `${key} = ?`).join(", ");
+		const whereClause = Object.keys(filter)
+			.map((key) => `${key} = ?`)
+			.join(" AND ");
+		const setClause = Object.keys(updates)
+			.map((key) => `${key} = ?`)
+			.join(", ");
 		const values = [...Object.values(updates), ...Object.values(filter)];
 		const result = await client.execute({
 			sql: `UPDATE lessons SET ${setClause} WHERE ${whereClause}`,
@@ -323,7 +447,9 @@ export const LessonDB = {
 	},
 
 	async bulkDelete(filter: Record<string, unknown>) {
-		const whereClause = Object.keys(filter).map((key) => `${key} = ?`).join(" AND ");
+		const whereClause = Object.keys(filter)
+			.map((key) => `${key} = ?`)
+			.join(" AND ");
 		const values = Object.values(filter);
 		const result = await client.execute({
 			sql: `DELETE FROM lessons WHERE ${whereClause}`,
@@ -348,7 +474,18 @@ export const LessonDB = {
 	) {
 		const result = await client.execute({
 			sql: "INSERT INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount, courseId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-			args: [lesson.id, lesson.title, lesson.date, lesson.dayOfWeek, lesson.time, lesson.location, lesson.ageGroup, lesson.capacity, lesson.enrolledCount, courseId],
+			args: [
+				lesson.id,
+				lesson.title,
+				lesson.date,
+				lesson.dayOfWeek,
+				lesson.time,
+				lesson.location,
+				lesson.ageGroup,
+				lesson.capacity,
+				lesson.enrolledCount,
+				courseId,
+			],
 		});
 		return { changes: result.rowsAffected };
 	},
@@ -373,18 +510,30 @@ export const ParticipantDB = {
 	}) {
 		const result = await client.execute({
 			sql: "INSERT INTO participants (id, name, email, phone, ageGroup) VALUES (?, ?, ?, ?, ?)",
-			args: [participant.id, participant.name, participant.email, participant.phone, participant.ageGroup],
+			args: [
+				participant.id,
+				participant.name,
+				participant.email,
+				participant.phone,
+				participant.ageGroup,
+			],
 		});
 		return { changes: result.rowsAffected };
 	},
 
 	async getById(id: string) {
-		const result = await client.execute({ sql: "SELECT * FROM participants WHERE id = ?", args: [id] });
+		const result = await client.execute({
+			sql: "SELECT * FROM participants WHERE id = ?",
+			args: [id],
+		});
 		return result.rows[0];
 	},
 
 	async getAll() {
-		const result = await client.execute({ sql: "SELECT * FROM participants", args: [] });
+		const result = await client.execute({
+			sql: "SELECT * FROM participants",
+			args: [],
+		});
 		return result.rows;
 	},
 
@@ -447,23 +596,37 @@ export const RegistrationDB = {
 	}) {
 		const result = await client.execute({
 			sql: "INSERT INTO registrations (id, lessonId, participantId, status, missedLessonId) VALUES (?, ?, ?, ?, ?)",
-			args: [registration.id, registration.lessonId, registration.participantId, registration.status, registration.missedLessonId || null],
+			args: [
+				registration.id,
+				registration.lessonId,
+				registration.participantId,
+				registration.status,
+				registration.missedLessonId || null,
+			],
 		});
 		return { changes: result.rowsAffected };
 	},
 
 	async getByLessonId(lessonId: string) {
-		const result = await client.execute({ sql: "SELECT * FROM registrations WHERE lessonId = ?", args: [lessonId] });
+		const result = await client.execute({
+			sql: "SELECT * FROM registrations WHERE lessonId = ?",
+			args: [lessonId],
+		});
 		return result.rows;
 	},
 
 	async getById(id: string) {
-		const result = await client.execute({ sql: "SELECT * FROM registrations WHERE id = ?", args: [id] });
+		const result = await client.execute({
+			sql: "SELECT * FROM registrations WHERE id = ?",
+			args: [id],
+		});
 		return result.rows[0];
 	},
 
 	async update(id: string, updates: Record<string, unknown>) {
-		const fields = Object.keys(updates).map((key) => `${key} = ?`).join(", ");
+		const fields = Object.keys(updates)
+			.map((key) => `${key} = ?`)
+			.join(", ");
 		const values = [...Object.values(updates), id];
 		const result = await client.execute({
 			sql: `UPDATE registrations SET ${fields} WHERE id = ?`,
@@ -489,7 +652,10 @@ export const RegistrationDB = {
 	},
 
 	async getAll() {
-		const result = await client.execute({ sql: "SELECT * FROM registrations", args: [] });
+		const result = await client.execute({
+			sql: "SELECT * FROM registrations",
+			args: [],
+		});
 		return result.rows;
 	},
 };
@@ -506,18 +672,31 @@ export const UserDB = {
 	}) {
 		const result = await client.execute({
 			sql: "INSERT INTO users (id, email, passwordHash, name, role, participantId) VALUES (?, ?, ?, ?, ?, ?)",
-			args: [user.id, user.email, user.passwordHash, user.name, user.role, user.participantId || null],
+			args: [
+				user.id,
+				user.email,
+				user.passwordHash,
+				user.name,
+				user.role,
+				user.participantId || null,
+			],
 		});
 		return { changes: result.rowsAffected };
 	},
 
 	async getByEmail(email: string) {
-		const result = await client.execute({ sql: "SELECT * FROM users WHERE email = ?", args: [email] });
+		const result = await client.execute({
+			sql: "SELECT * FROM users WHERE email = ?",
+			args: [email],
+		});
 		return result.rows[0];
 	},
 
 	async getById(id: string) {
-		const result = await client.execute({ sql: "SELECT * FROM users WHERE id = ?", args: [id] });
+		const result = await client.execute({
+			sql: "SELECT * FROM users WHERE id = ?",
+			args: [id],
+		});
 		return result.rows[0];
 	},
 
@@ -538,7 +717,9 @@ export const UserDB = {
 	},
 
 	async update(id: string, updates: Record<string, unknown>) {
-		const fields = Object.keys(updates).map((key) => `${key} = ?`).join(", ");
+		const fields = Object.keys(updates)
+			.map((key) => `${key} = ?`)
+			.join(", ");
 		const values = [...Object.values(updates), id];
 		const result = await client.execute({
 			sql: `UPDATE users SET ${fields} WHERE id = ?`,

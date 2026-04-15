@@ -1,4 +1,4 @@
-import { LessonDB, CourseDB } from "./database.js";
+import { CourseDB, LessonDB } from "./database.js";
 import type { Lesson } from "./lesson.js";
 
 export class LessonCalendarDB {
@@ -22,7 +22,10 @@ export class LessonCalendarDB {
 		await LessonDB.update(id, updates);
 	}
 
-	async bulkUpdateLessons(filter: Partial<Lesson>, updates: Partial<Lesson>): Promise<number> {
+	async bulkUpdateLessons(
+		filter: Partial<Lesson>,
+		updates: Partial<Lesson>,
+	): Promise<number> {
 		const result = await LessonDB.bulkUpdate(filter, updates);
 		return result.changes;
 	}
@@ -46,7 +49,9 @@ export class LessonCalendarDB {
 		}
 
 		// Get course to retrieve age group
-		const course = (await CourseDB.getById(config.courseId)) as Record<string, unknown> | undefined;
+		const course = (await CourseDB.getById(config.courseId)) as
+			| Record<string, unknown>
+			| undefined;
 		if (!course) {
 			throw new Error(`Course ${config.courseId} not found`);
 		}

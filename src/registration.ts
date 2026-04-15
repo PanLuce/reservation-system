@@ -1,14 +1,9 @@
 import type { LessonCalendar } from "./calendar.js";
 import type { Participant } from "./participant.js";
 
-export type Registration = {
-	id: string;
-	lessonId: string;
-	participantId: string;
-	registeredAt: Date;
-	status: "confirmed" | "waitlist" | "cancelled";
-	missedLessonId?: string; // For substitution tracking
-};
+export type { Registration } from "./types.js";
+
+import type { Registration } from "./types.js";
 
 export class RegistrationManager {
 	private registrations: Registration[] = [];

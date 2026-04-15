@@ -8,7 +8,7 @@ A complete reservation management system for exercise classes with lessons, part
 - 👥 **Participant Registration** - Register participants with auto-waitlist when full
 - 🔄 **Substitution System** - Track missed lessons and allow makeup registration
 - 📊 **Excel Import** - Bulk import participants from Excel files
-- 💾 **SQLite Database** - All data persists across restarts
+- 💾 **Turso/LibSQL Database** - All data persists across restarts
 - 🎨 **Beautiful UI** - Modern, responsive interface in Czech language
 
 ## 🚀 Quick Start
@@ -36,19 +36,12 @@ Server runs on **port 3000** by default.
 
 ## 💾 Database Persistence
 
-The system now uses **SQLite** for data persistence:
+The system uses **@libsql/client** (Turso-compatible) for data persistence:
 
-- **Location**: `data/reservations.db`
-- **Auto-created** on first run
-- **Sample data** seeded automatically
-- **Survives server restarts** - your data is safe! ✨
-
-### Backup Your Data
-
-```bash
-# Simple backup
-cp data/reservations.db data/backup-$(date +%Y%m%d).db
-```
+- **Local dev**: `file:data/reservations.db` (auto-created on first run)
+- **Production**: Remote Turso DB via `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`
+- **Sample data** seeded automatically when database is empty
+- **Survives server restarts** - your data is safe!
 
 ## 📖 API Endpoints
 
@@ -92,9 +85,9 @@ Age groups: `3-12 months`, `1-2 years`, `2-3 years`, `3-4 years`
 ## 🎯 Technology Stack
 
 - **Backend**: TypeScript + Node.js + Express
-- **Database**: SQLite (better-sqlite3) ✨
+- **Database**: @libsql/client (Turso DB)
 - **Frontend**: HTML + CSS + JavaScript
-- **Testing**: Playwright (19/19 tests passing ✅)
+- **Testing**: Playwright
 - **Linting**: Biome
 
 ## 📝 Project Structure
@@ -115,11 +108,11 @@ reservation-system/
 
 ## ✅ What's New
 
-### Database Persistence ✨
-- All lessons, participants, and registrations now saved to SQLite
-- Data survives server restarts and crashes
-- Easy to backup (just copy the .db file)
-- No external database server needed!
+### Turso DB Migration
+- Migrated from better-sqlite3 to @libsql/client for Turso compatibility
+- Local development uses file-based SQLite via libsql
+- Production uses remote Turso database
+- Deployed on Railway
 
 ---
 

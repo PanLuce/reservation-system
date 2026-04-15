@@ -15,7 +15,9 @@ test("register participant via UI and verify email would be sent", async ({
 	await page.screenshot({ path: "screenshots/01-homepage.png" });
 
 	// Check if lessons are visible
-	const lessonsExist = await page.locator("text=/lesson|class|cvičení/i").count();
+	const lessonsExist = await page
+		.locator("text=/lesson|class|cvičení/i")
+		.count();
 	console.log(`📚 Found ${lessonsExist} lesson elements`);
 
 	console.log("✅ UI test complete - registration form is accessible");

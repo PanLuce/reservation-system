@@ -1,17 +1,19 @@
 import { expect, test } from "@playwright/test";
-import { RegistrationManagerDB } from "../src/registration-db.js";
 import { LessonCalendarDB } from "../src/calendar-db.js";
-import { createParticipant } from "../src/participant.js";
 import { createCourse } from "../src/course.js";
 import {
-	initializeDatabase,
 	CourseDB,
+	initializeDatabase,
 	ParticipantDB,
+	resetDatabaseForTests,
 } from "../src/database.js";
+import { createParticipant } from "../src/participant.js";
+import { RegistrationManagerDB } from "../src/registration-db.js";
 
 test.describe("Bulk Group Assignment - TDD", () => {
 	test.beforeEach(async () => {
 		await initializeDatabase();
+		await resetDatabaseForTests();
 	});
 
 	test("should assign all course participants to multiple lessons", async () => {
@@ -77,7 +79,9 @@ test.describe("Bulk Group Assignment - TDD", () => {
 
 		// Verify registrations in database
 		for (const lesson of lessons) {
-			const regs = await registrationManager.getRegistrationsForLesson(lesson.id);
+			const regs = await registrationManager.getRegistrationsForLesson(
+				lesson.id,
+			);
 			expect(regs).toHaveLength(3);
 		}
 	});
@@ -124,7 +128,10 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		const registrationManager = new RegistrationManagerDB();
 
 		// Pre-register David to the lesson
-		await registrationManager.registerParticipant(lessons[0].id, participants[0]);
+		await registrationManager.registerParticipant(
+			lessons[0].id,
+			participants[0],
+		);
 
 		// Act - try to register both participants
 		const result = await registrationManager.bulkAssignGroupToLessons({
@@ -138,7 +145,9 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		expect(result.skipped).toBe(1); // David skipped (already registered)
 
 		// Verify only 2 registrations total (not 3)
-		const regs = await registrationManager.getRegistrationsForLesson(lessons[0].id);
+		const regs = await registrationManager.getRegistrationsForLesson(
+			lessons[0].id,
+		);
 		expect(regs).toHaveLength(2);
 	});
 
@@ -191,7 +200,9 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		expect(result.skipped).toBe(0);
 
 		// Verify registrations
-		const regs = await registrationManager.getRegistrationsForLesson(lessons[0].id);
+		const regs = await registrationManager.getRegistrationsForLesson(
+			lessons[0].id,
+		);
 		expect(regs).toHaveLength(5);
 
 		const confirmed = regs.filter(

@@ -1,23 +1,26 @@
 import { expect, test } from "@playwright/test";
-import { RegistrationManagerDB } from "../src/registration-db.js";
 import {
+	client,
+	initializeDatabase,
 	LessonDB,
 	ParticipantDB,
 	RegistrationDB,
-	client,
-	initializeDatabase,
 } from "../src/database.js";
-import type { Participant } from "../src/participant.js";
-import type { Lesson } from "../src/lesson.js";
 import type { EmailServiceInterface } from "../src/email-factory.js";
+import type { Lesson } from "../src/lesson.js";
+import type { Participant } from "../src/participant.js";
+import { RegistrationManagerDB } from "../src/registration-db.js";
 
 // Helper to clean up test data
 async function cleanupTestData() {
-	await client.batch([
-		{ sql: "DELETE FROM registrations", args: [] },
-		{ sql: "DELETE FROM participants", args: [] },
-		{ sql: "DELETE FROM lessons", args: [] },
-	], "write");
+	await client.batch(
+		[
+			{ sql: "DELETE FROM registrations", args: [] },
+			{ sql: "DELETE FROM participants", args: [] },
+			{ sql: "DELETE FROM lessons", args: [] },
+		],
+		"write",
+	);
 }
 
 // Mock email service for testing
@@ -35,14 +38,24 @@ function createMockEmailService() {
 			lesson: Lesson,
 			status: "confirmed" | "waitlist",
 		) => {
-			calls.push({ method: "sendParticipantConfirmation", participant, lesson, status });
+			calls.push({
+				method: "sendParticipantConfirmation",
+				participant,
+				lesson,
+				status,
+			});
 		},
 		sendAdminNotification: async (
 			participant: Participant,
 			lesson: Lesson,
 			status: "confirmed" | "waitlist",
 		) => {
-			calls.push({ method: "sendAdminNotification", participant, lesson, status });
+			calls.push({
+				method: "sendAdminNotification",
+				participant,
+				lesson,
+				status,
+			});
 		},
 		getCalls: () => calls,
 		resetCalls: () => {
