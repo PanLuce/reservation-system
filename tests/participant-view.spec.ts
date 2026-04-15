@@ -10,11 +10,11 @@ import {
 } from "../src/database.js";
 
 test.describe("Participant View - Get Own Registrations", () => {
-	test.beforeEach(() => {
-		initializeDatabase();
+	test.beforeEach(async () => {
+		await initializeDatabase();
 	});
 
-	test("should get all registrations for a specific participant", () => {
+	test("should get all registrations for a specific participant", async () => {
 		// Arrange
 		const calendar = new LessonCalendarDB();
 		const registrationManager = new RegistrationManagerDB();
@@ -39,8 +39,8 @@ test.describe("Participant View - Get Own Registrations", () => {
 			capacity: 10,
 		});
 
-		calendar.addLesson(lesson1);
-		calendar.addLesson(lesson2);
+		await calendar.addLesson(lesson1);
+		await calendar.addLesson(lesson2);
 
 		const participant = createParticipant({
 			name: "John Doe",
@@ -50,10 +50,10 @@ test.describe("Participant View - Get Own Registrations", () => {
 		});
 
 		// Register participant to first lesson (this will insert the participant)
-		registrationManager.registerParticipant(lesson1.id, participant);
+		await registrationManager.registerParticipant(lesson1.id, participant);
 
 		// For second lesson, add registration directly since participant exists
-		RegistrationDB.insert({
+		await RegistrationDB.insert({
 			id: `reg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
 			lessonId: lesson2.id,
 			participantId: participant.id,
@@ -61,7 +61,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 		});
 
 		// Act
-		const registrations = ParticipantDB.getRegistrationsByParticipantId(
+		const registrations = await ParticipantDB.getRegistrationsByParticipantId(
 			participant.id,
 		);
 
@@ -74,7 +74,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 		expect(lessonIds).toContain(lesson2.id);
 	});
 
-	test("should return empty array when participant has no registrations", () => {
+	test("should return empty array when participant has no registrations", async () => {
 		// Arrange
 		const participant = createParticipant({
 			name: "Jane Doe",
@@ -84,7 +84,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 		});
 
 		// Act
-		const registrations = ParticipantDB.getRegistrationsByParticipantId(
+		const registrations = await ParticipantDB.getRegistrationsByParticipantId(
 			participant.id,
 		);
 
@@ -92,7 +92,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 		expect(registrations).toHaveLength(0);
 	});
 
-	test("should include lesson details with participant registrations", () => {
+	test("should include lesson details with participant registrations", async () => {
 		// Arrange
 		const calendar = new LessonCalendarDB();
 		const registrationManager = new RegistrationManagerDB();
@@ -107,7 +107,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 			capacity: 5,
 		});
 
-		calendar.addLesson(lesson);
+		await calendar.addLesson(lesson);
 
 		const participant = createParticipant({
 			name: "Test User",
@@ -116,10 +116,10 @@ test.describe("Participant View - Get Own Registrations", () => {
 			ageGroup: "1-2 years",
 		});
 
-		registrationManager.registerParticipant(lesson.id, participant);
+		await registrationManager.registerParticipant(lesson.id, participant);
 
 		// Act
-		const registrations = ParticipantDB.getRegistrationsWithLessonDetails(
+		const registrations = await ParticipantDB.getRegistrationsWithLessonDetails(
 			participant.id,
 		);
 

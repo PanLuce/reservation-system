@@ -4,11 +4,11 @@ import { CourseDB, initializeDatabase } from "../src/database.js";
 import { createCourse } from "../src/course.js";
 
 test.describe("Bulk Lesson Creation - TDD", () => {
-	test.beforeEach(() => {
-		initializeDatabase();
+	test.beforeEach(async () => {
+		await initializeDatabase();
 	});
 
-	test("should create multiple lessons from course template", () => {
+	test("should create multiple lessons from course template", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Baby Yoga",
@@ -16,7 +16,7 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 			color: "#FF5733",
 			description: "Yoga for babies",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
 		const bulkConfig = {
@@ -30,7 +30,7 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		};
 
 		// Act
-		const createdLessons = calendar.bulkCreateLessons(bulkConfig);
+		const createdLessons = await calendar.bulkCreateLessons(bulkConfig);
 
 		// Assert
 		expect(createdLessons).toHaveLength(4);
@@ -56,14 +56,14 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		]);
 	});
 
-	test("should link created lessons to course", () => {
+	test("should link created lessons to course", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Toddler Dance",
 			ageGroup: "2-3 years",
 			color: "#33FF57",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
 		const bulkConfig = {
@@ -77,27 +77,27 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		};
 
 		// Act
-		const createdLessons = calendar.bulkCreateLessons(bulkConfig);
+		const createdLessons = await calendar.bulkCreateLessons(bulkConfig);
 
 		// Assert
 		expect(createdLessons).toHaveLength(2);
 
 		// Verify course linkage through database
-		const allLessons = calendar.getAllLessons();
+		const allLessons = await calendar.getAllLessons();
 		const courseLessons = allLessons.filter(
 			(l: { courseId?: string }) => l.courseId === course.id,
 		);
 		expect(courseLessons).toHaveLength(2);
 	});
 
-	test("should create lessons with recurring weekly pattern", () => {
+	test("should create lessons with recurring weekly pattern", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Kids Fitness",
 			ageGroup: "3-4 years",
 			color: "#5733FF",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
 		const startDate = new Date("2024-03-01"); // Friday
@@ -115,7 +115,7 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		};
 
 		// Act
-		const createdLessons = calendar.bulkCreateLessonsRecurring(bulkConfig);
+		const createdLessons = await calendar.bulkCreateLessonsRecurring(bulkConfig);
 
 		// Assert
 		expect(createdLessons).toHaveLength(4);
@@ -130,14 +130,14 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		]);
 	});
 
-	test("should reject bulk creation with empty dates array", () => {
+	test("should reject bulk creation with empty dates array", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Test Course",
 			ageGroup: "1-2 years",
 			color: "#FF5733",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
 		const bulkConfig = {
@@ -151,22 +151,22 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		};
 
 		// Act & Assert
-		expect(() => calendar.bulkCreateLessons(bulkConfig)).toThrow(
+		await expect(calendar.bulkCreateLessons(bulkConfig)).rejects.toThrow(
 			"At least one date is required",
 		);
 	});
 
-	test("should retrieve all lessons for a specific course", () => {
+	test("should retrieve all lessons for a specific course", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Art Class",
 			ageGroup: "3-4 years",
 			color: "#FF3357",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		calendar.bulkCreateLessons({
+		await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Creative Art",
 			location: "Art Room",
@@ -177,7 +177,7 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		});
 
 		// Act
-		const courseLessons = calendar.getLessonsByCourse(course.id);
+		const courseLessons = await calendar.getLessonsByCourse(course.id);
 
 		// Assert
 		expect(courseLessons).toHaveLength(3);

@@ -12,11 +12,11 @@ test.describe.configure({ mode: "serial" });
 
 test.describe("Authentication Service", () => {
 	// Initialize and clean up database before each test
-	test.beforeEach(() => {
+	test.beforeEach(async () => {
 		// Initialize database schema
-		initializeDatabase();
+		await initializeDatabase();
 		// Clear all data for clean test state
-		resetDatabaseForTests();
+		await resetDatabaseForTests();
 	});
 
 	test.describe("login", () => {
@@ -27,7 +27,7 @@ test.describe("Authentication Service", () => {
 			const password = "password123";
 			const passwordHash = await bcrypt.hash(password, 10);
 
-			UserDB.insert({
+			await UserDB.insert({
 				id: "user_1",
 				email,
 				passwordHash,
@@ -71,7 +71,7 @@ test.describe("Authentication Service", () => {
 			const wrongPassword = "wrongpassword";
 			const passwordHash = await bcrypt.hash(correctPassword, 10);
 
-			UserDB.insert({
+			await UserDB.insert({
 				id: "user_invalid_pw",
 				email,
 				passwordHash,
@@ -96,7 +96,7 @@ test.describe("Authentication Service", () => {
 			const password = "password123";
 			const passwordHash = await bcrypt.hash(password, 10);
 
-			UserDB.insert({
+			await UserDB.insert({
 				id: "user_lastlogin",
 				email,
 				passwordHash,
@@ -109,7 +109,7 @@ test.describe("Authentication Service", () => {
 
 			// Assert
 			expect(loginResult.success).toBe(true);
-			const user = UserDB.getById("user_lastlogin") as Record<string, unknown>;
+			const user = await UserDB.getById("user_lastlogin") as Record<string, unknown>;
 			expect(user).toBeDefined();
 			expect(user.lastLogin).toBeDefined();
 			expect(user.lastLogin).not.toBeNull();
@@ -122,7 +122,7 @@ test.describe("Authentication Service", () => {
 			const password = "admin123";
 			const passwordHash = await bcrypt.hash(password, 10);
 
-			UserDB.insert({
+			await UserDB.insert({
 				id: "admin_1",
 				email,
 				passwordHash,
@@ -187,7 +187,7 @@ test.describe("Authentication Service", () => {
 			const password = "password123";
 			const passwordHash = await bcrypt.hash(password, 10);
 
-			UserDB.insert({
+			await UserDB.insert({
 				id: "user_1",
 				email,
 				passwordHash,
@@ -221,7 +221,7 @@ test.describe("Authentication Service", () => {
 
 			// Assert
 			if (result.success) {
-				const user = UserDB.getByEmail(email) as Record<string, unknown>;
+				const user = await UserDB.getByEmail(email) as Record<string, unknown>;
 				expect(user.passwordHash).toBeDefined();
 				expect(user.passwordHash).not.toBe(password); // Password should be hashed
 				// Verify the hash can be compared
@@ -242,7 +242,7 @@ test.describe("Authentication Service", () => {
 			const participantId = "p_withid_123"; // unique ID
 
 			// Create participant record first (to satisfy FOREIGN KEY constraint)
-			ParticipantDB.insert({
+			await ParticipantDB.insert({
 				id: participantId,
 				name: "Child Name",
 				email: email,
@@ -268,14 +268,14 @@ test.describe("Authentication Service", () => {
 	});
 
 	test.describe("verifyToken", () => {
-		test("should verify token and return user", () => {
+		test("should verify token and return user", async () => {
 			// Arrange
 			const authService = new AuthService();
 			const userId = "user_verify";
 			const email = "verify@example.com"; // unique email
 			const passwordHash = bcrypt.hashSync("password123", 10);
 
-			UserDB.insert({
+			await UserDB.insert({
 				id: userId,
 				email,
 				passwordHash,
@@ -284,7 +284,7 @@ test.describe("Authentication Service", () => {
 			});
 
 			// Act
-			const user = authService.verifyToken(userId);
+			const user = await authService.verifyToken(userId);
 
 			// Assert
 			expect(user).toBeDefined();
@@ -294,25 +294,25 @@ test.describe("Authentication Service", () => {
 			expect(user?.role).toBe("participant");
 		});
 
-		test("should return null for non-existent user", () => {
+		test("should return null for non-existent user", async () => {
 			// Arrange
 			const authService = new AuthService();
 			const userId = "nonexistent_user";
 
 			// Act
-			const user = authService.verifyToken(userId);
+			const user = await authService.verifyToken(userId);
 
 			// Assert
 			expect(user).toBeNull();
 		});
 
-		test("should not return passwordHash in user object", () => {
+		test("should not return passwordHash in user object", async () => {
 			// Arrange
 			const authService = new AuthService();
 			const userId = "user_nopwhash";
 			const passwordHash = bcrypt.hashSync("password123", 10);
 
-			UserDB.insert({
+			await UserDB.insert({
 				id: userId,
 				email: "nopwhash@example.com", // unique email
 				passwordHash,
@@ -321,7 +321,7 @@ test.describe("Authentication Service", () => {
 			});
 
 			// Act
-			const user = authService.verifyToken(userId);
+			const user = await authService.verifyToken(userId);
 
 			// Assert
 			expect(user).toBeDefined();

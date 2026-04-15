@@ -15,7 +15,7 @@ export type LoginResult =
 
 export class AuthService {
 	async login(email: string, password: string): Promise<LoginResult> {
-		const user = UserDB.getByEmail(email) as
+		const user = (await UserDB.getByEmail(email)) as
 			| Record<string, unknown>
 			| undefined;
 
@@ -33,7 +33,7 @@ export class AuthService {
 		}
 
 		// Update last login
-		UserDB.updateLastLogin(user.id as string);
+		await UserDB.updateLastLogin(user.id as string);
 
 		// Return user without password
 		const participantId = user.participantId as string | undefined;
@@ -57,7 +57,7 @@ export class AuthService {
 		participantId?: string,
 	): Promise<LoginResult> {
 		// Check if user already exists
-		const existingUser = UserDB.getByEmail(email);
+		const existingUser = await UserDB.getByEmail(email);
 		if (existingUser) {
 			return { success: false, error: "User already exists" };
 		}
@@ -68,7 +68,7 @@ export class AuthService {
 		// Create user
 		const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-		UserDB.insert({
+		await UserDB.insert({
 			id: userId,
 			email,
 			passwordHash,
@@ -89,8 +89,8 @@ export class AuthService {
 		};
 	}
 
-	verifyToken(userId: string): User | null {
-		const user = UserDB.getById(userId) as Record<string, unknown> | undefined;
+	async verifyToken(userId: string): Promise<User | null> {
+		const user = (await UserDB.getById(userId)) as Record<string, unknown> | undefined;
 
 		if (!user) {
 			return null;

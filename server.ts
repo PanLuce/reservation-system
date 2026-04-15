@@ -10,7 +10,7 @@ import { randomUUID } from "node:crypto";
 import { AuthService } from "./src/auth.js";
 import { LessonCalendarDB } from "./src/calendar-db.js";
 import {
-	db,
+	client,
 	initializeDatabase,
 	ParticipantDB,
 	seedSampleData,
@@ -63,9 +63,9 @@ if (!fs.existsSync(dataDir)) {
 	fs.mkdirSync(dataDir, { recursive: true });
 }
 
-// Initialize database
-initializeDatabase();
-seedSampleData();
+// Initialize database (async)
+await initializeDatabase();
+await seedSampleData();
 
 const app = express();
 
@@ -192,10 +192,10 @@ app.get("/health", (_req, res) => {
 });
 
 // Readiness check - verifies dependencies (database) are available
-app.get("/ready", (_req, res) => {
+app.get("/ready", async (_req, res) => {
 	try {
 		// Test database connectivity with a simple query
-		db.prepare("SELECT 1").get();
+		await client.execute("SELECT 1");
 
 		res.json({
 			status: "ready",
@@ -228,7 +228,7 @@ function requireAuth(
 	next();
 }
 
-function requireAdmin(
+async function requireAdmin(
 	req: express.Request,
 	res: express.Response,
 	next: express.NextFunction,
@@ -237,7 +237,7 @@ function requireAdmin(
 		return res.status(401).json({ error: "Authentication required" });
 	}
 
-	const user = authService.verifyToken(req.session.userId);
+	const user = await authService.verifyToken(req.session.userId);
 	if (!user || user.role !== "admin") {
 		return res.status(403).json({ error: "Admin access required" });
 	}
@@ -290,8 +290,8 @@ app.post("/api/auth/register", async (req, res) => {
 	res.status(201).json({ user: result.user });
 });
 
-app.get("/api/auth/me", requireAuth, (req, res) => {
-	const user = authService.verifyToken(req.session.userId!);
+app.get("/api/auth/me", requireAuth, async (req, res) => {
+	const user = await authService.verifyToken(req.session.userId!);
 
 	if (!user) {
 		return res.status(401).json({ error: "Invalid session" });
@@ -312,19 +312,19 @@ app.post("/api/auth/logout", (req, res) => {
 // API Routes
 
 // Lessons (public read, admin write)
-app.get("/api/lessons", (_req, res) => {
-	res.json(calendar.getAllLessons());
+app.get("/api/lessons", async (_req, res) => {
+	res.json(await calendar.getAllLessons());
 });
 
-app.get("/api/lessons/:id", (req, res) => {
-	const lesson = calendar.getLessonById(req.params.id);
+app.get("/api/lessons/:id", async (req, res) => {
+	const lesson = await calendar.getLessonById(req.params.id);
 	if (!lesson) {
 		return res.status(404).json({ error: "Lesson not found" });
 	}
 	res.json(lesson);
 });
 
-app.post("/api/lessons", requireAdmin, (req, res) => {
+app.post("/api/lessons", requireAdmin, async (req, res) => {
 	const lessonData = req.body;
 	const lesson = createLesson({
 		title: lessonData.title,
@@ -335,11 +335,11 @@ app.post("/api/lessons", requireAdmin, (req, res) => {
 		ageGroup: lessonData.ageGroup,
 		capacity: Number(lessonData.capacity),
 	});
-	calendar.addLesson(lesson);
+	await calendar.addLesson(lesson);
 	res.status(201).json(lesson);
 });
 
-app.post("/api/courses/:courseId/bulk-lessons", requireAdmin, (req, res) => {
+app.post("/api/courses/:courseId/bulk-lessons", requireAdmin, async (req, res) => {
 	const courseId = req.params.courseId;
 	if (!courseId) {
 		return res.status(400).json({ error: "Course ID is required" });
@@ -351,7 +351,7 @@ app.post("/api/courses/:courseId/bulk-lessons", requireAdmin, (req, res) => {
 		let lessons;
 		if (dates && Array.isArray(dates)) {
 			// Create lessons for specific dates
-			lessons = calendar.bulkCreateLessons({
+			lessons = await calendar.bulkCreateLessons({
 				courseId,
 				title,
 				location,
@@ -362,7 +362,7 @@ app.post("/api/courses/:courseId/bulk-lessons", requireAdmin, (req, res) => {
 			});
 		} else if (startDate && weeksCount) {
 			// Create recurring lessons
-			lessons = calendar.bulkCreateLessonsRecurring({
+			lessons = await calendar.bulkCreateLessonsRecurring({
 				courseId,
 				title,
 				location,
@@ -389,17 +389,17 @@ app.post("/api/courses/:courseId/bulk-lessons", requireAdmin, (req, res) => {
 	}
 });
 
-app.get("/api/courses/:courseId/lessons", (req, res) => {
+app.get("/api/courses/:courseId/lessons", async (req, res) => {
 	const courseId = req.params.courseId;
 	if (!courseId) {
 		return res.status(400).json({ error: "Course ID is required" });
 	}
 
-	const lessons = calendar.getLessonsByCourse(courseId);
+	const lessons = await calendar.getLessonsByCourse(courseId);
 	res.json(lessons);
 });
 
-app.post("/api/courses/:courseId/bulk-register", requireAdmin, (req, res) => {
+app.post("/api/courses/:courseId/bulk-register", requireAdmin, async (req, res) => {
 	const courseId = req.params.courseId;
 	if (!courseId) {
 		return res.status(400).json({ error: "Course ID is required" });
@@ -416,7 +416,7 @@ app.post("/api/courses/:courseId/bulk-register", requireAdmin, (req, res) => {
 	}
 
 	try {
-		const result = registrationManager.bulkAssignGroupToLessons({
+		const result = await registrationManager.bulkAssignGroupToLessons({
 			participantIds,
 			lessonIds,
 		});
@@ -432,36 +432,36 @@ app.post("/api/courses/:courseId/bulk-register", requireAdmin, (req, res) => {
 	}
 });
 
-app.get("/api/courses/:courseId/participants", (req, res) => {
+app.get("/api/courses/:courseId/participants", async (req, res) => {
 	const courseId = req.params.courseId;
 	if (!courseId) {
 		return res.status(400).json({ error: "Course ID is required" });
 	}
 
-	const participants = ParticipantDB.getByCourse(courseId);
+	const participants = await ParticipantDB.getByCourse(courseId);
 	res.json(participants);
 });
 
-app.put("/api/lessons/:id", requireAdmin, (req, res) => {
+app.put("/api/lessons/:id", requireAdmin, async (req, res) => {
 	const lessonId = req.params.id;
 	if (!lessonId) {
 		return res.status(400).json({ error: "Lesson ID is required" });
 	}
-	const lesson = calendar.getLessonById(lessonId);
+	const lesson = await calendar.getLessonById(lessonId);
 	if (!lesson) {
 		return res.status(404).json({ error: "Lesson not found" });
 	}
-	calendar.updateLesson(lessonId, req.body);
-	const updated = calendar.getLessonById(lessonId);
+	await calendar.updateLesson(lessonId, req.body);
+	const updated = await calendar.getLessonById(lessonId);
 	res.json(updated);
 });
 
-app.delete("/api/lessons/:id", requireAdmin, (req, res) => {
+app.delete("/api/lessons/:id", requireAdmin, async (req, res) => {
 	const lessonId = req.params.id;
 	if (!lessonId) {
 		return res.status(400).json({ error: "Lesson ID is required" });
 	}
-	const count = calendar.bulkDeleteLessons({ id: lessonId });
+	const count = await calendar.bulkDeleteLessons({ id: lessonId });
 	if (count === 0) {
 		return res.status(404).json({ error: "Lesson not found" });
 	}
@@ -469,7 +469,7 @@ app.delete("/api/lessons/:id", requireAdmin, (req, res) => {
 });
 
 // Registrations
-app.post("/api/registrations", (req, res) => {
+app.post("/api/registrations", async (req, res) => {
 	const { lessonId, participant } = req.body;
 
 	const newParticipant = createParticipant({
@@ -479,31 +479,31 @@ app.post("/api/registrations", (req, res) => {
 		ageGroup: participant.ageGroup,
 	});
 
-	const registration = registrationManager.registerParticipant(
+	const registration = await registrationManager.registerParticipant(
 		lessonId,
 		newParticipant,
 	);
 	res.status(201).json(registration);
 });
 
-app.get("/api/registrations/lesson/:lessonId", (req, res) => {
-	const registrations = registrationManager.getRegistrationsForLesson(
+app.get("/api/registrations/lesson/:lessonId", async (req, res) => {
+	const registrations = await registrationManager.getRegistrationsForLesson(
 		req.params.lessonId,
 	);
 	res.json(registrations);
 });
 
-app.get("/api/participants/:participantId/registrations", (req, res) => {
+app.get("/api/participants/:participantId/registrations", async (req, res) => {
 	const participantId = req.params.participantId;
 	if (!participantId) {
 		return res.status(400).json({ error: "Participant ID is required" });
 	}
-	const registrations = ParticipantDB.getRegistrationsWithLessonDetails(participantId);
+	const registrations = await ParticipantDB.getRegistrationsWithLessonDetails(participantId);
 	res.json(registrations);
 });
 
 // Participant Self-Service
-app.post("/api/participants/:participantId/cancel-registration", (req, res) => {
+app.post("/api/participants/:participantId/cancel-registration", async (req, res) => {
 	const participantId = req.params.participantId;
 	const { registrationId } = req.body;
 
@@ -515,7 +515,7 @@ app.post("/api/participants/:participantId/cancel-registration", (req, res) => {
 		return res.status(400).json({ error: "Registration ID is required" });
 	}
 
-	const result = registrationManager.participantCancelRegistration(
+	const result = await registrationManager.participantCancelRegistration(
 		registrationId,
 		participantId,
 	);
@@ -527,7 +527,7 @@ app.post("/api/participants/:participantId/cancel-registration", (req, res) => {
 	}
 });
 
-app.post("/api/participants/:participantId/register-lesson", (req, res) => {
+app.post("/api/participants/:participantId/register-lesson", async (req, res) => {
 	const participantId = req.params.participantId;
 	const { lessonId } = req.body;
 
@@ -539,7 +539,7 @@ app.post("/api/participants/:participantId/register-lesson", (req, res) => {
 		return res.status(400).json({ error: "Lesson ID is required" });
 	}
 
-	const result = registrationManager.participantSelfRegister(
+	const result = await registrationManager.participantSelfRegister(
 		lessonId,
 		participantId,
 	);
@@ -551,7 +551,7 @@ app.post("/api/participants/:participantId/register-lesson", (req, res) => {
 	}
 });
 
-app.post("/api/participants/:participantId/transfer-lesson", (req, res) => {
+app.post("/api/participants/:participantId/transfer-lesson", async (req, res) => {
 	const participantId = req.params.participantId;
 	const { currentRegistrationId, newLessonId } = req.body;
 
@@ -565,7 +565,7 @@ app.post("/api/participants/:participantId/transfer-lesson", (req, res) => {
 		});
 	}
 
-	const result = registrationManager.participantTransferLesson(
+	const result = await registrationManager.participantTransferLesson(
 		currentRegistrationId,
 		newLessonId,
 		participantId,
@@ -578,14 +578,14 @@ app.post("/api/participants/:participantId/transfer-lesson", (req, res) => {
 	}
 });
 
-app.get("/api/participants/:participantId/available-lessons", (req, res) => {
+app.get("/api/participants/:participantId/available-lessons", async (req, res) => {
 	const participantId = req.params.participantId;
 
 	if (!participantId) {
 		return res.status(400).json({ error: "Participant ID is required" });
 	}
 
-	const lessons = registrationManager.getAvailableLessonsForParticipant(
+	const lessons = await registrationManager.getAvailableLessonsForParticipant(
 		participantId,
 	);
 
@@ -593,7 +593,7 @@ app.get("/api/participants/:participantId/available-lessons", (req, res) => {
 });
 
 // Admin Override
-app.post("/api/admin/register-participant", requireAdmin, (req, res) => {
+app.post("/api/admin/register-participant", requireAdmin, async (req, res) => {
 	const { lessonId, participantId, forceCapacity } = req.body;
 
 	if (!lessonId || !participantId) {
@@ -602,7 +602,7 @@ app.post("/api/admin/register-participant", requireAdmin, (req, res) => {
 		});
 	}
 
-	const result = registrationManager.adminRegisterParticipant(
+	const result = await registrationManager.adminRegisterParticipant(
 		lessonId,
 		participantId,
 		{ forceCapacity: forceCapacity || false },
@@ -615,14 +615,14 @@ app.post("/api/admin/register-participant", requireAdmin, (req, res) => {
 	}
 });
 
-app.post("/api/admin/cancel-registration", requireAdmin, (req, res) => {
+app.post("/api/admin/cancel-registration", requireAdmin, async (req, res) => {
 	const { registrationId } = req.body;
 
 	if (!registrationId) {
 		return res.status(400).json({ error: "Registration ID is required" });
 	}
 
-	const result = registrationManager.adminCancelRegistration(registrationId);
+	const result = await registrationManager.adminCancelRegistration(registrationId);
 
 	if (result.success) {
 		res.json(result);
@@ -631,7 +631,7 @@ app.post("/api/admin/cancel-registration", requireAdmin, (req, res) => {
 	}
 });
 
-app.post("/api/admin/bulk-register-participant", requireAdmin, (req, res) => {
+app.post("/api/admin/bulk-register-participant", requireAdmin, async (req, res) => {
 	const { participantId, lessonIds } = req.body;
 
 	if (!participantId || !lessonIds || !Array.isArray(lessonIds)) {
@@ -640,7 +640,7 @@ app.post("/api/admin/bulk-register-participant", requireAdmin, (req, res) => {
 		});
 	}
 
-	const result = registrationManager.adminBulkRegisterParticipant(
+	const result = await registrationManager.adminBulkRegisterParticipant(
 		participantId,
 		lessonIds,
 	);
@@ -649,14 +649,14 @@ app.post("/api/admin/bulk-register-participant", requireAdmin, (req, res) => {
 });
 
 // Substitutions
-app.get("/api/substitutions/:ageGroup", (req, res) => {
-	const availableLessons = registrationManager.getAvailableSubstitutionLessons(
+app.get("/api/substitutions/:ageGroup", async (req, res) => {
+	const availableLessons = await registrationManager.getAvailableSubstitutionLessons(
 		req.params.ageGroup,
 	);
 	res.json(availableLessons);
 });
 
-app.post("/api/substitutions", (req, res) => {
+app.post("/api/substitutions", async (req, res) => {
 	const { lessonId, participant, missedLessonId } = req.body;
 
 	const newParticipant = createParticipant({
@@ -666,7 +666,7 @@ app.post("/api/substitutions", (req, res) => {
 		ageGroup: participant.ageGroup,
 	});
 
-	const registration = registrationManager.registerForSubstitution(
+	const registration = await registrationManager.registerForSubstitution(
 		lessonId,
 		newParticipant,
 		missedLessonId,
@@ -675,7 +675,7 @@ app.post("/api/substitutions", (req, res) => {
 });
 
 // Excel Import
-app.post("/api/excel/import", upload.single("file"), (req, res) => {
+app.post("/api/excel/import", upload.single("file"), async (req, res) => {
 	if (!req.file) {
 		return res.status(400).json({ error: "No file uploaded" });
 	}
@@ -686,7 +686,7 @@ app.post("/api/excel/import", upload.single("file"), (req, res) => {
 	}
 
 	try {
-		const count = excelLoader.bulkLoadAndRegister(
+		const count = await excelLoader.bulkLoadAndRegister(
 			req.file.path,
 			lessonId,
 			registrationManager,
@@ -780,7 +780,7 @@ function gracefulShutdown(signal: string) {
 
 		// Close database connection
 		try {
-			db.close();
+			client.close();
 			logger.info("Database connection closed");
 		} catch (error) {
 			logger.error("Error closing database", {

@@ -11,22 +11,22 @@ import {
 } from "../src/database.js";
 
 test.describe("Admin Override - TDD", () => {
-	test.beforeEach(() => {
-		initializeDatabase();
-		resetDatabaseForTests();
+	test.beforeEach(async () => {
+		await initializeDatabase();
+		await resetDatabaseForTests();
 	});
 
-	test("should allow admin to register participant with different age group", () => {
+	test("should allow admin to register participant with different age group", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Baby Class",
 			ageGroup: "3-12 months",
 			color: "#FF5733",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Baby Yoga",
 			location: "Studio A",
@@ -43,12 +43,12 @@ test.describe("Admin Override - TDD", () => {
 			phone: "111",
 			ageGroup: "3-4 years", // Different from lesson's "3-12 months"
 		});
-		ParticipantDB.insert(participant);
+		await ParticipantDB.insert(participant);
 
 		const registrationManager = new RegistrationManagerDB();
 
 		// Act - admin forces registration despite age group mismatch
-		const result = registrationManager.adminRegisterParticipant(
+		const result = await registrationManager.adminRegisterParticipant(
 			lessons[0].id,
 			participant.id,
 		);
@@ -59,17 +59,17 @@ test.describe("Admin Override - TDD", () => {
 		expect(result.registration?.status).toBe("confirmed");
 	});
 
-	test("should allow admin to unregister any participant from any lesson", () => {
+	test("should allow admin to unregister any participant from any lesson", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Dance Class",
 			ageGroup: "2-3 years",
 			color: "#33FF57",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Dance",
 			location: "Studio B",
@@ -85,34 +85,34 @@ test.describe("Admin Override - TDD", () => {
 			phone: "222",
 			ageGroup: "2-3 years",
 		});
-		ParticipantDB.insert(participant);
+		await ParticipantDB.insert(participant);
 
 		const registrationManager = new RegistrationManagerDB();
-		const registration = registrationManager.registerParticipant(
+		const registration = await registrationManager.registerParticipant(
 			lessons[0].id,
 			participant,
 		);
 
 		// Act - admin cancels any participant's registration
-		const result = registrationManager.adminCancelRegistration(registration.id);
+		const result = await registrationManager.adminCancelRegistration(registration.id);
 
 		// Assert
 		expect(result.success).toBe(true);
 		expect(result.message).toContain("cancelled");
 
 		// Verify lesson enrolled count decreased
-		const updatedLesson = calendar.getLessonById(lessons[0].id);
+		const updatedLesson = await calendar.getLessonById(lessons[0].id);
 		expect(updatedLesson?.enrolledCount).toBe(0);
 	});
 
-	test("should allow admin to cancel registration past deadline", () => {
+	test("should allow admin to cancel registration past deadline", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Art Class",
 			ageGroup: "3-4 years",
 			color: "#5733FF",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
 
@@ -121,7 +121,7 @@ test.describe("Admin Override - TDD", () => {
 		yesterday.setDate(yesterday.getDate() - 1);
 		const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Art Workshop",
 			location: "Art Room",
@@ -137,32 +137,32 @@ test.describe("Admin Override - TDD", () => {
 			phone: "333",
 			ageGroup: "3-4 years",
 		});
-		ParticipantDB.insert(participant);
+		await ParticipantDB.insert(participant);
 
 		const registrationManager = new RegistrationManagerDB();
-		const registration = registrationManager.registerParticipant(
+		const registration = await registrationManager.registerParticipant(
 			lessons[0].id,
 			participant,
 		);
 
 		// Act - admin cancels past deadline
-		const result = registrationManager.adminCancelRegistration(registration.id);
+		const result = await registrationManager.adminCancelRegistration(registration.id);
 
 		// Assert - should succeed (admin override)
 		expect(result.success).toBe(true);
 	});
 
-	test("should allow admin to force register even when lesson is full", () => {
+	test("should allow admin to force register even when lesson is full", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Small Class",
 			ageGroup: "1-2 years",
 			color: "#FF3357",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Small Group",
 			location: "Room 1",
@@ -192,23 +192,23 @@ test.describe("Admin Override - TDD", () => {
 			ageGroup: "1-2 years",
 		});
 
-		ParticipantDB.insert(participant1);
-		ParticipantDB.insert(participant2);
-		ParticipantDB.insert(participant3);
+		await ParticipantDB.insert(participant1);
+		await ParticipantDB.insert(participant2);
+		await ParticipantDB.insert(participant3);
 
 		const registrationManager = new RegistrationManagerDB();
 
 		// Fill to capacity
-		registrationManager.registerParticipant(lessons[0].id, participant1);
-		registrationManager.registerParticipant(lessons[0].id, participant2);
+		await registrationManager.registerParticipant(lessons[0].id, participant1);
+		await registrationManager.registerParticipant(lessons[0].id, participant2);
 
 		// Verify it's full
-		const lessonBeforeForce = calendar.getLessonById(lessons[0].id);
+		const lessonBeforeForce = await calendar.getLessonById(lessons[0].id);
 		expect(lessonBeforeForce?.enrolledCount).toBe(2);
 		expect(lessonBeforeForce?.capacity).toBe(2);
 
 		// Act - admin forces registration even though full
-		const result = registrationManager.adminRegisterParticipant(
+		const result = await registrationManager.adminRegisterParticipant(
 			lessons[0].id,
 			participant3.id,
 			{ forceCapacity: true },
@@ -219,21 +219,21 @@ test.describe("Admin Override - TDD", () => {
 		expect(result.registration?.status).toBe("confirmed");
 
 		// Verify enrolled count increased beyond capacity
-		const lessonAfterForce = calendar.getLessonById(lessons[0].id);
+		const lessonAfterForce = await calendar.getLessonById(lessons[0].id);
 		expect(lessonAfterForce?.enrolledCount).toBe(3); // Over capacity!
 	});
 
-	test("should allow admin to register participant to multiple lessons at once", () => {
+	test("should allow admin to register participant to multiple lessons at once", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Fitness Course",
 			ageGroup: "3-12 months",
 			color: "#3357FF",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Baby Fitness",
 			location: "Gym",
@@ -249,12 +249,12 @@ test.describe("Admin Override - TDD", () => {
 			phone: "777",
 			ageGroup: "3-12 months",
 		});
-		ParticipantDB.insert(participant);
+		await ParticipantDB.insert(participant);
 
 		const registrationManager = new RegistrationManagerDB();
 
 		// Act - admin registers participant to all 3 lessons
-		const result = registrationManager.adminBulkRegisterParticipant(
+		const result = await registrationManager.adminBulkRegisterParticipant(
 			participant.id,
 			lessons.map((l) => l.id),
 		);
@@ -265,17 +265,17 @@ test.describe("Admin Override - TDD", () => {
 		expect(result.successful).toBe(3);
 	});
 
-	test("should provide admin with override reasons in response", () => {
+	test("should provide admin with override reasons in response", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Test Class",
 			ageGroup: "1-2 years",
 			color: "#FF5733",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Test Lesson",
 			location: "Room 1",
@@ -291,12 +291,12 @@ test.describe("Admin Override - TDD", () => {
 			phone: "888",
 			ageGroup: "3-4 years", // Wrong age group
 		});
-		ParticipantDB.insert(participant);
+		await ParticipantDB.insert(participant);
 
 		const registrationManager = new RegistrationManagerDB();
 
 		// Act
-		const result = registrationManager.adminRegisterParticipant(
+		const result = await registrationManager.adminRegisterParticipant(
 			lessons[0].id,
 			participant.id,
 		);

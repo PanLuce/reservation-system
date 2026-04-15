@@ -10,18 +10,18 @@ import {
 } from "../src/database.js";
 
 test.describe("Bulk Group Assignment - TDD", () => {
-	test.beforeEach(() => {
-		initializeDatabase();
+	test.beforeEach(async () => {
+		await initializeDatabase();
 	});
 
-	test("should assign all course participants to multiple lessons", () => {
+	test("should assign all course participants to multiple lessons", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Baby Yoga Course",
 			ageGroup: "3-12 months",
 			color: "#FF5733",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		// Create 3 participants linked to course
 		const participants = [
@@ -46,12 +46,12 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		];
 
 		for (const p of participants) {
-			ParticipantDB.insert(p);
+			await ParticipantDB.insert(p);
 		}
 
 		// Create 2 lessons from course
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Morning Yoga",
 			location: "Studio A",
@@ -64,32 +64,32 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		const registrationManager = new RegistrationManagerDB();
 
 		// Act
-		const result = registrationManager.bulkAssignGroupToLessons({
+		const result = await registrationManager.bulkAssignGroupToLessons({
 			participantIds: participants.map((p) => p.id),
 			lessonIds: lessons.map((l) => l.id),
 		});
 
 		// Assert
-		expect(result.totalRegistrations).toBe(6); // 3 participants × 2 lessons
+		expect(result.totalRegistrations).toBe(6); // 3 participants x 2 lessons
 		expect(result.successful).toBe(6);
 		expect(result.skipped).toBe(0);
 		expect(result.waitlisted).toBe(0);
 
 		// Verify registrations in database
 		for (const lesson of lessons) {
-			const regs = registrationManager.getRegistrationsForLesson(lesson.id);
+			const regs = await registrationManager.getRegistrationsForLesson(lesson.id);
 			expect(regs).toHaveLength(3);
 		}
 	});
 
-	test("should skip participants already registered to lesson", () => {
+	test("should skip participants already registered to lesson", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Toddler Dance",
 			ageGroup: "2-3 years",
 			color: "#33FF57",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const participants = [
 			createParticipant({
@@ -107,11 +107,11 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		];
 
 		for (const p of participants) {
-			ParticipantDB.insert(p);
+			await ParticipantDB.insert(p);
 		}
 
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Dance Class",
 			location: "Main Hall",
@@ -124,32 +124,32 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		const registrationManager = new RegistrationManagerDB();
 
 		// Pre-register David to the lesson
-		registrationManager.registerParticipant(lessons[0].id, participants[0]);
+		await registrationManager.registerParticipant(lessons[0].id, participants[0]);
 
 		// Act - try to register both participants
-		const result = registrationManager.bulkAssignGroupToLessons({
+		const result = await registrationManager.bulkAssignGroupToLessons({
 			participantIds: participants.map((p) => p.id),
 			lessonIds: lessons.map((l) => l.id),
 		});
 
 		// Assert
-		expect(result.totalRegistrations).toBe(2); // 2 participants × 1 lesson
+		expect(result.totalRegistrations).toBe(2); // 2 participants x 1 lesson
 		expect(result.successful).toBe(1); // Only Emma registered
 		expect(result.skipped).toBe(1); // David skipped (already registered)
 
 		// Verify only 2 registrations total (not 3)
-		const regs = registrationManager.getRegistrationsForLesson(lessons[0].id);
+		const regs = await registrationManager.getRegistrationsForLesson(lessons[0].id);
 		expect(regs).toHaveLength(2);
 	});
 
-	test("should handle capacity limits with waitlist", () => {
+	test("should handle capacity limits with waitlist", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Small Class",
 			ageGroup: "1-2 years",
 			color: "#5733FF",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		// Create 5 participants
 		const participants = [];
@@ -160,13 +160,13 @@ test.describe("Bulk Group Assignment - TDD", () => {
 				phone: `${i}${i}${i}`,
 				ageGroup: "1-2 years",
 			});
-			ParticipantDB.insert(p);
+			await ParticipantDB.insert(p);
 			participants.push(p);
 		}
 
 		// Create lesson with capacity of 3
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Small Group",
 			location: "Room 1",
@@ -179,7 +179,7 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		const registrationManager = new RegistrationManagerDB();
 
 		// Act
-		const result = registrationManager.bulkAssignGroupToLessons({
+		const result = await registrationManager.bulkAssignGroupToLessons({
 			participantIds: participants.map((p) => p.id),
 			lessonIds: lessons.map((l) => l.id),
 		});
@@ -191,7 +191,7 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		expect(result.skipped).toBe(0);
 
 		// Verify registrations
-		const regs = registrationManager.getRegistrationsForLesson(lessons[0].id);
+		const regs = await registrationManager.getRegistrationsForLesson(lessons[0].id);
 		expect(regs).toHaveLength(5);
 
 		const confirmed = regs.filter(
@@ -205,14 +205,14 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		expect(waitlisted).toHaveLength(2);
 	});
 
-	test("should work with course-participant linking", () => {
+	test("should work with course-participant linking", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Art Class",
 			ageGroup: "3-4 years",
 			color: "#FF3357",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		// Create participants and link to course
 		const participants = [];
@@ -223,14 +223,14 @@ test.describe("Bulk Group Assignment - TDD", () => {
 				phone: `7${i}7`,
 				ageGroup: "3-4 years",
 			});
-			ParticipantDB.insert(p);
-			ParticipantDB.linkToCourse(p.id, course.id);
+			await ParticipantDB.insert(p);
+			await ParticipantDB.linkToCourse(p.id, course.id);
 			participants.push(p);
 		}
 
 		// Create lessons
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Art Workshop",
 			location: "Art Room",
@@ -243,23 +243,23 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		const registrationManager = new RegistrationManagerDB();
 
 		// Act - get participants by course and register them
-		const courseParticipants = ParticipantDB.getByCourse(course.id);
-		const result = registrationManager.bulkAssignGroupToLessons({
+		const courseParticipants = await ParticipantDB.getByCourse(course.id);
+		const result = await registrationManager.bulkAssignGroupToLessons({
 			participantIds: courseParticipants.map((p: { id: string }) => p.id),
 			lessonIds: lessons.map((l) => l.id),
 		});
 
 		// Assert
-		expect(result.totalRegistrations).toBe(6); // 3 participants × 2 lessons
+		expect(result.totalRegistrations).toBe(6); // 3 participants x 2 lessons
 		expect(result.successful).toBe(6);
 	});
 
-	test("should provide detailed error information", () => {
+	test("should provide detailed error information", async () => {
 		// Arrange
 		const registrationManager = new RegistrationManagerDB();
 
 		// Act - try with invalid data
-		const result = registrationManager.bulkAssignGroupToLessons({
+		const result = await registrationManager.bulkAssignGroupToLessons({
 			participantIds: ["invalid_p1", "invalid_p2"],
 			lessonIds: ["invalid_l1"],
 		});

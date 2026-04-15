@@ -2,37 +2,37 @@ import { LessonDB, CourseDB } from "./database.js";
 import type { Lesson } from "./lesson.js";
 
 export class LessonCalendarDB {
-	addLesson(lesson: Lesson): void {
-		LessonDB.insert(lesson);
+	async addLesson(lesson: Lesson): Promise<void> {
+		await LessonDB.insert(lesson);
 	}
 
-	getAllLessons(): Lesson[] {
-		return LessonDB.getAll() as Lesson[];
+	async getAllLessons(): Promise<Lesson[]> {
+		return (await LessonDB.getAll()) as unknown as Lesson[];
 	}
 
-	getLessonsByDay(day: string): Lesson[] {
-		return LessonDB.getByDay(day) as Lesson[];
+	async getLessonsByDay(day: string): Promise<Lesson[]> {
+		return (await LessonDB.getByDay(day)) as unknown as Lesson[];
 	}
 
-	getLessonById(id: string): Lesson | undefined {
-		return LessonDB.getById(id) as Lesson | undefined;
+	async getLessonById(id: string): Promise<Lesson | undefined> {
+		return (await LessonDB.getById(id)) as Lesson | undefined;
 	}
 
-	updateLesson(id: string, updates: Partial<Lesson>): void {
-		LessonDB.update(id, updates);
+	async updateLesson(id: string, updates: Partial<Lesson>): Promise<void> {
+		await LessonDB.update(id, updates);
 	}
 
-	bulkUpdateLessons(filter: Partial<Lesson>, updates: Partial<Lesson>): number {
-		const result = LessonDB.bulkUpdate(filter, updates);
+	async bulkUpdateLessons(filter: Partial<Lesson>, updates: Partial<Lesson>): Promise<number> {
+		const result = await LessonDB.bulkUpdate(filter, updates);
 		return result.changes;
 	}
 
-	bulkDeleteLessons(filter: Partial<Lesson>): number {
-		const result = LessonDB.bulkDelete(filter);
+	async bulkDeleteLessons(filter: Partial<Lesson>): Promise<number> {
+		const result = await LessonDB.bulkDelete(filter);
 		return result.changes;
 	}
 
-	bulkCreateLessons(config: {
+	async bulkCreateLessons(config: {
 		courseId: string;
 		title: string;
 		location: string;
@@ -40,13 +40,13 @@ export class LessonCalendarDB {
 		dayOfWeek: string;
 		capacity: number;
 		dates: string[];
-	}): Lesson[] {
+	}): Promise<Lesson[]> {
 		if (!config.dates || config.dates.length === 0) {
 			throw new Error("At least one date is required");
 		}
 
 		// Get course to retrieve age group
-		const course = CourseDB.getById(config.courseId) as Record<string, unknown> | undefined;
+		const course = (await CourseDB.getById(config.courseId)) as Record<string, unknown> | undefined;
 		if (!course) {
 			throw new Error(`Course ${config.courseId} not found`);
 		}
@@ -66,14 +66,14 @@ export class LessonCalendarDB {
 				enrolledCount: 0,
 			};
 
-			LessonDB.insertWithCourse(lesson, config.courseId);
+			await LessonDB.insertWithCourse(lesson, config.courseId);
 			createdLessons.push(lesson);
 		}
 
 		return createdLessons;
 	}
 
-	bulkCreateLessonsRecurring(config: {
+	async bulkCreateLessonsRecurring(config: {
 		courseId: string;
 		title: string;
 		location: string;
@@ -82,7 +82,7 @@ export class LessonCalendarDB {
 		capacity: number;
 		startDate: string;
 		weeksCount: number;
-	}): Lesson[] {
+	}): Promise<Lesson[]> {
 		// Generate dates for weekly recurrence
 		const dates: string[] = [];
 		const start = new Date(config.startDate);
@@ -90,7 +90,7 @@ export class LessonCalendarDB {
 		for (let i = 0; i < config.weeksCount; i++) {
 			const currentDate = new Date(start);
 			currentDate.setDate(start.getDate() + i * 7);
-			dates.push(currentDate.toISOString().split("T")[0]);
+			dates.push(currentDate.toISOString().split("T")[0]!);
 		}
 
 		return this.bulkCreateLessons({
@@ -104,7 +104,7 @@ export class LessonCalendarDB {
 		});
 	}
 
-	getLessonsByCourse(courseId: string): Lesson[] {
-		return LessonDB.getByCourse(courseId) as Lesson[];
+	async getLessonsByCourse(courseId: string): Promise<Lesson[]> {
+		return (await LessonDB.getByCourse(courseId)) as unknown as Lesson[];
 	}
 }

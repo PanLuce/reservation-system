@@ -6,10 +6,10 @@ test.describe("Course/Group Management - TDD", () => {
 	test("should create a course with valid data", () => {
 		// Arrange
 		const courseData = {
-			name: "Pondělí dopoledne - Batolata",
+			name: "Pond\u011bl\u00ed dopoledne - Batolata",
 			ageGroup: "1-2 years",
 			color: "#4CAF50",
-			description: "Cvičení pro batolata v pondělí dopoledne",
+			description: "Cvi\u010den\u00ed pro batolata v pond\u011bl\u00ed dopoledne",
 		};
 
 		// Act
@@ -55,28 +55,28 @@ test.describe("Course/Group Management - TDD", () => {
 });
 
 test.describe.serial("Course Database Operations - TDD", () => {
-	test.beforeEach(() => {
+	test.beforeEach(async () => {
 		// Arrange - Initialize database and clean up for each test
-		initializeDatabase();
+		await initializeDatabase();
 		// Clean up all courses before each test
-		const courses = CourseDB.getAll();
+		const courses = await CourseDB.getAll();
 		for (const course of courses) {
-			CourseDB.delete(course.id);
+			await CourseDB.delete(course.id);
 		}
 	});
 
-	test("should insert and retrieve course from database", () => {
+	test("should insert and retrieve course from database", async () => {
 		// Arrange
 		const course = createCourse({
-			name: "Pondělí dopoledne - Batolata",
+			name: "Pond\u011bl\u00ed dopoledne - Batolata",
 			ageGroup: "1-2 years",
 			color: "#4CAF50",
-			description: "Cvičení pro batolata",
+			description: "Cvi\u010den\u00ed pro batolata",
 		});
 
 		// Act
-		CourseDB.insert(course);
-		const retrieved = CourseDB.getById(course.id);
+		await CourseDB.insert(course);
+		const retrieved = await CourseDB.getById(course.id);
 
 		// Assert
 		expect(retrieved).toBeDefined();
@@ -85,7 +85,7 @@ test.describe.serial("Course Database Operations - TDD", () => {
 		expect(retrieved.color).toBe(course.color);
 	});
 
-	test("should get all courses ordered by name", () => {
+	test("should get all courses ordered by name", async () => {
 		// Arrange
 		const course1 = createCourse({
 			name: "Zebra Course",
@@ -99,9 +99,9 @@ test.describe.serial("Course Database Operations - TDD", () => {
 		});
 
 		// Act
-		CourseDB.insert(course1);
-		CourseDB.insert(course2);
-		const courses = CourseDB.getAll();
+		await CourseDB.insert(course1);
+		await CourseDB.insert(course2);
+		const courses = await CourseDB.getAll();
 
 		// Assert
 		expect(courses).toHaveLength(2);
@@ -109,7 +109,7 @@ test.describe.serial("Course Database Operations - TDD", () => {
 		expect(courses[1].name).toBe("Zebra Course");
 	});
 
-	test("should get courses by age group", () => {
+	test("should get courses by age group", async () => {
 		// Arrange
 		const course1 = createCourse({
 			name: "Course 1",
@@ -128,31 +128,31 @@ test.describe.serial("Course Database Operations - TDD", () => {
 		});
 
 		// Act
-		CourseDB.insert(course1);
-		CourseDB.insert(course2);
-		CourseDB.insert(course3);
-		const courses = CourseDB.getByAgeGroup("1-2 years");
+		await CourseDB.insert(course1);
+		await CourseDB.insert(course2);
+		await CourseDB.insert(course3);
+		const courses = await CourseDB.getByAgeGroup("1-2 years");
 
 		// Assert
 		expect(courses).toHaveLength(2);
 		expect(courses.every((c) => c.ageGroup === "1-2 years")).toBe(true);
 	});
 
-	test("should update course", () => {
+	test("should update course", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Original Name",
 			ageGroup: "1-2 years",
 			color: "#FF0000",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		// Act
-		CourseDB.update(course.id, {
+		await CourseDB.update(course.id, {
 			name: "Updated Name",
 			color: "#00FF00",
 		});
-		const updated = CourseDB.getById(course.id);
+		const updated = await CourseDB.getById(course.id);
 
 		// Assert
 		expect(updated.name).toBe("Updated Name");
@@ -160,18 +160,18 @@ test.describe.serial("Course Database Operations - TDD", () => {
 		expect(updated.ageGroup).toBe("1-2 years"); // Unchanged
 	});
 
-	test("should delete course", () => {
+	test("should delete course", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "To Delete",
 			ageGroup: "1-2 years",
 			color: "#FF0000",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		// Act
-		CourseDB.delete(course.id);
-		const deleted = CourseDB.getById(course.id);
+		await CourseDB.delete(course.id);
+		const deleted = await CourseDB.getById(course.id);
 
 		// Assert
 		expect(deleted).toBeUndefined();

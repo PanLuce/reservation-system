@@ -6,18 +6,18 @@ import type { Registration } from "./registration.js";
 export class RegistrationManagerDB {
 	constructor(private emailService?: EmailServiceInterface) {}
 
-	registerParticipant(
+	async registerParticipant(
 		lessonId: string,
 		participant: Participant,
-	): Registration {
+	): Promise<Registration> {
 		// Save participant first (only if doesn't exist)
-		const existingParticipant = ParticipantDB.getById(participant.id);
+		const existingParticipant = await ParticipantDB.getById(participant.id);
 		if (!existingParticipant) {
-			ParticipantDB.insert(participant);
+			await ParticipantDB.insert(participant);
 		}
 
 		// Get lesson
-		const lesson = LessonDB.getById(lessonId) as Record<string, unknown> | undefined;
+		const lesson = (await LessonDB.getById(lessonId)) as Record<string, unknown> | undefined;
 		if (!lesson) {
 			throw new Error(`Lesson ${lessonId} not found`);
 		}
@@ -36,18 +36,18 @@ export class RegistrationManagerDB {
 		};
 
 		// Save registration
-		RegistrationDB.insert(registration);
+		await RegistrationDB.insert(registration);
 
 		// Update lesson enrolled count if confirmed
 		if (!isFull) {
-			LessonDB.update(lessonId, {
+			await LessonDB.update(lessonId, {
 				enrolledCount: enrolledCount + 1,
 			});
 		}
 
 		// Send emails asynchronously (don't block registration)
 		if (this.emailService) {
-			const updatedLesson = LessonDB.getById(lessonId) as Record<string, unknown> | undefined;
+			const updatedLesson = (await LessonDB.getById(lessonId)) as Record<string, unknown> | undefined;
 			if (updatedLesson) {
 				this.sendRegistrationEmails(participant, updatedLesson, status).catch(
 					(err) => {
@@ -90,23 +90,23 @@ export class RegistrationManagerDB {
 		]);
 	}
 
-	bulkRegisterParticipants(
+	async bulkRegisterParticipants(
 		lessonId: string,
 		participants: Participant[],
-	): Registration[] {
+	): Promise<Registration[]> {
 		const registrations: Registration[] = [];
 		for (const participant of participants) {
-			registrations.push(this.registerParticipant(lessonId, participant));
+			registrations.push(await this.registerParticipant(lessonId, participant));
 		}
 		return registrations;
 	}
 
-	getRegistrationsForLesson(lessonId: string): Registration[] {
-		return RegistrationDB.getByLessonId(lessonId) as Registration[];
+	async getRegistrationsForLesson(lessonId: string): Promise<Registration[]> {
+		return (await RegistrationDB.getByLessonId(lessonId)) as unknown as Registration[];
 	}
 
-	cancelRegistration(registrationId: string): void {
-		const registration = RegistrationDB.getById(registrationId) as Record<string, unknown> | undefined;
+	async cancelRegistration(registrationId: string): Promise<void> {
+		const registration = (await RegistrationDB.getById(registrationId)) as Record<string, unknown> | undefined;
 		if (!registration) {
 			throw new Error(`Registration ${registrationId} not found`);
 		}
@@ -114,28 +114,28 @@ export class RegistrationManagerDB {
 		const status = registration.status as string;
 		if (status === "confirmed") {
 			const regLessonId = registration.lessonId as string;
-			const lesson = LessonDB.getById(regLessonId) as Record<string, unknown> | undefined;
+			const lesson = (await LessonDB.getById(regLessonId)) as Record<string, unknown> | undefined;
 			if (lesson) {
 				const enrolledCount = lesson.enrolledCount as number;
-				LessonDB.update(regLessonId, {
+				await LessonDB.update(regLessonId, {
 					enrolledCount: Math.max(0, enrolledCount - 1),
 				});
 			}
 		}
 
-		RegistrationDB.update(registrationId, { status: "cancelled" });
+		await RegistrationDB.update(registrationId, { status: "cancelled" });
 	}
 
-	registerForSubstitution(
+	async registerForSubstitution(
 		lessonId: string,
 		participant: Participant,
 		missedLessonId: string,
-	): Registration {
+	): Promise<Registration> {
 		// Save participant first
-		ParticipantDB.insert(participant);
+		await ParticipantDB.insert(participant);
 
 		// Get lesson
-		const lesson = LessonDB.getById(lessonId) as Record<string, unknown> | undefined;
+		const lesson = (await LessonDB.getById(lessonId)) as Record<string, unknown> | undefined;
 		if (!lesson) {
 			throw new Error(`Lesson ${lessonId} not found`);
 		}
@@ -155,11 +155,11 @@ export class RegistrationManagerDB {
 		};
 
 		// Save registration
-		RegistrationDB.insert(registration);
+		await RegistrationDB.insert(registration);
 
 		// Update lesson enrolled count if confirmed
 		if (!isFull) {
-			LessonDB.update(lessonId, {
+			await LessonDB.update(lessonId, {
 				enrolledCount: enrolledCount + 1,
 			});
 		}
@@ -167,8 +167,8 @@ export class RegistrationManagerDB {
 		return registration;
 	}
 
-	getAvailableSubstitutionLessons(ageGroup: string): Array<Record<string, unknown>> {
-		const allLessons = LessonDB.getAll() as Array<Record<string, unknown>>;
+	async getAvailableSubstitutionLessons(ageGroup: string): Promise<Array<Record<string, unknown>>> {
+		const allLessons = (await LessonDB.getAll()) as Array<Record<string, unknown>>;
 		return allLessons.filter(
 			(lesson) =>
 				lesson.ageGroup === ageGroup &&
@@ -176,16 +176,16 @@ export class RegistrationManagerDB {
 		);
 	}
 
-	bulkAssignGroupToLessons(config: {
+	async bulkAssignGroupToLessons(config: {
 		participantIds: string[];
 		lessonIds: string[];
-	}): {
+	}): Promise<{
 		totalRegistrations: number;
 		successful: number;
 		skipped: number;
 		waitlisted: number;
 		errors: Array<{ participantId: string; lessonId: string; error: string }>;
-	} {
+	}> {
 		const result = {
 			totalRegistrations: config.participantIds.length * config.lessonIds.length,
 			successful: 0,
@@ -196,7 +196,7 @@ export class RegistrationManagerDB {
 
 		for (const participantId of config.participantIds) {
 			// Get participant
-			const participant = ParticipantDB.getById(participantId) as Record<string, unknown> | undefined;
+			const participant = (await ParticipantDB.getById(participantId)) as Record<string, unknown> | undefined;
 			if (!participant) {
 				for (const lessonId of config.lessonIds) {
 					result.errors.push({
@@ -211,7 +211,7 @@ export class RegistrationManagerDB {
 			for (const lessonId of config.lessonIds) {
 				try {
 					// Check if already registered
-					const existingReg = RegistrationDB.getByParticipantAndLesson(
+					const existingReg = await RegistrationDB.getByParticipantAndLesson(
 						participantId,
 						lessonId,
 					);
@@ -222,7 +222,7 @@ export class RegistrationManagerDB {
 					}
 
 					// Get lesson to check capacity
-					const lesson = LessonDB.getById(lessonId) as Record<string, unknown> | undefined;
+					const lesson = (await LessonDB.getById(lessonId)) as Record<string, unknown> | undefined;
 					if (!lesson) {
 						result.errors.push({
 							participantId,
@@ -245,11 +245,11 @@ export class RegistrationManagerDB {
 						status,
 					};
 
-					RegistrationDB.insert(registration);
+					await RegistrationDB.insert(registration);
 
 					// Update lesson enrolled count if confirmed
 					if (!isFull) {
-						LessonDB.update(lessonId, {
+						await LessonDB.update(lessonId, {
 							enrolledCount: enrolledCount + 1,
 						});
 						result.successful++;
@@ -269,12 +269,12 @@ export class RegistrationManagerDB {
 		return result;
 	}
 
-	participantCancelRegistration(
+	async participantCancelRegistration(
 		registrationId: string,
 		participantId: string,
-	): { success: boolean; message?: string; error?: string } {
+	): Promise<{ success: boolean; message?: string; error?: string }> {
 		// Get registration
-		const registration = RegistrationDB.getById(registrationId) as Record<string, unknown> | undefined;
+		const registration = (await RegistrationDB.getById(registrationId)) as Record<string, unknown> | undefined;
 
 		if (!registration) {
 			return { success: false, error: "Registration not found" };
@@ -289,27 +289,27 @@ export class RegistrationManagerDB {
 		}
 
 		// Cancel the registration
-		this.cancelRegistration(registrationId);
+		await this.cancelRegistration(registrationId);
 
 		return { success: true, message: "Registration successfully cancelled" };
 	}
 
-	participantSelfRegister(
+	async participantSelfRegister(
 		lessonId: string,
 		participantId: string,
-	): {
+	): Promise<{
 		success: boolean;
 		registration?: Registration;
 		error?: string;
-	} {
+	}> {
 		// Get participant
-		const participant = ParticipantDB.getById(participantId) as Record<string, unknown> | undefined;
+		const participant = (await ParticipantDB.getById(participantId)) as Record<string, unknown> | undefined;
 		if (!participant) {
 			return { success: false, error: "Participant not found" };
 		}
 
 		// Get lesson
-		const lesson = LessonDB.getById(lessonId) as Record<string, unknown> | undefined;
+		const lesson = (await LessonDB.getById(lessonId)) as Record<string, unknown> | undefined;
 		if (!lesson) {
 			return { success: false, error: "Lesson not found" };
 		}
@@ -323,7 +323,7 @@ export class RegistrationManagerDB {
 		}
 
 		// Check if already registered
-		const existingReg = RegistrationDB.getByParticipantAndLesson(
+		const existingReg = await RegistrationDB.getByParticipantAndLesson(
 			participantId,
 			lessonId,
 		);
@@ -344,7 +344,7 @@ export class RegistrationManagerDB {
 		};
 
 		try {
-			const registration = this.registerParticipant(lessonId, participantObj);
+			const registration = await this.registerParticipant(lessonId, participantObj);
 			return { success: true, registration };
 		} catch (error) {
 			return {
@@ -354,17 +354,17 @@ export class RegistrationManagerDB {
 		}
 	}
 
-	participantTransferLesson(
+	async participantTransferLesson(
 		currentRegistrationId: string,
 		newLessonId: string,
 		participantId: string,
-	): {
+	): Promise<{
 		success: boolean;
 		newRegistration?: Registration;
 		error?: string;
-	} {
+	}> {
 		// Get current registration
-		const currentReg = RegistrationDB.getById(currentRegistrationId) as Record<string, unknown> | undefined;
+		const currentReg = (await RegistrationDB.getById(currentRegistrationId)) as Record<string, unknown> | undefined;
 
 		if (!currentReg) {
 			return { success: false, error: "Current registration not found" };
@@ -379,13 +379,13 @@ export class RegistrationManagerDB {
 		}
 
 		// Get participant
-		const participant = ParticipantDB.getById(participantId) as Record<string, unknown> | undefined;
+		const participant = (await ParticipantDB.getById(participantId)) as Record<string, unknown> | undefined;
 		if (!participant) {
 			return { success: false, error: "Participant not found" };
 		}
 
 		// Get new lesson
-		const newLesson = LessonDB.getById(newLessonId) as Record<string, unknown> | undefined;
+		const newLesson = (await LessonDB.getById(newLessonId)) as Record<string, unknown> | undefined;
 		if (!newLesson) {
 			return { success: false, error: "New lesson not found" };
 		}
@@ -399,7 +399,7 @@ export class RegistrationManagerDB {
 		}
 
 		// Check if already registered to new lesson
-		const existingReg = RegistrationDB.getByParticipantAndLesson(
+		const existingReg = await RegistrationDB.getByParticipantAndLesson(
 			participantId,
 			newLessonId,
 		);
@@ -412,7 +412,7 @@ export class RegistrationManagerDB {
 
 		try {
 			// Cancel current registration
-			this.cancelRegistration(currentRegistrationId);
+			await this.cancelRegistration(currentRegistrationId);
 
 			// Register to new lesson
 			const participantObj = {
@@ -423,7 +423,7 @@ export class RegistrationManagerDB {
 				ageGroup: participant.ageGroup as string,
 			};
 
-			const newRegistration = this.registerParticipant(newLessonId, participantObj);
+			const newRegistration = await this.registerParticipant(newLessonId, participantObj);
 
 			return { success: true, newRegistration };
 		} catch (error) {
@@ -434,7 +434,7 @@ export class RegistrationManagerDB {
 		}
 	}
 
-	getAvailableLessonsForParticipant(participantId: string): Array<{
+	async getAvailableLessonsForParticipant(participantId: string): Promise<Array<{
 		id: string;
 		title: string;
 		date: string;
@@ -445,18 +445,18 @@ export class RegistrationManagerDB {
 		capacity: number;
 		enrolledCount: number;
 		availableSpots: number;
-	}> {
+	}>> {
 		// Get participant
-		const participant = ParticipantDB.getById(participantId) as Record<string, unknown> | undefined;
+		const participant = (await ParticipantDB.getById(participantId)) as Record<string, unknown> | undefined;
 		if (!participant) {
 			return [];
 		}
 
 		// Get today's date for filtering future lessons
-		const today = new Date().toISOString().split('T')[0];
+		const today = new Date().toISOString().split('T')[0]!;
 
 		// Get all lessons for participant's age group
-		const allLessons = LessonDB.getAll() as Array<Record<string, unknown>>;
+		const allLessons = (await LessonDB.getAll()) as Array<Record<string, unknown>>;
 		const matchingLessons = allLessons.filter(
 			(lesson) =>
 				lesson.ageGroup === participant.ageGroup &&
@@ -465,7 +465,7 @@ export class RegistrationManagerDB {
 		);
 
 		// Get participant's existing registrations
-		const participantRegs = RegistrationDB.getByParticipantId(participantId) as Array<Record<string, unknown>>;
+		const participantRegs = (await RegistrationDB.getByParticipantId(participantId)) as Array<Record<string, unknown>>;
 		const registeredLessonIds = participantRegs.map((r) => r.lessonId as string);
 
 		// Filter out lessons participant is already registered for
@@ -488,30 +488,30 @@ export class RegistrationManagerDB {
 	}
 
 	// Admin Override Methods
-	adminRegisterParticipant(
+	async adminRegisterParticipant(
 		lessonId: string,
 		participantId: string,
 		options?: { forceCapacity?: boolean },
-	): {
+	): Promise<{
 		success: boolean;
 		registration?: Registration;
 		error?: string;
 		adminOverride?: { reason: string };
-	} {
+	}> {
 		// Get participant
-		const participant = ParticipantDB.getById(participantId) as Record<string, unknown> | undefined;
+		const participant = (await ParticipantDB.getById(participantId)) as Record<string, unknown> | undefined;
 		if (!participant) {
 			return { success: false, error: "Participant not found" };
 		}
 
 		// Get lesson
-		const lesson = LessonDB.getById(lessonId) as Record<string, unknown> | undefined;
+		const lesson = (await LessonDB.getById(lessonId)) as Record<string, unknown> | undefined;
 		if (!lesson) {
 			return { success: false, error: "Lesson not found" };
 		}
 
 		// Check if already registered
-		const existingReg = RegistrationDB.getByParticipantAndLesson(
+		const existingReg = await RegistrationDB.getByParticipantAndLesson(
 			participantId,
 			lessonId,
 		);
@@ -559,11 +559,11 @@ export class RegistrationManagerDB {
 		};
 
 		try {
-			RegistrationDB.insert(registration);
+			await RegistrationDB.insert(registration);
 
 			// Update lesson enrolled count if confirmed
 			if (status === "confirmed") {
-				LessonDB.update(lessonId, {
+				await LessonDB.update(lessonId, {
 					enrolledCount: enrolledCount + 1,
 				});
 			}
@@ -590,18 +590,18 @@ export class RegistrationManagerDB {
 		}
 	}
 
-	adminCancelRegistration(
+	async adminCancelRegistration(
 		registrationId: string,
-	): { success: boolean; message?: string; error?: string } {
+	): Promise<{ success: boolean; message?: string; error?: string }> {
 		// Get registration
-		const registration = RegistrationDB.getById(registrationId) as Record<string, unknown> | undefined;
+		const registration = (await RegistrationDB.getById(registrationId)) as Record<string, unknown> | undefined;
 
 		if (!registration) {
 			return { success: false, error: "Registration not found" };
 		}
 
 		// Admin can cancel any registration without checks
-		this.cancelRegistration(registrationId);
+		await this.cancelRegistration(registrationId);
 
 		return {
 			success: true,
@@ -609,16 +609,16 @@ export class RegistrationManagerDB {
 		};
 	}
 
-	adminBulkRegisterParticipant(
+	async adminBulkRegisterParticipant(
 		participantId: string,
 		lessonIds: string[],
-	): {
+	): Promise<{
 		success: boolean;
 		registrations: Registration[];
 		successful: number;
 		failed: number;
 		errors: Array<{ lessonId: string; error: string }>;
-	} {
+	}> {
 		const result = {
 			success: true,
 			registrations: [] as Registration[],
@@ -628,7 +628,7 @@ export class RegistrationManagerDB {
 		};
 
 		for (const lessonId of lessonIds) {
-			const regResult = this.adminRegisterParticipant(lessonId, participantId);
+			const regResult = await this.adminRegisterParticipant(lessonId, participantId);
 
 			if (regResult.success && regResult.registration) {
 				result.registrations.push(regResult.registration);

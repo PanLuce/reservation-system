@@ -12,22 +12,22 @@ import {
 } from "../src/database.js";
 
 test.describe("Participant Self-Service - TDD", () => {
-	test.beforeEach(() => {
-		initializeDatabase();
-		resetDatabaseForTests();
+	test.beforeEach(async () => {
+		await initializeDatabase();
+		await resetDatabaseForTests();
 	});
 
-	test("should allow participant to cancel their own registration", () => {
+	test("should allow participant to cancel their own registration", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Yoga Class",
 			ageGroup: "3-12 months",
 			color: "#FF5733",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Morning Yoga",
 			location: "Studio A",
@@ -43,16 +43,16 @@ test.describe("Participant Self-Service - TDD", () => {
 			phone: "111",
 			ageGroup: "3-12 months",
 		});
-		ParticipantDB.insert(participant);
+		await ParticipantDB.insert(participant);
 
 		const registrationManager = new RegistrationManagerDB();
-		const registration = registrationManager.registerParticipant(
+		const registration = await registrationManager.registerParticipant(
 			lessons[0].id,
 			participant,
 		);
 
 		// Act
-		const result = registrationManager.participantCancelRegistration(
+		const result = await registrationManager.participantCancelRegistration(
 			registration.id,
 			participant.id,
 		);
@@ -62,21 +62,21 @@ test.describe("Participant Self-Service - TDD", () => {
 		expect(result.message).toContain("cancelled");
 
 		// Verify lesson enrolled count decreased
-		const updatedLesson = calendar.getLessonById(lessons[0].id);
+		const updatedLesson = await calendar.getLessonById(lessons[0].id);
 		expect(updatedLesson?.enrolledCount).toBe(0);
 	});
 
-	test("should prevent participant from cancelling other participant's registration", () => {
+	test("should prevent participant from cancelling other participant's registration", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Dance Class",
 			ageGroup: "2-3 years",
 			color: "#33FF57",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Dance",
 			location: "Studio B",
@@ -98,17 +98,17 @@ test.describe("Participant Self-Service - TDD", () => {
 			phone: "333",
 			ageGroup: "2-3 years",
 		});
-		ParticipantDB.insert(participant1);
-		ParticipantDB.insert(participant2);
+		await ParticipantDB.insert(participant1);
+		await ParticipantDB.insert(participant2);
 
 		const registrationManager = new RegistrationManagerDB();
-		const registration = registrationManager.registerParticipant(
+		const registration = await registrationManager.registerParticipant(
 			lessons[0].id,
 			participant1,
 		);
 
 		// Act - participant2 tries to cancel participant1's registration
-		const result = registrationManager.participantCancelRegistration(
+		const result = await registrationManager.participantCancelRegistration(
 			registration.id,
 			participant2.id,
 		);
@@ -118,17 +118,17 @@ test.describe("Participant Self-Service - TDD", () => {
 		expect(result.error).toContain("not authorized");
 	});
 
-	test("should allow participant to register for available lesson", () => {
+	test("should allow participant to register for available lesson", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Art Class",
 			ageGroup: "3-4 years",
 			color: "#5733FF",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Painting",
 			location: "Art Room",
@@ -144,12 +144,12 @@ test.describe("Participant Self-Service - TDD", () => {
 			phone: "444",
 			ageGroup: "3-4 years",
 		});
-		ParticipantDB.insert(participant);
+		await ParticipantDB.insert(participant);
 
 		const registrationManager = new RegistrationManagerDB();
 
 		// Act
-		const result = registrationManager.participantSelfRegister(
+		const result = await registrationManager.participantSelfRegister(
 			lessons[0].id,
 			participant.id,
 		);
@@ -160,21 +160,21 @@ test.describe("Participant Self-Service - TDD", () => {
 		expect(result.registration?.status).toBe("confirmed");
 
 		// Verify lesson enrolled count increased
-		const updatedLesson = calendar.getLessonById(lessons[0].id);
+		const updatedLesson = await calendar.getLessonById(lessons[0].id);
 		expect(updatedLesson?.enrolledCount).toBe(1);
 	});
 
-	test("should prevent participant from registering to lesson with different age group", () => {
+	test("should prevent participant from registering to lesson with different age group", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Baby Music",
 			ageGroup: "3-12 months",
 			color: "#FF3357",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Music Time",
 			location: "Music Room",
@@ -190,12 +190,12 @@ test.describe("Participant Self-Service - TDD", () => {
 			phone: "555",
 			ageGroup: "3-4 years", // Different age group!
 		});
-		ParticipantDB.insert(participant);
+		await ParticipantDB.insert(participant);
 
 		const registrationManager = new RegistrationManagerDB();
 
 		// Act
-		const result = registrationManager.participantSelfRegister(
+		const result = await registrationManager.participantSelfRegister(
 			lessons[0].id,
 			participant.id,
 		);
@@ -205,17 +205,17 @@ test.describe("Participant Self-Service - TDD", () => {
 		expect(result.error).toContain("age group");
 	});
 
-	test("should allow participant to transfer from one lesson to another", () => {
+	test("should allow participant to transfer from one lesson to another", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Fitness Class",
 			ageGroup: "1-2 years",
 			color: "#3357FF",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Kids Fitness",
 			location: "Gym",
@@ -231,18 +231,18 @@ test.describe("Participant Self-Service - TDD", () => {
 			phone: "666",
 			ageGroup: "1-2 years",
 		});
-		ParticipantDB.insert(participant);
+		await ParticipantDB.insert(participant);
 
 		const registrationManager = new RegistrationManagerDB();
 
 		// Register to first lesson
-		const firstReg = registrationManager.registerParticipant(
+		const firstReg = await registrationManager.registerParticipant(
 			lessons[0].id,
 			participant,
 		);
 
 		// Act - transfer to second lesson
-		const result = registrationManager.participantTransferLesson(
+		const result = await registrationManager.participantTransferLesson(
 			firstReg.id,
 			lessons[1].id,
 			participant.id,
@@ -253,15 +253,15 @@ test.describe("Participant Self-Service - TDD", () => {
 		expect(result.newRegistration).toBeDefined();
 
 		// Verify first lesson count decreased
-		const lesson1 = calendar.getLessonById(lessons[0].id);
+		const lesson1 = await calendar.getLessonById(lessons[0].id);
 		expect(lesson1?.enrolledCount).toBe(0);
 
 		// Verify second lesson count increased
-		const lesson2 = calendar.getLessonById(lessons[1].id);
+		const lesson2 = await calendar.getLessonById(lessons[1].id);
 		expect(lesson2?.enrolledCount).toBe(1);
 	});
 
-	test("should get available lessons filtered by participant age group", () => {
+	test("should get available lessons filtered by participant age group", async () => {
 		// Arrange
 		const course1 = createCourse({
 			name: "Baby Class",
@@ -273,8 +273,8 @@ test.describe("Participant Self-Service - TDD", () => {
 			ageGroup: "1-2 years",
 			color: "#33FF57",
 		});
-		CourseDB.insert(course1);
-		CourseDB.insert(course2);
+		await CourseDB.insert(course1);
+		await CourseDB.insert(course2);
 
 		const calendar = new LessonCalendarDB();
 
@@ -283,7 +283,7 @@ test.describe("Participant Self-Service - TDD", () => {
 		futureDate.setDate(futureDate.getDate() + 7); // 1 week from now
 		const futureDateStr = futureDate.toISOString().split('T')[0];
 
-		calendar.bulkCreateLessons({
+		await calendar.bulkCreateLessons({
 			courseId: course1.id,
 			title: "Baby Yoga",
 			location: "Studio A",
@@ -293,7 +293,7 @@ test.describe("Participant Self-Service - TDD", () => {
 			dates: [futureDateStr],
 		});
 
-		calendar.bulkCreateLessons({
+		await calendar.bulkCreateLessons({
 			courseId: course2.id,
 			title: "Toddler Dance",
 			location: "Studio B",
@@ -309,12 +309,12 @@ test.describe("Participant Self-Service - TDD", () => {
 			phone: "777",
 			ageGroup: "3-12 months",
 		});
-		ParticipantDB.insert(participant);
+		await ParticipantDB.insert(participant);
 
 		const registrationManager = new RegistrationManagerDB();
 
 		// Act
-		const availableLessons = registrationManager.getAvailableLessonsForParticipant(
+		const availableLessons = await registrationManager.getAvailableLessonsForParticipant(
 			participant.id,
 		);
 
@@ -324,17 +324,17 @@ test.describe("Participant Self-Service - TDD", () => {
 		expect(availableLessons[0].ageGroup).toBe("3-12 months");
 	});
 
-	test("should prevent double registration to same lesson", () => {
+	test("should prevent double registration to same lesson", async () => {
 		// Arrange
 		const course = createCourse({
 			name: "Test Class",
 			ageGroup: "2-3 years",
 			color: "#5733FF",
 		});
-		CourseDB.insert(course);
+		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		const lessons = calendar.bulkCreateLessons({
+		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Test Lesson",
 			location: "Room 1",
@@ -350,15 +350,15 @@ test.describe("Participant Self-Service - TDD", () => {
 			phone: "888",
 			ageGroup: "2-3 years",
 		});
-		ParticipantDB.insert(participant);
+		await ParticipantDB.insert(participant);
 
 		const registrationManager = new RegistrationManagerDB();
 
 		// First registration
-		registrationManager.participantSelfRegister(lessons[0].id, participant.id);
+		await registrationManager.participantSelfRegister(lessons[0].id, participant.id);
 
 		// Act - try to register again
-		const result = registrationManager.participantSelfRegister(
+		const result = await registrationManager.participantSelfRegister(
 			lessons[0].id,
 			participant.id,
 		);

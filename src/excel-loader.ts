@@ -15,13 +15,13 @@ export class ExcelParticipantLoader {
 		return this.parseWorkbook(workbook);
 	}
 
-	bulkLoadAndRegister(
+	async bulkLoadAndRegister(
 		filePath: string,
 		lessonId: string,
 		registrationManager: RegistrationManager | RegistrationManagerDB,
-	): number {
+	): Promise<number> {
 		const participants = this.parseParticipantsFromFile(filePath);
-		const registrations = registrationManager.bulkRegisterParticipants(
+		const registrations = await registrationManager.bulkRegisterParticipants(
 			lessonId,
 			participants,
 		);

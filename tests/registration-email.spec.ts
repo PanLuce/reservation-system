@@ -4,7 +4,7 @@ import {
 	LessonDB,
 	ParticipantDB,
 	RegistrationDB,
-	db,
+	client,
 	initializeDatabase,
 } from "../src/database.js";
 import type { Participant } from "../src/participant.js";
@@ -12,10 +12,12 @@ import type { Lesson } from "../src/lesson.js";
 import type { EmailServiceInterface } from "../src/email-factory.js";
 
 // Helper to clean up test data
-function cleanupTestData() {
-	db.exec("DELETE FROM registrations");
-	db.exec("DELETE FROM participants");
-	db.exec("DELETE FROM lessons");
+async function cleanupTestData() {
+	await client.batch([
+		{ sql: "DELETE FROM registrations", args: [] },
+		{ sql: "DELETE FROM participants", args: [] },
+		{ sql: "DELETE FROM lessons", args: [] },
+	], "write");
 }
 
 // Mock email service for testing
@@ -64,13 +66,13 @@ function createFailingEmailService() {
 test.describe.configure({ mode: "serial" });
 
 test.describe("Registration with Email Integration", () => {
-	test.beforeEach(() => {
-		initializeDatabase();
-		cleanupTestData();
+	test.beforeEach(async () => {
+		await initializeDatabase();
+		await cleanupTestData();
 	});
 
-	test.afterEach(() => {
-		cleanupTestData();
+	test.afterEach(async () => {
+		await cleanupTestData();
 	});
 
 	test("should send emails after successful confirmed registration", async () => {
@@ -82,27 +84,27 @@ test.describe("Registration with Email Integration", () => {
 
 		const lesson: Lesson = {
 			id: "lesson_1",
-			title: "Ranní cvičení",
+			title: "Rann\u00ed cvi\u010den\u00ed",
 			date: "2024-03-15",
-			dayOfWeek: "Pondělí",
+			dayOfWeek: "Pond\u011bl\u00ed",
 			time: "10:00",
-			location: "CVČ Vietnamská",
+			location: "CV\u010c Vietnamsk\u00e1",
 			ageGroup: "3-12 months",
 			capacity: 10,
 			enrolledCount: 0,
 		};
-		LessonDB.insert(lesson);
+		await LessonDB.insert(lesson);
 
 		const participant: Participant = {
 			id: "p1",
-			name: "Jana Nováková",
+			name: "Jana Nov\u00e1kov\u00e1",
 			email: "jana@example.cz",
 			phone: "+420 777 888 999",
 			ageGroup: "3-12 months",
 		};
 
 		// Act
-		const registration = registrationManager.registerParticipant(
+		const registration = await registrationManager.registerParticipant(
 			"lesson_1",
 			participant,
 		);
@@ -143,26 +145,26 @@ test.describe("Registration with Email Integration", () => {
 		const lesson: Lesson = {
 			id: "lesson_2",
 			date: "2024-03-16",
-			title: "Plný kurz",
-			dayOfWeek: "Úterý",
+			title: "Pln\u00fd kurz",
+			dayOfWeek: "\u00dater\u00fd",
 			time: "14:00",
-			location: "CVČ Vietnamská",
+			location: "CV\u010c Vietnamsk\u00e1",
 			ageGroup: "3-12 months",
 			capacity: 5,
 			enrolledCount: 5, // Full
 		};
-		LessonDB.insert(lesson);
+		await LessonDB.insert(lesson);
 
 		const participant: Participant = {
 			id: "p2",
-			name: "Petr Novák",
+			name: "Petr Nov\u00e1k",
 			email: "petr@example.cz",
 			phone: "+420 888 999 111",
 			ageGroup: "3-12 months",
 		};
 
 		// Act
-		const registration = registrationManager.registerParticipant(
+		const registration = await registrationManager.registerParticipant(
 			"lesson_2",
 			participant,
 		);
@@ -204,7 +206,7 @@ test.describe("Registration with Email Integration", () => {
 			capacity: 10,
 			enrolledCount: 0,
 		};
-		LessonDB.insert(lesson);
+		await LessonDB.insert(lesson);
 
 		const participant: Participant = {
 			id: "p3",
@@ -215,7 +217,7 @@ test.describe("Registration with Email Integration", () => {
 		};
 
 		// Act - should not throw
-		const registration = registrationManager.registerParticipant(
+		const registration = await registrationManager.registerParticipant(
 			"lesson_3",
 			participant,
 		);
@@ -229,11 +231,11 @@ test.describe("Registration with Email Integration", () => {
 		expect(registration.participantId).toBe("p3");
 
 		// Verify registration was saved to database
-		const savedRegistration = RegistrationDB.getById(registration.id);
+		const savedRegistration = await RegistrationDB.getById(registration.id);
 		expect(savedRegistration).toBeDefined();
 	});
 
-	test("should not send emails when email service is not provided", () => {
+	test("should not send emails when email service is not provided", async () => {
 		// Arrange - no email service
 		const registrationManager = new RegistrationManagerDB();
 
@@ -248,7 +250,7 @@ test.describe("Registration with Email Integration", () => {
 			capacity: 10,
 			enrolledCount: 0,
 		};
-		LessonDB.insert(lesson);
+		await LessonDB.insert(lesson);
 
 		const participant: Participant = {
 			id: "p4",
@@ -259,7 +261,7 @@ test.describe("Registration with Email Integration", () => {
 		};
 
 		// Act - should work fine without email service
-		const registration = registrationManager.registerParticipant(
+		const registration = await registrationManager.registerParticipant(
 			"lesson_4",
 			participant,
 		);
@@ -287,7 +289,7 @@ test.describe("Registration with Email Integration", () => {
 			capacity: 10,
 			enrolledCount: 0,
 		};
-		LessonDB.insert(lesson);
+		await LessonDB.insert(lesson);
 
 		const participants: Participant[] = [
 			{
@@ -307,7 +309,7 @@ test.describe("Registration with Email Integration", () => {
 		];
 
 		// Act
-		const registrations = registrationManager.bulkRegisterParticipants(
+		const registrations = await registrationManager.bulkRegisterParticipants(
 			"lesson_5",
 			participants,
 		);
@@ -319,7 +321,7 @@ test.describe("Registration with Email Integration", () => {
 		expect(registrations).toHaveLength(2);
 
 		const calls = mockEmailService.getCalls();
-		// 2 participants × 2 emails each (participant + admin) = 4 emails
+		// 2 participants x 2 emails each (participant + admin) = 4 emails
 		expect(calls).toHaveLength(4);
 	});
 });
