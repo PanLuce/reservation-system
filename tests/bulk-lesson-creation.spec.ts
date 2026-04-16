@@ -89,9 +89,7 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 
 		// Verify course linkage through database
 		const allLessons = await calendar.getAllLessons();
-		const courseLessons = allLessons.filter(
-			(l: { courseId?: string }) => l.courseId === course.id,
-		);
+		const courseLessons = allLessons.filter((l) => l.courseId === course.id);
 		expect(courseLessons).toHaveLength(2);
 	});
 
@@ -105,8 +103,6 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
-		const startDate = new Date("2024-03-01"); // Friday
-		const weeksCount = 4;
 
 		const bulkConfig = {
 			courseId: course.id,

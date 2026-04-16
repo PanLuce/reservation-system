@@ -63,7 +63,7 @@ test.describe
 			// Clean up all courses before each test
 			const courses = await CourseDB.getAll();
 			for (const course of courses) {
-				await CourseDB.delete(course.id);
+				await CourseDB.delete(course.id as string);
 			}
 		});
 
@@ -82,9 +82,9 @@ test.describe
 
 			// Assert
 			expect(retrieved).toBeDefined();
-			expect(retrieved.name).toBe(course.name);
-			expect(retrieved.ageGroup).toBe(course.ageGroup);
-			expect(retrieved.color).toBe(course.color);
+			expect(retrieved!.name).toBe(course.name);
+			expect(retrieved!.ageGroup).toBe(course.ageGroup);
+			expect(retrieved!.color).toBe(course.color);
 		});
 
 		test("should get all courses ordered by name", async () => {
@@ -107,8 +107,8 @@ test.describe
 
 			// Assert
 			expect(courses).toHaveLength(2);
-			expect(courses[0].name).toBe("Alpha Course");
-			expect(courses[1].name).toBe("Zebra Course");
+			expect(courses[0]!.name).toBe("Alpha Course");
+			expect(courses[1]!.name).toBe("Zebra Course");
 		});
 
 		test("should get courses by age group", async () => {
@@ -157,9 +157,9 @@ test.describe
 			const updated = await CourseDB.getById(course.id);
 
 			// Assert
-			expect(updated.name).toBe("Updated Name");
-			expect(updated.color).toBe("#00FF00");
-			expect(updated.ageGroup).toBe("1-2 years"); // Unchanged
+			expect(updated!.name).toBe("Updated Name");
+			expect(updated!.color).toBe("#00FF00");
+			expect(updated!.ageGroup).toBe("1-2 years"); // Unchanged
 		});
 
 		test("should delete course", async () => {

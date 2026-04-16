@@ -8,6 +8,7 @@ export type Lesson = {
 	ageGroup: string;
 	capacity: number;
 	enrolledCount: number;
+	courseId?: string;
 };
 
 export type LessonInput = Omit<Lesson, "id" | "enrolledCount">;

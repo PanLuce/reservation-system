@@ -49,7 +49,7 @@ test.describe("Admin Override - TDD", () => {
 
 		// Act - admin forces registration despite age group mismatch
 		const result = await registrationManager.adminRegisterParticipant(
-			lessons[0].id,
+			lessons[0]!.id,
 			participant.id,
 		);
 
@@ -89,7 +89,7 @@ test.describe("Admin Override - TDD", () => {
 
 		const registrationManager = new RegistrationManagerDB();
 		const registration = await registrationManager.registerParticipant(
-			lessons[0].id,
+			lessons[0]!.id,
 			participant,
 		);
 
@@ -103,7 +103,7 @@ test.describe("Admin Override - TDD", () => {
 		expect(result.message).toContain("cancelled");
 
 		// Verify lesson enrolled count decreased
-		const updatedLesson = await calendar.getLessonById(lessons[0].id);
+		const updatedLesson = await calendar.getLessonById(lessons[0]!.id);
 		expect(updatedLesson?.enrolledCount).toBe(0);
 	});
 
@@ -121,7 +121,7 @@ test.describe("Admin Override - TDD", () => {
 		// Create lesson in the past (deadline has passed)
 		const yesterday = new Date();
 		yesterday.setDate(yesterday.getDate() - 1);
-		const yesterdayStr = yesterday.toISOString().split("T")[0];
+		const yesterdayStr = yesterday.toISOString().split("T")[0]!;
 
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
@@ -143,7 +143,7 @@ test.describe("Admin Override - TDD", () => {
 
 		const registrationManager = new RegistrationManagerDB();
 		const registration = await registrationManager.registerParticipant(
-			lessons[0].id,
+			lessons[0]!.id,
 			participant,
 		);
 
@@ -203,17 +203,17 @@ test.describe("Admin Override - TDD", () => {
 		const registrationManager = new RegistrationManagerDB();
 
 		// Fill to capacity
-		await registrationManager.registerParticipant(lessons[0].id, participant1);
-		await registrationManager.registerParticipant(lessons[0].id, participant2);
+		await registrationManager.registerParticipant(lessons[0]!.id, participant1);
+		await registrationManager.registerParticipant(lessons[0]!.id, participant2);
 
 		// Verify it's full
-		const lessonBeforeForce = await calendar.getLessonById(lessons[0].id);
+		const lessonBeforeForce = await calendar.getLessonById(lessons[0]!.id);
 		expect(lessonBeforeForce?.enrolledCount).toBe(2);
 		expect(lessonBeforeForce?.capacity).toBe(2);
 
 		// Act - admin forces registration even though full
 		const result = await registrationManager.adminRegisterParticipant(
-			lessons[0].id,
+			lessons[0]!.id,
 			participant3.id,
 			{ forceCapacity: true },
 		);
@@ -223,7 +223,7 @@ test.describe("Admin Override - TDD", () => {
 		expect(result.registration?.status).toBe("confirmed");
 
 		// Verify enrolled count increased beyond capacity
-		const lessonAfterForce = await calendar.getLessonById(lessons[0].id);
+		const lessonAfterForce = await calendar.getLessonById(lessons[0]!.id);
 		expect(lessonAfterForce?.enrolledCount).toBe(3); // Over capacity!
 	});
 
@@ -301,7 +301,7 @@ test.describe("Admin Override - TDD", () => {
 
 		// Act
 		const result = await registrationManager.adminRegisterParticipant(
-			lessons[0].id,
+			lessons[0]!.id,
 			participant.id,
 		);
 

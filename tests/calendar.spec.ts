@@ -9,6 +9,7 @@ test.describe("Calendar Management", () => {
 		const lesson: Lesson = {
 			id: "test_1",
 			title: "Morning Class",
+			date: "2025-01-06",
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -23,7 +24,7 @@ test.describe("Calendar Management", () => {
 
 		// Assert
 		expect(lessons).toHaveLength(1);
-		expect(lessons[0]).toEqual(lesson);
+		expect(lessons[0]!).toEqual(lesson);
 	});
 
 	test("should get lessons by day of week", () => {
@@ -32,6 +33,7 @@ test.describe("Calendar Management", () => {
 		const mondayLesson: Lesson = {
 			id: "test_1",
 			title: "Monday Morning",
+			date: "2025-01-06",
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -42,6 +44,7 @@ test.describe("Calendar Management", () => {
 		const tuesdayLesson: Lesson = {
 			id: "test_2",
 			title: "Tuesday Morning",
+			date: "2025-01-06",
 			dayOfWeek: "Tuesday",
 			time: "10:00",
 			location: "CVČ Jeremiáše",
@@ -57,7 +60,7 @@ test.describe("Calendar Management", () => {
 
 		// Assert
 		expect(mondayLessons).toHaveLength(1);
-		expect(mondayLessons[0].dayOfWeek).toBe("Monday");
+		expect(mondayLessons[0]!.dayOfWeek).toBe("Monday");
 	});
 
 	test("should retrieve lesson by ID", () => {
@@ -66,6 +69,7 @@ test.describe("Calendar Management", () => {
 		const lesson: Lesson = {
 			id: "test_123",
 			title: "Test Class",
+			date: "2025-01-06",
 			dayOfWeek: "Wednesday",
 			time: "14:00",
 			location: "DK Poklad",

@@ -11,6 +11,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Monday Makeup Class",
+			date: "2025-01-06",
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -53,6 +54,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 			{
 				id: "lesson_1",
 				title: "Monday Class",
+				date: "2025-01-06",
 				dayOfWeek: "Monday",
 				time: "10:00",
 				location: "CVČ Vietnamská",
@@ -63,6 +65,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 			{
 				id: "lesson_2",
 				title: "Monday Full Class",
+				date: "2025-01-06",
 				dayOfWeek: "Monday",
 				time: "11:00",
 				location: "CVČ Vietnamská",
@@ -73,6 +76,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 			{
 				id: "lesson_3",
 				title: "Tuesday Class",
+				date: "2025-01-06",
 				dayOfWeek: "Tuesday",
 				time: "10:00",
 				location: "CVČ Jeremiáše",
@@ -83,6 +87,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 			{
 				id: "lesson_4",
 				title: "Wrong Age Group",
+				date: "2025-01-06",
 				dayOfWeek: "Wednesday",
 				time: "10:00",
 				location: "DK Poklad",
@@ -117,6 +122,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Makeup Class",
+			date: "2025-01-06",
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",

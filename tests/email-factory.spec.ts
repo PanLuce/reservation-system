@@ -1,8 +1,5 @@
 import { expect, test } from "@playwright/test";
-import {
-	createEmailService,
-	type EmailServiceInterface,
-} from "../src/email-factory.js";
+import { createEmailService } from "../src/email-factory.js";
 
 test.describe("Email Factory", () => {
 	// Store original env vars to restore after tests
@@ -127,6 +124,7 @@ test.describe("Email Factory", () => {
 		const mockLesson = {
 			id: "lesson_1",
 			title: "Test Lesson",
+			date: "2025-01-06",
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "Test Location",

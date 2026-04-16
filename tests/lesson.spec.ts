@@ -6,6 +6,7 @@ test.describe("Lesson Management", () => {
 		// Arrange
 		const lessonInput = {
 			title: "Cvičení pro maminky s dětmi",
+			date: "2025-01-06",
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",

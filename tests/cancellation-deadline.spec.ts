@@ -17,7 +17,7 @@ test.describe("Cancellation Deadline Validation", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
-			date: tomorrow.toISOString().split("T")[0], // YYYY-MM-DD format
+			date: tomorrow.toISOString().split("T")[0]!, // YYYY-MM-DD format
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -67,7 +67,7 @@ test.describe("Cancellation Deadline Validation", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
-			date: today.toISOString().split("T")[0], // YYYY-MM-DD format (today)
+			date: today.toISOString().split("T")[0]!, // YYYY-MM-DD format (today)
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -124,7 +124,7 @@ test.describe("Cancellation Deadline Validation", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
-			date: tomorrow.toISOString().split("T")[0],
+			date: tomorrow.toISOString().split("T")[0]!,
 			dayOfWeek: "Tuesday",
 			time: "10:00",
 			location: "CVČ Vietnamská",

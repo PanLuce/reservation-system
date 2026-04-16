@@ -1,4 +1,4 @@
-const API_URL = window.location.origin + "/api";
+const API_URL = `${window.location.origin}/api`;
 
 // Current user state
 let currentUser = null;
@@ -74,9 +74,9 @@ document.querySelectorAll(".tab").forEach((tab) => {
 		const targetTab = tab.dataset.tab;
 
 		// Update tabs
-		document
-			.querySelectorAll(".tab")
-			.forEach((t) => t.classList.remove("active"));
+		document.querySelectorAll(".tab").forEach((t) => {
+			t.classList.remove("active");
+		});
 		tab.classList.add("active");
 
 		// Update content

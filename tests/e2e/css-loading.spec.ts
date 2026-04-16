@@ -69,28 +69,23 @@ test.describe("Dashboard Page - CSS Applied", () => {
 		expect(successfulCss.length).toBeGreaterThan(0);
 	});
 
-	test("login page should have purple gradient background", async ({
-		page,
-	}) => {
+	test("login page should have warm brand background", async ({ page }) => {
 		// Arrange
 		await page.goto("http://localhost:3000/login.html");
 		await page.waitForLoadState("networkidle");
 
-		// Act: Get body background using inline styles (login has inline CSS)
+		// Act: Get body background color
 		const bodyBg = await page.evaluate(() => {
 			const body = document.body;
 			const computed = window.getComputedStyle(body);
 			return {
-				background: computed.background,
-				backgroundImage: computed.backgroundImage,
+				backgroundColor: computed.backgroundColor,
 			};
 		});
 
-		// Assert: Should have gradient (from inline CSS or styles.css)
-		const hasGradient =
-			bodyBg.background.includes("linear-gradient") ||
-			bodyBg.backgroundImage.includes("linear-gradient");
-		expect(hasGradient).toBe(true);
+		// Assert: Should have the warm off-white brand background (#f5f0eb)
+		// rgb(245, 240, 235) is the computed value of #f5f0eb
+		expect(bodyBg.backgroundColor).toBe("rgb(245, 240, 235)");
 	});
 });
 

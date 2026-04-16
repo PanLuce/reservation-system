@@ -32,7 +32,7 @@ test.describe("Email UI Tests", () => {
 
 		// Wait for lessons list container to be populated
 		await page.waitForFunction(
-			() => document.querySelector("#lessons-list")?.children.length > 0,
+			() => document.querySelector("#lessons-list")!.children.length > 0,
 			{ timeout: 10000 },
 		);
 
@@ -42,7 +42,7 @@ test.describe("Email UI Tests", () => {
 
 		// Wait for lesson select to be populated
 		await page.waitForFunction(
-			() => document.querySelector("#lesson-select")?.children.length > 1,
+			() => document.querySelector("#lesson-select")!.children.length > 1,
 			{ timeout: 5000 },
 		);
 

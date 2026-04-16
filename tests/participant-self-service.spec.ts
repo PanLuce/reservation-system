@@ -4,7 +4,6 @@ import { createCourse } from "../src/course.js";
 import {
 	CourseDB,
 	initializeDatabase,
-	LessonDB,
 	ParticipantDB,
 	resetDatabaseForTests,
 } from "../src/database.js";
@@ -47,7 +46,7 @@ test.describe("Participant Self-Service - TDD", () => {
 
 		const registrationManager = new RegistrationManagerDB();
 		const registration = await registrationManager.registerParticipant(
-			lessons[0].id,
+			lessons[0]!.id,
 			participant,
 		);
 
@@ -62,7 +61,7 @@ test.describe("Participant Self-Service - TDD", () => {
 		expect(result.message).toContain("cancelled");
 
 		// Verify lesson enrolled count decreased
-		const updatedLesson = await calendar.getLessonById(lessons[0].id);
+		const updatedLesson = await calendar.getLessonById(lessons[0]!.id);
 		expect(updatedLesson?.enrolledCount).toBe(0);
 	});
 
@@ -103,7 +102,7 @@ test.describe("Participant Self-Service - TDD", () => {
 
 		const registrationManager = new RegistrationManagerDB();
 		const registration = await registrationManager.registerParticipant(
-			lessons[0].id,
+			lessons[0]!.id,
 			participant1,
 		);
 
@@ -150,7 +149,7 @@ test.describe("Participant Self-Service - TDD", () => {
 
 		// Act
 		const result = await registrationManager.participantSelfRegister(
-			lessons[0].id,
+			lessons[0]!.id,
 			participant.id,
 		);
 
@@ -160,7 +159,7 @@ test.describe("Participant Self-Service - TDD", () => {
 		expect(result.registration?.status).toBe("confirmed");
 
 		// Verify lesson enrolled count increased
-		const updatedLesson = await calendar.getLessonById(lessons[0].id);
+		const updatedLesson = await calendar.getLessonById(lessons[0]!.id);
 		expect(updatedLesson?.enrolledCount).toBe(1);
 	});
 
@@ -196,7 +195,7 @@ test.describe("Participant Self-Service - TDD", () => {
 
 		// Act
 		const result = await registrationManager.participantSelfRegister(
-			lessons[0].id,
+			lessons[0]!.id,
 			participant.id,
 		);
 
@@ -237,14 +236,14 @@ test.describe("Participant Self-Service - TDD", () => {
 
 		// Register to first lesson
 		const firstReg = await registrationManager.registerParticipant(
-			lessons[0].id,
+			lessons[0]!.id,
 			participant,
 		);
 
 		// Act - transfer to second lesson
 		const result = await registrationManager.participantTransferLesson(
 			firstReg.id,
-			lessons[1].id,
+			lessons[1]!.id,
 			participant.id,
 		);
 
@@ -253,11 +252,11 @@ test.describe("Participant Self-Service - TDD", () => {
 		expect(result.newRegistration).toBeDefined();
 
 		// Verify first lesson count decreased
-		const lesson1 = await calendar.getLessonById(lessons[0].id);
+		const lesson1 = await calendar.getLessonById(lessons[0]!.id);
 		expect(lesson1?.enrolledCount).toBe(0);
 
 		// Verify second lesson count increased
-		const lesson2 = await calendar.getLessonById(lessons[1].id);
+		const lesson2 = await calendar.getLessonById(lessons[1]!.id);
 		expect(lesson2?.enrolledCount).toBe(1);
 	});
 
@@ -281,7 +280,7 @@ test.describe("Participant Self-Service - TDD", () => {
 		// Create lessons for different age groups (future dates)
 		const futureDate = new Date();
 		futureDate.setDate(futureDate.getDate() + 7); // 1 week from now
-		const futureDateStr = futureDate.toISOString().split("T")[0];
+		const futureDateStr = futureDate.toISOString().split("T")[0]!;
 
 		await calendar.bulkCreateLessons({
 			courseId: course1.id,
@@ -321,8 +320,8 @@ test.describe("Participant Self-Service - TDD", () => {
 
 		// Assert
 		expect(availableLessons.length).toBe(1);
-		expect(availableLessons[0].title).toBe("Baby Yoga");
-		expect(availableLessons[0].ageGroup).toBe("3-12 months");
+		expect(availableLessons[0]!.title).toBe("Baby Yoga");
+		expect(availableLessons[0]!.ageGroup).toBe("3-12 months");
 	});
 
 	test("should prevent double registration to same lesson", async () => {
@@ -357,13 +356,13 @@ test.describe("Participant Self-Service - TDD", () => {
 
 		// First registration
 		await registrationManager.participantSelfRegister(
-			lessons[0].id,
+			lessons[0]!.id,
 			participant.id,
 		);
 
 		// Act - try to register again
 		const result = await registrationManager.participantSelfRegister(
-			lessons[0].id,
+			lessons[0]!.id,
 			participant.id,
 		);
 

@@ -69,9 +69,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 
 		// Assert
 		expect(registrations).toHaveLength(2);
-		const lessonIds = registrations.map(
-			(r: { lessonId: string }) => r.lessonId,
-		);
+		const lessonIds = registrations.map((r) => r.lessonId as string);
 		expect(lessonIds).toContain(lesson1.id);
 		expect(lessonIds).toContain(lesson2.id);
 	});

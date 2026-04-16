@@ -129,8 +129,8 @@ test.describe("Bulk Group Assignment - TDD", () => {
 
 		// Pre-register David to the lesson
 		await registrationManager.registerParticipant(
-			lessons[0].id,
-			participants[0],
+			lessons[0]!.id,
+			participants[0]!,
 		);
 
 		// Act - try to register both participants
@@ -146,7 +146,7 @@ test.describe("Bulk Group Assignment - TDD", () => {
 
 		// Verify only 2 registrations total (not 3)
 		const regs = await registrationManager.getRegistrationsForLesson(
-			lessons[0].id,
+			lessons[0]!.id,
 		);
 		expect(regs).toHaveLength(2);
 	});
@@ -201,7 +201,7 @@ test.describe("Bulk Group Assignment - TDD", () => {
 
 		// Verify registrations
 		const regs = await registrationManager.getRegistrationsForLesson(
-			lessons[0].id,
+			lessons[0]!.id,
 		);
 		expect(regs).toHaveLength(5);
 
@@ -256,7 +256,7 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		// Act - get participants by course and register them
 		const courseParticipants = await ParticipantDB.getByCourse(course.id);
 		const result = await registrationManager.bulkAssignGroupToLessons({
-			participantIds: courseParticipants.map((p: { id: string }) => p.id),
+			participantIds: courseParticipants.map((p) => String(p.id)),
 			lessonIds: lessons.map((l) => l.id),
 		});
 

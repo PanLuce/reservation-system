@@ -9,6 +9,7 @@ test.describe("Bulk Operations - TDD Red Phase", () => {
 		const lesson: Lesson = {
 			id: "test_1",
 			title: "Old Title",
+			date: "2025-01-06",
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -35,6 +36,7 @@ test.describe("Bulk Operations - TDD Red Phase", () => {
 			{
 				id: "test_1",
 				title: "Monday Class",
+				date: "2025-01-06",
 				dayOfWeek: "Monday",
 				time: "10:00",
 				location: "CVČ Vietnamská",
@@ -45,6 +47,7 @@ test.describe("Bulk Operations - TDD Red Phase", () => {
 			{
 				id: "test_2",
 				title: "Monday Class",
+				date: "2025-01-06",
 				dayOfWeek: "Monday",
 				time: "11:00",
 				location: "CVČ Vietnamská",
@@ -55,6 +58,7 @@ test.describe("Bulk Operations - TDD Red Phase", () => {
 			{
 				id: "test_3",
 				title: "Tuesday Class",
+				date: "2025-01-06",
 				dayOfWeek: "Tuesday",
 				time: "10:00",
 				location: "CVČ Jeremiáše",
@@ -92,6 +96,7 @@ test.describe("Bulk Operations - TDD Red Phase", () => {
 			{
 				id: "test_1",
 				title: "Monday Class",
+				date: "2025-01-06",
 				dayOfWeek: "Monday",
 				time: "10:00",
 				location: "CVČ Vietnamská",
@@ -102,6 +107,7 @@ test.describe("Bulk Operations - TDD Red Phase", () => {
 			{
 				id: "test_2",
 				title: "Monday Class",
+				date: "2025-01-06",
 				dayOfWeek: "Monday",
 				time: "11:00",
 				location: "CVČ Vietnamská",
@@ -112,6 +118,7 @@ test.describe("Bulk Operations - TDD Red Phase", () => {
 			{
 				id: "test_3",
 				title: "Tuesday Class",
+				date: "2025-01-06",
 				dayOfWeek: "Tuesday",
 				time: "10:00",
 				location: "CVČ Jeremiáše",

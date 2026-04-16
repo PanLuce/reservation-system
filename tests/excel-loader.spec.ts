@@ -45,13 +45,13 @@ test.describe("Excel Participant Loader", () => {
 
 		// Assert
 		expect(participants).toHaveLength(3);
-		expect(participants[0].name).toBe("Jana Nováková");
-		expect(participants[0].email).toBe("jana@example.cz");
-		expect(participants[0].phone).toBe("+420777888999");
-		expect(participants[0].ageGroup).toBe("3-12 months");
+		expect(participants[0]!.name).toBe("Jana Nováková");
+		expect(participants[0]!.email).toBe("jana@example.cz");
+		expect(participants[0]!.phone).toBe("+420777888999");
+		expect(participants[0]!.ageGroup).toBe("3-12 months");
 
-		expect(participants[1].name).toBe("Petr Svoboda");
-		expect(participants[2].name).toBe("Marie Dvořáková");
+		expect(participants[1]!.name).toBe("Petr Svoboda");
+		expect(participants[2]!.name).toBe("Marie Dvořáková");
 	});
 
 	test("should handle empty Excel file", () => {
@@ -97,7 +97,7 @@ test.describe("Excel Participant Loader", () => {
 
 		// Assert
 		expect(participants).toHaveLength(2); // Only 2 valid rows
-		expect(participants[0].name).toBe("Jana Nováková");
-		expect(participants[1].name).toBe("Valid Person");
+		expect(participants[0]!.name).toBe("Jana Nováková");
+		expect(participants[1]!.name).toBe("Valid Person");
 	});
 });

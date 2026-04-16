@@ -30,9 +30,11 @@ declare module "express-session" {
 }
 
 // Extend Express Request type for correlation ID
-declare module "express" {
-	interface Request {
-		correlationId?: string;
+declare global {
+	namespace Express {
+		interface Request {
+			correlationId?: string;
+		}
 	}
 }
 
@@ -118,25 +120,20 @@ app.use(
 		contentSecurityPolicy: {
 			directives: {
 				defaultSrc: ["'self'"],
-				styleSrc: ["'self'", "'unsafe-inline'"],
+				styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
 				scriptSrc: ["'self'", "'unsafe-inline'"],
 				scriptSrcAttr: ["'unsafe-inline'"],
 				imgSrc: ["'self'", "data:", "https:"],
 				connectSrc: ["'self'"],
-				fontSrc: ["'self'"],
+				fontSrc: ["'self'", "https://fonts.gstatic.com"],
 				objectSrc: ["'none'"],
 				mediaSrc: ["'self'"],
 				frameSrc: ["'none'"],
 				upgradeInsecureRequests: isProduction ? [] : null,
 			},
 		},
-		// Allow iframe embedding from allowed origins
-		frameguard: isProduction
-			? {
-					action: "allow-from",
-					domain: allowedOrigins[0], // WordPress domain
-				}
-			: false, // Allow in development
+		// Allow iframe embedding (use CSP frame-ancestors for cross-origin)
+		frameguard: isProduction ? { action: "sameorigin" as const } : false,
 		// Other security headers
 		hsts: {
 			maxAge: 31536000, // 1 year
@@ -366,7 +363,7 @@ app.post(
 		} = req.body;
 
 		try {
-			let lessons;
+			let lessons: Awaited<ReturnType<typeof calendar.bulkCreateLessons>>;
 			if (dates && Array.isArray(dates)) {
 				// Create lessons for specific dates
 				lessons = await calendar.bulkCreateLessons({

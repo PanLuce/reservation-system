@@ -71,7 +71,7 @@ test.describe("Email Service", () => {
 		const sentEmails = mockTransporter.getSentEmails();
 		expect(sentEmails).toHaveLength(1);
 
-		const email = sentEmails[0];
+		const email = sentEmails[0]!;
 		expect(email.to).toBe("jana@example.cz");
 		expect(email.from).toBe("info@centrumrubacek.cz");
 		expect(email.subject).toContain("Potvrzení registrace");
@@ -111,7 +111,7 @@ test.describe("Email Service", () => {
 		const sentEmails = mockTransporter.getSentEmails();
 		expect(sentEmails).toHaveLength(1);
 
-		const email = sentEmails[0];
+		const email = sentEmails[0]!;
 		expect(email.to).toBe("jana@example.cz");
 		expect(email.subject).toContain("Registrace na čekací listinu");
 		expect(email.subject).toContain("Ranní cvičení");
@@ -143,7 +143,7 @@ test.describe("Email Service", () => {
 		const sentEmails = mockTransporter.getSentEmails();
 		expect(sentEmails).toHaveLength(1);
 
-		const email = sentEmails[0];
+		const email = sentEmails[0]!;
 		expect(email.to).toBe("admin@centrumrubacek.cz");
 		expect(email.from).toBe("info@centrumrubacek.cz");
 		expect(email.subject).toContain("Nová registrace");
@@ -242,7 +242,7 @@ test.describe("Email Service", () => {
 
 		// Assert
 		const sentEmails = mockTransporter.getSentEmails();
-		const email = sentEmails[0];
+		const email = sentEmails[0]!;
 
 		expect(email.text).toContain("10/10");
 		expect(email.text).toContain("waitlist");
