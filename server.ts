@@ -127,6 +127,7 @@ app.use(
 				objectSrc: ["'none'"],
 				mediaSrc: ["'self'"],
 				frameSrc: ["'none'"],
+				upgradeInsecureRequests: isProduction ? [] : null,
 			},
 		},
 		// Allow iframe embedding from allowed origins
