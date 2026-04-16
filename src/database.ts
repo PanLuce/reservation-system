@@ -171,6 +171,33 @@ export async function resetDatabaseForTests() {
 		],
 		"write",
 	);
+	await ensureAdminUser();
+}
+
+export async function ensureAdminUser() {
+	const adminEmail = process.env.ADMIN_EMAIL_SEED;
+	const adminPassword = process.env.ADMIN_PASSWORD_SEED;
+
+	if (!adminEmail || !adminPassword) {
+		return;
+	}
+
+	const existing = await client.execute({
+		sql: "SELECT COUNT(*) as count FROM users WHERE email = ?",
+		args: [adminEmail],
+	});
+
+	if (Number(existing.rows[0]?.count ?? 0) > 0) {
+		return;
+	}
+
+	const passwordHash = await bcrypt.hash(adminPassword, 10);
+	await client.execute({
+		sql: "INSERT INTO users (id, email, passwordHash, name, role) VALUES (?, ?, ?, ?, ?)",
+		args: ["admin_seed", adminEmail, passwordHash, "Admin", "admin"],
+	});
+
+	logger.info("Admin user ensured", { email: adminEmail });
 }
 
 export async function seedSampleData() {
@@ -238,36 +265,10 @@ export async function seedSampleData() {
 			});
 		}
 
-		const userResult = await client.execute({
-			sql: "SELECT COUNT(*) as count FROM users",
-			args: [],
-		});
-		const userCount = Number(userResult.rows[0]?.count ?? 0);
-
-		if (userCount === 0) {
-			const adminEmail = process.env.ADMIN_EMAIL_SEED;
-			const adminPassword = process.env.ADMIN_PASSWORD_SEED;
-
-			if (adminEmail && adminPassword) {
-				const passwordHash = await bcrypt.hash(adminPassword, 10);
-
-				await client.execute({
-					sql: "INSERT INTO users (id, email, passwordHash, name, role) VALUES (?, ?, ?, ?, ?)",
-					args: ["admin_1", adminEmail, passwordHash, "Admin", "admin"],
-				});
-
-				logger.info("Admin user created from environment variables", {
-					email: adminEmail,
-				});
-			} else {
-				logger.warn(
-					"No admin user created. Set ADMIN_EMAIL_SEED and ADMIN_PASSWORD_SEED to create an admin account.",
-				);
-			}
-		}
-
 		logger.info("Sample data seeded successfully");
 	}
+
+	await ensureAdminUser();
 }
 
 // Database operations for Courses
