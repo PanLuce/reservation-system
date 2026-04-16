@@ -3,7 +3,6 @@ import {
 	client,
 	initializeDatabase,
 	LessonDB,
-	ParticipantDB,
 	RegistrationDB,
 } from "../src/database.js";
 import type { EmailServiceInterface } from "../src/email-factory.js";

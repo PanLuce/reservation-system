@@ -1,5 +1,6 @@
 import { CourseDB, LessonDB } from "./database.js";
 import type { Lesson } from "./lesson.js";
+import { toDateString } from "./types.js";
 
 export class LessonCalendarDB {
 	async addLesson(lesson: Lesson): Promise<void> {
@@ -95,7 +96,7 @@ export class LessonCalendarDB {
 		for (let i = 0; i < config.weeksCount; i++) {
 			const currentDate = new Date(start);
 			currentDate.setDate(start.getDate() + i * 7);
-			dates.push(currentDate.toISOString().split("T")[0]!);
+			dates.push(toDateString(currentDate));
 		}
 
 		return this.bulkCreateLessons({

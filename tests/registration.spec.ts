@@ -3,11 +3,12 @@ import { LessonCalendar } from "../src/calendar.js";
 import type { Lesson } from "../src/lesson.js";
 import type { Participant } from "../src/participant.js";
 import { RegistrationManager } from "../src/registration.js";
+import { toDateString } from "../src/types.js";
 
 test.describe("Registration Management", () => {
 	const tomorrow = new Date();
 	tomorrow.setDate(tomorrow.getDate() + 1);
-	const futureDate = tomorrow.toISOString().split("T")[0] as string;
+	const futureDate = toDateString(tomorrow);
 
 	test("should register a participant to a lesson", () => {
 		// Arrange

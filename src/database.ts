@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { type Client, createClient, type InValue } from "@libsql/client";
 import bcrypt from "bcrypt";
 import { logger } from "./logger.js";
+import { toDateString } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -218,9 +219,9 @@ export async function seedSampleData() {
 		const nextWednesday = new Date(nextMonday);
 		nextWednesday.setDate(nextMonday.getDate() + 2);
 
-		const mondayDate = nextMonday.toISOString().split("T")[0]!;
-		const tuesdayDate = nextTuesday.toISOString().split("T")[0]!;
-		const wednesdayDate = nextWednesday.toISOString().split("T")[0]!;
+		const mondayDate = toDateString(nextMonday);
+		const tuesdayDate = toDateString(nextTuesday);
+		const wednesdayDate = toDateString(nextWednesday);
 
 		const sampleLessons: InValue[][] = [
 			[

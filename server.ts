@@ -294,7 +294,11 @@ app.post("/api/auth/register", async (req, res) => {
 });
 
 app.get("/api/auth/me", requireAuth, async (req, res) => {
-	const user = await authService.verifyToken(req.session.userId!);
+	const userId = req.session.userId;
+	if (!userId) {
+		return res.status(401).json({ error: "Authentication required" });
+	}
+	const user = await authService.verifyToken(userId);
 
 	if (!user) {
 		return res.status(401).json({ error: "Invalid session" });

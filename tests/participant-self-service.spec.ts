@@ -9,6 +9,7 @@ import {
 } from "../src/database.js";
 import { createParticipant } from "../src/participant.js";
 import { RegistrationManagerDB } from "../src/registration-db.js";
+import { toDateString } from "../src/types.js";
 
 test.describe("Participant Self-Service - TDD", () => {
 	test.beforeEach(async () => {
@@ -280,7 +281,7 @@ test.describe("Participant Self-Service - TDD", () => {
 		// Create lessons for different age groups (future dates)
 		const futureDate = new Date();
 		futureDate.setDate(futureDate.getDate() + 7); // 1 week from now
-		const futureDateStr = futureDate.toISOString().split("T")[0]!;
+		const futureDateStr = toDateString(futureDate);
 
 		await calendar.bulkCreateLessons({
 			courseId: course1.id,

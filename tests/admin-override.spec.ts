@@ -9,6 +9,7 @@ import {
 } from "../src/database.js";
 import { createParticipant } from "../src/participant.js";
 import { RegistrationManagerDB } from "../src/registration-db.js";
+import { toDateString } from "../src/types.js";
 
 test.describe("Admin Override - TDD", () => {
 	test.beforeEach(async () => {
@@ -121,7 +122,7 @@ test.describe("Admin Override - TDD", () => {
 		// Create lesson in the past (deadline has passed)
 		const yesterday = new Date();
 		yesterday.setDate(yesterday.getDate() - 1);
-		const yesterdayStr = yesterday.toISOString().split("T")[0]!;
+		const yesterdayStr = toDateString(yesterday);
 
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,

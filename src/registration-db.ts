@@ -1,7 +1,7 @@
 import { LessonDB, ParticipantDB, RegistrationDB } from "./database.js";
 import type { EmailServiceInterface } from "./email-factory.js";
 import type { Participant } from "./participant.js";
-import type { Registration } from "./types.js";
+import { type Registration, toDateString } from "./types.js";
 
 export class RegistrationManagerDB {
 	constructor(private emailService?: EmailServiceInterface) {}
@@ -500,7 +500,7 @@ export class RegistrationManagerDB {
 		}
 
 		// Get today's date for filtering future lessons
-		const today = new Date().toISOString().split("T")[0]!;
+		const today = toDateString(new Date());
 
 		// Get all lessons for participant's age group
 		const allLessons = (await LessonDB.getAll()) as Array<

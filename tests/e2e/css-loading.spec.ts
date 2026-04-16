@@ -48,7 +48,7 @@ test.describe("CSS File Loading - Direct Check", () => {
 test.describe("Dashboard Page - CSS Applied", () => {
 	test("dashboard should load styles.css successfully", async ({ page }) => {
 		// Arrange: Track network requests
-		const cssRequests: any[] = [];
+		const cssRequests: Array<{ url: string; status: number }> = [];
 		page.on("response", (response) => {
 			if (response.url().endsWith("styles.css")) {
 				cssRequests.push({

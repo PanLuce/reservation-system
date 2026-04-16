@@ -3,6 +3,7 @@ import { LessonCalendar } from "../src/calendar.js";
 import type { Lesson } from "../src/lesson.js";
 import type { Participant } from "../src/participant.js";
 import { RegistrationManager } from "../src/registration.js";
+import { toDateString } from "../src/types.js";
 
 test.describe("Cancellation Deadline Validation", () => {
 	test("should allow cancellation before midnight of lesson day", () => {
@@ -17,7 +18,7 @@ test.describe("Cancellation Deadline Validation", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
-			date: tomorrow.toISOString().split("T")[0]!, // YYYY-MM-DD format
+			date: toDateString(tomorrow), // YYYY-MM-DD format
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -67,7 +68,7 @@ test.describe("Cancellation Deadline Validation", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
-			date: today.toISOString().split("T")[0]!, // YYYY-MM-DD format (today)
+			date: toDateString(today), // YYYY-MM-DD format (today)
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
@@ -124,7 +125,7 @@ test.describe("Cancellation Deadline Validation", () => {
 		const lesson: Lesson = {
 			id: "lesson_1",
 			title: "Morning Class",
-			date: tomorrow.toISOString().split("T")[0]!,
+			date: toDateString(tomorrow),
 			dayOfWeek: "Tuesday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
