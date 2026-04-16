@@ -120,6 +120,7 @@ app.use(
 				defaultSrc: ["'self'"],
 				styleSrc: ["'self'", "'unsafe-inline'"],
 				scriptSrc: ["'self'", "'unsafe-inline'"],
+				scriptSrcAttr: ["'unsafe-inline'"],
 				imgSrc: ["'self'", "data:", "https:"],
 				connectSrc: ["'self'"],
 				fontSrc: ["'self'"],
