@@ -52,8 +52,6 @@ process.on("unhandledRejection", (reason: unknown) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-console.log("STARTUP: server.ts loading...");
-
 // Environment configuration
 const isProduction = process.env.NODE_ENV === "production";
 const PORT = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 3000;
@@ -83,12 +81,9 @@ if (!fs.existsSync(dataDir)) {
 }
 
 // Initialize database (async)
-console.log("STARTUP: initializing database...");
 try {
 	await initializeDatabase();
-	console.log("STARTUP: database initialized");
 	await seedSampleData();
-	console.log("STARTUP: seed data loaded");
 } catch (error) {
 	console.error("FATAL: Database initialization failed:", error);
 	process.exit(1);
@@ -842,9 +837,7 @@ app.use(
 );
 
 // Start server
-console.log(`STARTUP: binding to port ${PORT}...`);
 const server = app.listen(PORT, () => {
-	console.log(`STARTUP: listening on port ${PORT}`);
 	logger.info("Reservation System started", {
 		port: PORT,
 		environment: isProduction ? "production" : "development",
