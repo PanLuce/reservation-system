@@ -21,6 +21,7 @@ import { createLesson } from "./src/lesson.js";
 import { logger } from "./src/logger.js";
 import { createParticipant } from "./src/participant.js";
 import { RegistrationManagerDB } from "./src/registration-db.js";
+import { LibSQLSessionStore } from "./src/session-store.js";
 
 // Extend session data type
 declare module "express-session" {
@@ -74,6 +75,9 @@ await initializeDatabase();
 await seedSampleData();
 
 const app = express();
+
+// Trust first proxy (Railway reverse proxy) — required for secure cookies behind proxy
+app.set("trust proxy", 1);
 
 // Middleware
 
@@ -155,14 +159,15 @@ app.use(
 app.use(express.json());
 app.use(
 	session({
+		store: new LibSQLSessionStore(client),
 		secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
 		resave: false,
 		saveUninitialized: false,
 		cookie: {
-			secure: isProduction, // HTTPS required in production
+			secure: isProduction,
 			httpOnly: true,
 			maxAge: 24 * 60 * 60 * 1000, // 24 hours
-			sameSite: isProduction ? "none" : "lax", // 'none' required for cross-site iframe
+			sameSite: "lax",
 		},
 	}),
 );
