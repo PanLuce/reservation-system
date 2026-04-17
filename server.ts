@@ -71,8 +71,13 @@ if (!fs.existsSync(dataDir)) {
 }
 
 // Initialize database (async)
-await initializeDatabase();
-await seedSampleData();
+try {
+	await initializeDatabase();
+	await seedSampleData();
+} catch (error) {
+	console.error("FATAL: Database initialization failed:", error);
+	process.exit(1);
+}
 
 const app = express();
 
