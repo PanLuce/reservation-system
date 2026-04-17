@@ -329,7 +329,7 @@ app.get("/api/lessons", async (_req, res) => {
 });
 
 app.get("/api/lessons/:id", async (req, res) => {
-	const lesson = await calendar.getLessonById(req.params.id);
+	const lesson = await calendar.getLessonById(req.params.id as string);
 	if (!lesson) {
 		return res.status(404).json({ error: "Lesson not found" });
 	}
@@ -355,7 +355,7 @@ app.post(
 	"/api/courses/:courseId/bulk-lessons",
 	requireAdmin,
 	async (req, res) => {
-		const courseId = req.params.courseId;
+		const courseId = req.params.courseId as string;
 		if (!courseId) {
 			return res.status(400).json({ error: "Course ID is required" });
 		}
@@ -416,7 +416,7 @@ app.post(
 );
 
 app.get("/api/courses/:courseId/lessons", async (req, res) => {
-	const courseId = req.params.courseId;
+	const courseId = req.params.courseId as string;
 	if (!courseId) {
 		return res.status(400).json({ error: "Course ID is required" });
 	}
@@ -429,7 +429,7 @@ app.post(
 	"/api/courses/:courseId/bulk-register",
 	requireAdmin,
 	async (req, res) => {
-		const courseId = req.params.courseId;
+		const courseId = req.params.courseId as string;
 		if (!courseId) {
 			return res.status(400).json({ error: "Course ID is required" });
 		}
@@ -472,7 +472,7 @@ app.post(
 );
 
 app.get("/api/courses/:courseId/participants", async (req, res) => {
-	const courseId = req.params.courseId;
+	const courseId = req.params.courseId as string;
 	if (!courseId) {
 		return res.status(400).json({ error: "Course ID is required" });
 	}
@@ -482,7 +482,7 @@ app.get("/api/courses/:courseId/participants", async (req, res) => {
 });
 
 app.put("/api/lessons/:id", requireAdmin, async (req, res) => {
-	const lessonId = req.params.id;
+	const lessonId = req.params.id as string;
 	if (!lessonId) {
 		return res.status(400).json({ error: "Lesson ID is required" });
 	}
@@ -496,7 +496,7 @@ app.put("/api/lessons/:id", requireAdmin, async (req, res) => {
 });
 
 app.delete("/api/lessons/:id", requireAdmin, async (req, res) => {
-	const lessonId = req.params.id;
+	const lessonId = req.params.id as string;
 	if (!lessonId) {
 		return res.status(400).json({ error: "Lesson ID is required" });
 	}
@@ -527,13 +527,13 @@ app.post("/api/registrations", async (req, res) => {
 
 app.get("/api/registrations/lesson/:lessonId", async (req, res) => {
 	const registrations = await registrationManager.getRegistrationsForLesson(
-		req.params.lessonId,
+		req.params.lessonId as string,
 	);
 	res.json(registrations);
 });
 
 app.get("/api/participants/:participantId/registrations", async (req, res) => {
-	const participantId = req.params.participantId;
+	const participantId = req.params.participantId as string;
 	if (!participantId) {
 		return res.status(400).json({ error: "Participant ID is required" });
 	}
@@ -546,7 +546,7 @@ app.get("/api/participants/:participantId/registrations", async (req, res) => {
 app.post(
 	"/api/participants/:participantId/cancel-registration",
 	async (req, res) => {
-		const participantId = req.params.participantId;
+		const participantId = req.params.participantId as string;
 		const { registrationId } = req.body;
 
 		if (!participantId) {
@@ -573,7 +573,7 @@ app.post(
 app.post(
 	"/api/participants/:participantId/register-lesson",
 	async (req, res) => {
-		const participantId = req.params.participantId;
+		const participantId = req.params.participantId as string;
 		const { lessonId } = req.body;
 
 		if (!participantId) {
@@ -600,7 +600,7 @@ app.post(
 app.post(
 	"/api/participants/:participantId/transfer-lesson",
 	async (req, res) => {
-		const participantId = req.params.participantId;
+		const participantId = req.params.participantId as string;
 		const { currentRegistrationId, newLessonId } = req.body;
 
 		if (!participantId) {
@@ -630,7 +630,7 @@ app.post(
 app.get(
 	"/api/participants/:participantId/available-lessons",
 	async (req, res) => {
-		const participantId = req.params.participantId;
+		const participantId = req.params.participantId as string;
 
 		if (!participantId) {
 			return res.status(400).json({ error: "Participant ID is required" });
@@ -710,7 +710,7 @@ app.post(
 app.get("/api/substitutions/:ageGroup", async (req, res) => {
 	const availableLessons =
 		await registrationManager.getAvailableSubstitutionLessons(
-			req.params.ageGroup,
+			req.params.ageGroup as string,
 		);
 	res.json(availableLessons);
 });
