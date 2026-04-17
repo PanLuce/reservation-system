@@ -27,10 +27,12 @@ export const client: Client = createClient(
 );
 
 export async function initializeDatabase() {
-	// PRAGMAs must be set outside of batch (transaction)
-	await client.execute("PRAGMA foreign_keys = ON");
-	await client.execute("PRAGMA journal_mode = WAL");
-	await client.execute("PRAGMA busy_timeout = 5000");
+	// PRAGMAs only work with local SQLite — Turso manages these server-side
+	if (url.startsWith("file:")) {
+		await client.execute("PRAGMA foreign_keys = ON");
+		await client.execute("PRAGMA journal_mode = WAL");
+		await client.execute("PRAGMA busy_timeout = 5000");
+	}
 
 	await client.batch(
 		[
