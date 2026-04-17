@@ -82,7 +82,9 @@
 			"Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 npm run dev)",
 			"Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 npx playwright test tests/admin-seed.spec.ts --reporter=line)",
 			"Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 npx playwright test --reporter=line)",
-			"Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 npx playwright:*)"
+			"Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 npx playwright:*)",
+			"Bash(npm ls:*)",
+			"Bash(git:*)"
 		]
 	},
 	"sandbox": {
