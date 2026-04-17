@@ -39,8 +39,20 @@ declare global {
 	}
 }
 
+// Register global error handlers FIRST — before any code that might crash
+process.on("uncaughtException", (error: Error) => {
+	console.error("FATAL uncaughtException:", error);
+	process.exit(1);
+});
+process.on("unhandledRejection", (reason: unknown) => {
+	console.error("FATAL unhandledRejection:", reason);
+	process.exit(1);
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+console.log("STARTUP: server.ts loading...");
 
 // Environment configuration
 const isProduction = process.env.NODE_ENV === "production";
@@ -71,9 +83,12 @@ if (!fs.existsSync(dataDir)) {
 }
 
 // Initialize database (async)
+console.log("STARTUP: initializing database...");
 try {
 	await initializeDatabase();
+	console.log("STARTUP: database initialized");
 	await seedSampleData();
+	console.log("STARTUP: seed data loaded");
 } catch (error) {
 	console.error("FATAL: Database initialization failed:", error);
 	process.exit(1);
@@ -827,7 +842,9 @@ app.use(
 );
 
 // Start server
+console.log(`STARTUP: binding to port ${PORT}...`);
 const server = app.listen(PORT, () => {
+	console.log(`STARTUP: listening on port ${PORT}`);
 	logger.info("Reservation System started", {
 		port: PORT,
 		environment: isProduction ? "production" : "development",
@@ -867,34 +884,6 @@ function gracefulShutdown(signal: string) {
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
-// Process-level error handlers
-
-// Handle uncaught exceptions
-process.on("uncaughtException", (error: Error) => {
-	logger.error("Uncaught exception", {
-		error: error.message,
-		stack: error.stack,
-	});
-
-	// Give logger time to flush, then exit
-	setTimeout(() => {
-		process.exit(1);
-	}, 1000);
-});
-
-// Handle unhandled promise rejections
-process.on(
-	"unhandledRejection",
-	(reason: unknown, promise: Promise<unknown>) => {
-		logger.error("Unhandled promise rejection", {
-			reason: reason instanceof Error ? reason.message : String(reason),
-			stack: reason instanceof Error ? reason.stack : undefined,
-			promise: String(promise),
-		});
-
-		// Give logger time to flush, then exit
-		setTimeout(() => {
-			process.exit(1);
-		}, 1000);
-	},
-);
+// Note: uncaughtException and unhandledRejection handlers are registered
+// at the top of the file (before any code that might crash) using console.error
+// for reliable output in container environments.
