@@ -114,6 +114,14 @@ export async function initializeDatabase() {
 				args: [],
 			},
 			{
+				sql: `CREATE TABLE IF NOT EXISTS sessions (
+				sid TEXT PRIMARY KEY,
+				sess TEXT NOT NULL,
+				expired DATETIME NOT NULL
+			)`,
+				args: [],
+			},
+			{
 				sql: "CREATE INDEX IF NOT EXISTS idx_courses_ageGroup ON courses(ageGroup)",
 				args: [],
 			},
@@ -153,6 +161,10 @@ export async function initializeDatabase() {
 				sql: "CREATE INDEX IF NOT EXISTS idx_registrations_status ON registrations(status)",
 				args: [],
 			},
+			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_sessions_expired ON sessions(expired)",
+				args: [],
+			},
 		],
 		"write",
 	);
@@ -163,6 +175,7 @@ export async function initializeDatabase() {
 export async function resetDatabaseForTests() {
 	await client.batch(
 		[
+			{ sql: "DELETE FROM sessions", args: [] },
 			{ sql: "DELETE FROM registrations", args: [] },
 			{ sql: "DELETE FROM course_participants", args: [] },
 			{ sql: "DELETE FROM users", args: [] },
