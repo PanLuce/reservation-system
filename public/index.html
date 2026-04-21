@@ -22,6 +22,7 @@
 
         <nav class="tabs">
             <button class="tab active" data-tab="lessons">📅 Lekce</button>
+            <button class="tab" data-tab="courses">🎯 Skupinky</button>
             <button class="tab" data-tab="register">👥 Registrace</button>
             <button class="tab" data-tab="substitution">🔄 Náhradní Lekce</button>
             <button class="tab" data-tab="excel">📊 Import Excel</button>
@@ -84,6 +85,55 @@
             </div>
 
             <div id="lessons-list" class="lessons-grid"></div>
+        </div>
+
+        <!-- Skupinky Tab -->
+        <div class="tab-content" id="courses">
+            <div class="section-header">
+                <h2>Skupinky (Kurzy)</h2>
+                <button type="button" class="btn btn-primary admin-only" onclick="showAddCourseForm()">+ Přidat skupinku</button>
+            </div>
+
+            <div id="add-course-form" class="form-card" style="display: none;">
+                <h3 id="course-form-title">Nová skupinka</h3>
+                <form onsubmit="submitCourseForm(event)">
+                    <input type="hidden" id="course-edit-id">
+                    <div class="form-group">
+                        <label>Název skupinky:</label>
+                        <input type="text" id="course-name" required placeholder="např. 3-6 měsíců, Vietnamská">
+                        <span class="field-error" id="course-name-error"></span>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Věková skupina:</label>
+                            <select id="course-age-group" required>
+                                <option value="3-12 months">3-12 měsíců</option>
+                                <option value="1-2 years">1-2 roky</option>
+                                <option value="2-3 years">2-3 roky</option>
+                                <option value="3-4 years">3-4 roky</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Barva skupinky:</label>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="color" id="course-color-picker" value="#4CAF50" oninput="syncColorHex(this.value)">
+                                <input type="text" id="course-color" value="#4CAF50" maxlength="7" placeholder="#4CAF50" oninput="syncColorPicker(this.value)" style="width: 90px;">
+                            </div>
+                            <span class="field-error" id="course-color-error"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Popis (volitelné):</label>
+                        <textarea id="course-description" rows="2" placeholder="např. Středa 10:00"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Uložit</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideAddCourseForm()">Zrušit</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="courses-list" class="lessons-grid"></div>
         </div>
 
         <!-- Register Tab -->

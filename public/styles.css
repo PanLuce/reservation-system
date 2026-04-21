@@ -369,3 +369,30 @@ header p {
 		padding: 12px 10px;
 	}
 }
+
+/* Skupinky (courses) */
+.color-swatch {
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	border: 1px solid rgba(0, 0, 0, 0.15);
+	vertical-align: middle;
+	margin-right: 6px;
+	flex-shrink: 0;
+}
+
+.course-card-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.field-error {
+	color: var(--color-danger);
+	font-size: 0.82rem;
+	display: block;
+	margin-top: 4px;
+	min-height: 1em;
+}

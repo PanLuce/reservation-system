@@ -89,7 +89,13 @@
       "Bash(kill %1)",
       "Bash(wait)",
       "Bash(TURSO_DATABASE_URL=libsql://fake-db.turso.io TURSO_AUTH_TOKEN=fake-token NODE_ENV=production SESSION_SECRET=test-secret-1234567890abcdef1234567890abcdef timeout 10 npm start)",
-      "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=admin123 timeout 5 node --import tsx/esm start.mjs)"
+      "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=admin123 timeout 5 node --import tsx/esm start.mjs)",
+      "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=admin123 npm run test)",
+      "Bash(npm run *)",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_fill_form",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_handle_dialog"
     ]
   },
   "sandbox": {

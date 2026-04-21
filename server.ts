@@ -9,7 +9,9 @@ import helmet from "helmet";
 import multer from "multer";
 import { AuthService } from "./src/auth.js";
 import { LessonCalendarDB } from "./src/calendar-db.js";
+import { createCourse } from "./src/course.js";
 import {
+	CourseDB,
 	client,
 	initializeDatabase,
 	ParticipantDB,
@@ -364,6 +366,70 @@ app.post("/api/lessons", requireAdmin, async (req, res) => {
 	});
 	await calendar.addLesson(lesson);
 	res.status(201).json(lesson);
+});
+
+// Courses (skupinky) — CRUD
+app.get("/api/courses", requireAuth, async (_req, res) => {
+	res.json(await CourseDB.getAll());
+});
+
+app.get("/api/courses/age-group/:ageGroup", requireAuth, async (req, res) => {
+	const courses = await CourseDB.getByAgeGroup(
+		decodeURIComponent(req.params.ageGroup as string),
+	);
+	res.json(courses);
+});
+
+app.get("/api/courses/:id", requireAuth, async (req, res) => {
+	const course = await CourseDB.getById(req.params.id as string);
+	if (!course) {
+		return res.status(404).json({ error: "Course not found" });
+	}
+	res.json(course);
+});
+
+app.post("/api/courses", requireAdmin, async (req, res) => {
+	try {
+		const course = createCourse({
+			name: req.body.name,
+			ageGroup: req.body.ageGroup,
+			color: req.body.color,
+			description: req.body.description,
+		});
+		await CourseDB.insert(course);
+		res.status(201).json(course);
+	} catch (error) {
+		res
+			.status(400)
+			.json({ error: error instanceof Error ? error.message : "Invalid data" });
+	}
+});
+
+app.put("/api/courses/:id", requireAdmin, async (req, res) => {
+	const id = req.params.id as string;
+	const existing = await CourseDB.getById(id);
+	if (!existing) {
+		return res.status(404).json({ error: "Course not found" });
+	}
+	try {
+		const { name, ageGroup, color, description } = req.body;
+		await CourseDB.update(id, { name, ageGroup, color, description });
+		res.json(await CourseDB.getById(id));
+	} catch (error) {
+		res
+			.status(400)
+			.json({ error: error instanceof Error ? error.message : "Invalid data" });
+	}
+});
+
+app.delete("/api/courses/:id", requireAdmin, async (req, res) => {
+	const id = req.params.id as string;
+	const existing = await CourseDB.getById(id);
+	if (!existing) {
+		return res.status(404).json({ error: "Course not found" });
+	}
+	await CourseDB.delete(id);
+	res.json({ message: "Course deleted" });
 });
 
 app.post(

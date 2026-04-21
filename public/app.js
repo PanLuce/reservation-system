@@ -43,6 +43,11 @@ function hideAdminFeatures() {
 	);
 	if (addLessonBtn) addLessonBtn.style.display = "none";
 
+	// Hide "Add Skupinka" button
+	document.querySelectorAll(".admin-only").forEach((el) => {
+		el.style.display = "none";
+	});
+
 	// Hide edit/delete buttons for lessons (will be done in loadLessons function)
 
 	// Hide Excel import tab
@@ -88,6 +93,8 @@ document.querySelectorAll(".tab").forEach((tab) => {
 		// Load data for specific tabs
 		if (targetTab === "lessons") {
 			loadLessons();
+		} else if (targetTab === "courses") {
+			loadCourses();
 		} else if (targetTab === "register") {
 			loadLessonSelect();
 		} else if (targetTab === "excel") {
@@ -448,3 +455,180 @@ async function uploadExcel(event) {
 document.addEventListener("DOMContentLoaded", () => {
 	loadLessons();
 });
+
+// ─── Skupinky (Courses) ───────────────────────────────────────────────────────
+
+async function loadCourses() {
+	try {
+		const res = await fetch(`${API_URL}/courses`, { credentials: "include" });
+		const courses = await res.json();
+		const container = document.getElementById("courses-list");
+
+		if (courses.length === 0) {
+			container.innerHTML =
+				'<p style="text-align:center;color:#999;padding:40px;">Žádné skupinky. Přidejte první skupinku!</p>';
+			return;
+		}
+
+		container.innerHTML = courses.map(renderCourseCard).join("");
+	} catch (error) {
+		showNotification("Chyba při načítání skupinek", "error");
+		console.error(error);
+	}
+}
+
+function renderCourseCard(course) {
+	const isAdmin = currentUser && currentUser.role === "admin";
+	return `
+		<div class="lesson-card" id="course-card-${course.id}">
+			<div class="course-card-header">
+				<span class="color-swatch" style="background:${course.color}"></span>
+				<h3 style="margin:0">${course.name}</h3>
+			</div>
+			<div class="lesson-info">
+				<div class="lesson-info-item">
+					<strong>👶 Věk:</strong> ${translateAgeGroup(course.ageGroup)}
+				</div>
+				${course.description ? `<div class="lesson-info-item"><strong>📝</strong> ${course.description}</div>` : ""}
+			</div>
+			${
+				isAdmin
+					? `
+			<div class="lesson-actions">
+				<button class="btn btn-secondary" onclick="editCourse('${course.id}')">Upravit</button>
+				<button class="btn btn-danger" onclick="deleteCourse('${course.id}')">Smazat</button>
+			</div>`
+					: ""
+			}
+		</div>`;
+}
+
+function showAddCourseForm() {
+	document.getElementById("course-form-title").textContent = "Nová skupinka";
+	document.getElementById("course-edit-id").value = "";
+	document.getElementById("course-name").value = "";
+	document.getElementById("course-age-group").value = "3-12 months";
+	document.getElementById("course-color").value = "#4CAF50";
+	document.getElementById("course-color-picker").value = "#4CAF50";
+	document.getElementById("course-description").value = "";
+	clearCourseErrors();
+	document.getElementById("add-course-form").style.display = "block";
+}
+
+function hideAddCourseForm() {
+	document.getElementById("add-course-form").style.display = "none";
+	clearCourseErrors();
+}
+
+async function editCourse(id) {
+	try {
+		const res = await fetch(`${API_URL}/courses/${id}`, {
+			credentials: "include",
+		});
+		const course = await res.json();
+		document.getElementById("course-form-title").textContent =
+			"Upravit skupinku";
+		document.getElementById("course-edit-id").value = course.id;
+		document.getElementById("course-name").value = course.name;
+		document.getElementById("course-age-group").value = course.ageGroup;
+		document.getElementById("course-color").value = course.color;
+		document.getElementById("course-color-picker").value = course.color;
+		document.getElementById("course-description").value =
+			course.description || "";
+		clearCourseErrors();
+		document.getElementById("add-course-form").style.display = "block";
+		document.getElementById("add-course-form").scrollIntoView({
+			behavior: "smooth",
+		});
+	} catch (error) {
+		showNotification("Chyba při načítání skupinky", "error");
+	}
+}
+
+async function submitCourseForm(event) {
+	event.preventDefault();
+	clearCourseErrors();
+
+	const id = document.getElementById("course-edit-id").value;
+	const name = document.getElementById("course-name").value.trim();
+	const ageGroup = document.getElementById("course-age-group").value;
+	const color = document.getElementById("course-color").value.trim();
+	const description = document
+		.getElementById("course-description")
+		.value.trim();
+
+	let hasError = false;
+	if (!name) {
+		document.getElementById("course-name-error").textContent =
+			"Název je povinný";
+		hasError = true;
+	}
+	if (!/^#([0-9A-Fa-f]{3}){1,2}$/.test(color)) {
+		document.getElementById("course-color-error").textContent =
+			"Barva musí být platný hex kód (např. #FF6B6B)";
+		hasError = true;
+	}
+	if (hasError) return;
+
+	try {
+		const url = id ? `${API_URL}/courses/${id}` : `${API_URL}/courses`;
+		const method = id ? "PUT" : "POST";
+		const res = await fetch(url, {
+			method,
+			headers: { "Content-Type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify({ name, ageGroup, color, description }),
+		});
+
+		if (!res.ok) {
+			const data = await res.json();
+			showNotification(data.error || "Chyba při ukládání", "error");
+			return;
+		}
+
+		hideAddCourseForm();
+		showNotification(
+			id ? "Skupinka byla upravena" : "Skupinka byla přidána",
+			"success",
+		);
+		loadCourses();
+	} catch (error) {
+		showNotification("Chyba při ukládání skupinky", "error");
+		console.error(error);
+	}
+}
+
+async function deleteCourse(id) {
+	if (!confirm("Opravdu smazat tuto skupinku?")) return;
+	try {
+		const res = await fetch(`${API_URL}/courses/${id}`, {
+			method: "DELETE",
+			credentials: "include",
+		});
+		if (!res.ok) {
+			const data = await res.json();
+			showNotification(data.error || "Chyba při mazání", "error");
+			return;
+		}
+		showNotification("Skupinka byla smazána", "success");
+		loadCourses();
+	} catch (error) {
+		showNotification("Chyba při mazání skupinky", "error");
+		console.error(error);
+	}
+}
+
+function syncColorHex(value) {
+	document.getElementById("course-color").value = value;
+}
+
+function syncColorPicker(value) {
+	if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(value)) {
+		document.getElementById("course-color-picker").value = value;
+	}
+}
+
+function clearCourseErrors() {
+	document.getElementById("course-name-error").textContent = "";
+	document.getElementById("course-color-error").textContent = "";
+}

@@ -1,0 +1,20 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - heading "🎯 Centrum Rubáček" [level=1] [ref=e5]
+    - paragraph [ref=e6]: Rezervační Systém
+  - generic [ref=e7]:
+    - button "Přihlášení" [ref=e8] [cursor=pointer]
+    - button "Registrace" [ref=e9] [cursor=pointer]
+  - generic [ref=e10]:
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]: "Email:"
+        - textbox "Email:" [ref=e14]
+      - generic [ref=e15]:
+        - generic [ref=e16]: "Heslo:"
+        - textbox "Heslo:" [ref=e17]
+      - button "Přihlásit se" [ref=e18] [cursor=pointer]
+    - generic [ref=e19]:
+      - strong [ref=e20]: "🔑 Testovací administrátorský účet:"
+      - text: "Email: admin@centrumrubacek.cz"
+      - text: "Heslo: admin123"

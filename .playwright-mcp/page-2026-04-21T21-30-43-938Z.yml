@@ -1,0 +1,19 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - heading "🎯 Centrum Rubáček" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Rezervační Systém pro Lekce
+    - generic [ref=e7]:
+      - text: Admin 👑 Admin
+      - button "Odhlásit se" [ref=e8] [cursor=pointer]
+  - navigation [ref=e9]:
+    - button "📅 Lekce" [ref=e10] [cursor=pointer]
+    - button "🎯 Skupinky" [active] [ref=e11] [cursor=pointer]
+    - button "👥 Registrace" [ref=e12] [cursor=pointer]
+    - button "🔄 Náhradní Lekce" [ref=e13] [cursor=pointer]
+    - button "📊 Import Excel" [ref=e14] [cursor=pointer]
+  - generic [ref=e81]:
+    - generic [ref=e82]:
+      - heading "Skupinky (Kurzy)" [level=2] [ref=e83]
+      - button "+ Přidat skupinku" [ref=e84] [cursor=pointer]
+    - paragraph [ref=e86]: Žádné skupinky. Přidejte první skupinku!
