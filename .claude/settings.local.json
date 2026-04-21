@@ -61,8 +61,8 @@
       "Bash(lsof:*)",
       "Bash(grep:*)",
       "Bash(timeout 3 npm start:*)",
-      "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=test123 timeout 3 npm start:*)",
-      "Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 timeout 2 node:*)",
+      "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=admin123 timeout 3 npm start:*)",
+      "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=admin123 timeout 2 node:*)",
       "Bash(test:*)",
       "Bash(git -C /Users/lukasvitala/GIT/reservation-system status --porcelain)",
       "Bash(git -C /Users/lukasvitala/GIT/reservation-system ls-files)",
@@ -79,17 +79,17 @@
       "Bash(done)",
       "Bash(NODE_OPTIONS=\"--loader tsx\" npx playwright test:*)",
       "Bash(npx playwright:*)",
-      "Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 npm run dev)",
-      "Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 npx playwright test tests/admin-seed.spec.ts --reporter=line)",
-      "Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 npx playwright test --reporter=line)",
-      "Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 npx playwright:*)",
+      "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=admin123 npm run dev)",
+      "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=admin123 npx playwright test tests/admin-seed.spec.ts --reporter=line)",
+      "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=admin123 npx playwright test --reporter=line)",
+      "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=admin123 npx playwright:*)",
       "Bash(npm ls:*)",
       "Bash(git:*)",
       "Bash(NODE_ENV=production SESSION_SECRET=test-secret-1234567890abcdef1234567890abcdef npm start)",
       "Bash(kill %1)",
       "Bash(wait)",
       "Bash(TURSO_DATABASE_URL=libsql://fake-db.turso.io TURSO_AUTH_TOKEN=fake-token NODE_ENV=production SESSION_SECRET=test-secret-1234567890abcdef1234567890abcdef timeout 10 npm start)",
-      "Bash(ADMIN_EMAIL_SEED=admin@test.com ADMIN_PASSWORD_SEED=test123 timeout 5 node --import tsx/esm start.mjs)"
+      "Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=admin123 timeout 5 node --import tsx/esm start.mjs)"
     ]
   },
   "sandbox": {

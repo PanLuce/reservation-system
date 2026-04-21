@@ -23,8 +23,8 @@ export default defineConfig({
 		timeout: 120 * 1000,
 		reuseExistingServer: !process.env.CI,
 		env: {
-			ADMIN_EMAIL_SEED: "admin@test.com",
-			ADMIN_PASSWORD_SEED: "test123",
+			ADMIN_EMAIL_SEED: "admin@centrumrubacek.cz",
+			ADMIN_PASSWORD_SEED: "admin123",
 		},
 	},
 });

@@ -8,8 +8,8 @@ import {
 
 test.describe("Admin seed account persistence", () => {
 	test.beforeEach(async () => {
-		process.env.ADMIN_EMAIL_SEED = "admin@test.com";
-		process.env.ADMIN_PASSWORD_SEED = "test123";
+		process.env.ADMIN_EMAIL_SEED = "admin@centrumrubacek.cz";
+		process.env.ADMIN_PASSWORD_SEED = "admin123";
 		await initializeDatabase();
 	});
 
@@ -21,7 +21,7 @@ test.describe("Admin seed account persistence", () => {
 		await seedSampleData();
 
 		// Assert
-		const admin = await UserDB.getByEmail("admin@test.com");
+		const admin = await UserDB.getByEmail("admin@centrumrubacek.cz");
 		expect(admin).toBeDefined();
 		expect(admin?.role).toBe("admin");
 	});
@@ -35,7 +35,7 @@ test.describe("Admin seed account persistence", () => {
 		await resetDatabaseForTests();
 
 		// Assert - admin should still be there
-		const admin = await UserDB.getByEmail("admin@test.com");
+		const admin = await UserDB.getByEmail("admin@centrumrubacek.cz");
 		expect(admin).toBeDefined();
 		expect(admin?.role).toBe("admin");
 	});
@@ -52,7 +52,7 @@ test.describe("Admin seed account persistence", () => {
 		await seedSampleData();
 
 		// Assert - admin should be created regardless of lesson count
-		const admin = await UserDB.getByEmail("admin@test.com");
+		const admin = await UserDB.getByEmail("admin@centrumrubacek.cz");
 		expect(admin).toBeDefined();
 	});
 });

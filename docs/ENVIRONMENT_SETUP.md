@@ -155,8 +155,8 @@ export ALLOWED_ORIGINS=https://centrumrubacek.cz
 ```bash
 NODE_ENV=development
 PORT=3000
-ADMIN_EMAIL_SEED=admin@test.local
-ADMIN_PASSWORD_SEED=test123
+ADMIN_EMAIL_SEED=admin@centrumrubacek.cz
+ADMIN_PASSWORD_SEED=admin123
 LOG_LEVEL=debug
 ```
 
