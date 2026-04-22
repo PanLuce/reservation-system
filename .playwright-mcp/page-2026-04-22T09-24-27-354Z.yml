@@ -1,0 +1,104 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - heading "🎯 Centrum Rubáček" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Rezervační Systém pro Lekce
+    - generic [ref=e7]:
+      - text: Sub 👤 Účastník
+      - button "Odhlásit se" [ref=e8] [cursor=pointer]
+  - navigation [ref=e9]:
+    - button "📅 Lekce" [ref=e10] [cursor=pointer]
+    - button "🎯 Skupinky" [ref=e11] [cursor=pointer]
+  - generic [ref=e12]:
+    - heading "Přehled Lekcí" [level=2] [ref=e14]
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - heading "Past Lesson" [level=3] [ref=e17]
+        - generic [ref=e18]:
+          - generic [ref=e19]:
+            - strong [ref=e20]: "📅 Den:"
+            - text: Pondělí
+          - generic [ref=e21]:
+            - strong [ref=e22]: "🕐 Čas:"
+            - text: 09:00
+          - generic [ref=e23]:
+            - strong [ref=e24]: "📍 Místo:"
+            - text: Studio
+          - generic [ref=e25]:
+            - strong [ref=e26]: "👶 Věk:"
+            - text: 3-12 měsíců
+        - generic [ref=e28]:
+          - generic [ref=e29]: Obsazenost
+          - strong [ref=e31]: 0/10
+      - generic [ref=e33]:
+        - heading "My Lesson" [level=3] [ref=e34]
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - strong [ref=e37]: "📅 Den:"
+            - text: Úterý
+          - generic [ref=e38]:
+            - strong [ref=e39]: "🕐 Čas:"
+            - text: 09:00
+          - generic [ref=e40]:
+            - strong [ref=e41]: "📍 Místo:"
+            - text: Studio
+          - generic [ref=e42]:
+            - strong [ref=e43]: "👶 Věk:"
+            - text: 3-12 měsíců
+        - generic [ref=e45]:
+          - generic [ref=e46]: Obsazenost
+          - strong [ref=e48]: 1/10
+      - generic [ref=e51]:
+        - heading "Sub Lesson" [level=3] [ref=e52]
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - strong [ref=e55]: "📅 Den:"
+            - text: Úterý
+          - generic [ref=e56]:
+            - strong [ref=e57]: "🕐 Čas:"
+            - text: 09:00
+          - generic [ref=e58]:
+            - strong [ref=e59]: "📍 Místo:"
+            - text: Studio
+          - generic [ref=e60]:
+            - strong [ref=e61]: "👶 Věk:"
+            - text: 3-12 měsíců
+        - generic [ref=e63]:
+          - generic [ref=e64]: Obsazenost
+          - strong [ref=e66]: 2/10
+      - generic [ref=e69]:
+        - heading "Full Lesson" [level=3] [ref=e70]
+        - generic [ref=e71]:
+          - generic [ref=e72]:
+            - strong [ref=e73]: "📅 Den:"
+            - text: Úterý
+          - generic [ref=e74]:
+            - strong [ref=e75]: "🕐 Čas:"
+            - text: 09:00
+          - generic [ref=e76]:
+            - strong [ref=e77]: "📍 Místo:"
+            - text: Studio
+          - generic [ref=e78]:
+            - strong [ref=e79]: "👶 Věk:"
+            - text: 3-12 měsíců
+        - generic [ref=e81]:
+          - generic [ref=e82]: Obsazenost
+          - strong [ref=e84]: 2/2
+      - generic [ref=e87]:
+        - heading "Wrong Color" [level=3] [ref=e88]
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - strong [ref=e91]: "📅 Den:"
+            - text: Úterý
+          - generic [ref=e92]:
+            - strong [ref=e93]: "🕐 Čas:"
+            - text: 10:00
+          - generic [ref=e94]:
+            - strong [ref=e95]: "📍 Místo:"
+            - text: Studio
+          - generic [ref=e96]:
+            - strong [ref=e97]: "👶 Věk:"
+            - text: 1-2 roky
+        - generic [ref=e99]:
+          - generic [ref=e100]: Obsazenost
+          - strong [ref=e102]: 0/10
