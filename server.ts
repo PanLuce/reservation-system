@@ -270,6 +270,28 @@ async function requireAdmin(
 	next();
 }
 
+// Middleware: allows access only if user is admin OR their participantId matches the :participantId param
+async function requireParticipantScope(
+	req: express.Request,
+	res: express.Response,
+	next: express.NextFunction,
+) {
+	if (!req.session.userId) {
+		return res.status(401).json({ error: "Authentication required" });
+	}
+	const user = await authService.verifyToken(req.session.userId);
+	if (!user) {
+		return res.status(401).json({ error: "Authentication required" });
+	}
+	if (user.role === "admin") {
+		return next();
+	}
+	if (user.participantId === req.params.participantId) {
+		return next();
+	}
+	return res.status(403).json({ error: "Access denied" });
+}
+
 // API Routes
 
 // Authentication
@@ -637,7 +659,7 @@ app.get("/api/registrations/lesson/:lessonId", async (req, res) => {
 	res.json(registrations);
 });
 
-app.get("/api/participants/:participantId/registrations", async (req, res) => {
+app.get("/api/participants/:participantId/registrations", requireParticipantScope, async (req, res) => {
 	const participantId = req.params.participantId as string;
 	if (!participantId) {
 		return res.status(400).json({ error: "Participant ID is required" });
@@ -650,6 +672,7 @@ app.get("/api/participants/:participantId/registrations", async (req, res) => {
 // Participant Self-Service
 app.post(
 	"/api/participants/:participantId/cancel-registration",
+	requireParticipantScope,
 	async (req, res) => {
 		const participantId = req.params.participantId as string;
 		const { registrationId } = req.body;
@@ -677,6 +700,7 @@ app.post(
 
 app.post(
 	"/api/participants/:participantId/register-lesson",
+	requireParticipantScope,
 	async (req, res) => {
 		const participantId = req.params.participantId as string;
 		const { lessonId } = req.body;
