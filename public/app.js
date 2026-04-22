@@ -502,7 +502,31 @@ async function loadMyReservations() {
 	if (!currentUser || !currentUser.participantId) return;
 	const pId = currentUser.participantId;
 
-	await Promise.all([loadMyLessons(pId), loadSubstitutionCandidates(pId)]);
+	await Promise.all([
+		loadMyLessons(pId),
+		loadSubstitutionCandidates(pId),
+		loadCreditCount(pId),
+	]);
+}
+
+async function loadCreditCount(participantId) {
+	try {
+		const res = await fetch(
+			`${API_URL}/participants/${participantId}/credits`,
+			{
+				credentials: "include",
+			},
+		);
+		if (!res.ok) return;
+		const data = await res.json();
+		const el = document.getElementById("nahrad-count");
+		if (el) {
+			el.textContent =
+				data.count > 0 ? `Náhrady: ${data.count}` : "Žádné aktivní náhrady";
+		}
+	} catch {
+		// non-fatal
+	}
 }
 
 async function loadMyLessons(participantId) {

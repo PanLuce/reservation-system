@@ -116,6 +116,19 @@ export async function initializeDatabase() {
 				args: [],
 			},
 			{
+				sql: `CREATE TABLE IF NOT EXISTS substitution_credits (
+				id TEXT PRIMARY KEY,
+				participantId TEXT NOT NULL,
+				earnedFromRegistrationId TEXT,
+				earnedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+				expiresAt DATETIME NOT NULL,
+				usedOnRegistrationId TEXT,
+				usedAt DATETIME,
+				FOREIGN KEY (participantId) REFERENCES participants(id) ON DELETE CASCADE
+			)`,
+				args: [],
+			},
+			{
 				sql: `CREATE TABLE IF NOT EXISTS sessions (
 				sid TEXT PRIMARY KEY,
 				sess TEXT NOT NULL,
@@ -178,6 +191,7 @@ export async function resetDatabaseForTests() {
 	await client.batch(
 		[
 			{ sql: "DELETE FROM sessions", args: [] },
+			{ sql: "DELETE FROM substitution_credits", args: [] },
 			{ sql: "DELETE FROM registrations", args: [] },
 			{ sql: "DELETE FROM course_participants", args: [] },
 			{ sql: "DELETE FROM users", args: [] },
@@ -775,5 +789,57 @@ export const UserDB = {
 			args: values as InValue[],
 		});
 		return { changes: result.rowsAffected };
+	},
+};
+
+// Database operations for Substitution Credits
+export const CreditDB = {
+	async insert(credit: {
+		id: string;
+		participantId: string;
+		earnedFromRegistrationId: string | null;
+		expiresAt: string;
+	}) {
+		await client.execute({
+			sql: "INSERT INTO substitution_credits (id, participantId, earnedFromRegistrationId, expiresAt) VALUES (?, ?, ?, ?)",
+			args: [
+				credit.id,
+				credit.participantId,
+				credit.earnedFromRegistrationId,
+				credit.expiresAt,
+			],
+		});
+	},
+
+	async getActiveByParticipant(participantId: string) {
+		const now = new Date().toISOString();
+		const result = await client.execute({
+			sql: "SELECT * FROM substitution_credits WHERE participantId = ? AND usedOnRegistrationId IS NULL AND expiresAt > ? ORDER BY expiresAt ASC",
+			args: [participantId, now],
+		});
+		return result.rows;
+	},
+
+	async markUsed(creditId: string, registrationId: string) {
+		await client.execute({
+			sql: "UPDATE substitution_credits SET usedOnRegistrationId = ?, usedAt = CURRENT_TIMESTAMP WHERE id = ?",
+			args: [registrationId, creditId],
+		});
+	},
+
+	async updateExpiry(creditId: string, newExpiresAt: string) {
+		const result = await client.execute({
+			sql: "UPDATE substitution_credits SET expiresAt = ? WHERE id = ?",
+			args: [newExpiresAt, creditId],
+		});
+		return { changes: result.rowsAffected };
+	},
+
+	async getById(creditId: string) {
+		const result = await client.execute({
+			sql: "SELECT * FROM substitution_credits WHERE id = ?",
+			args: [creditId],
+		});
+		return result.rows[0];
 	},
 };

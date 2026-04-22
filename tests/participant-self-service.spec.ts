@@ -145,6 +145,7 @@ test.describe("Participant Self-Service - TDD", () => {
 			ageGroup: "3-4 years",
 		});
 		await ParticipantDB.insert(participant);
+		await ParticipantDB.linkToCourse(participant.id, course.id);
 
 		const registrationManager = new RegistrationManagerDB();
 

@@ -10,8 +10,10 @@ import multer from "multer";
 import { AuthService } from "./src/auth.js";
 import { LessonCalendarDB } from "./src/calendar-db.js";
 import { createCourse } from "./src/course.js";
+import { issueCredit } from "./src/credit.js";
 import {
 	CourseDB,
+	CreditDB,
 	client,
 	initializeDatabase,
 	LessonDB,
@@ -726,6 +728,8 @@ app.post(
 
 		if (result.success) {
 			res.status(201).json(result);
+		} else if ("noCredit" in result && result.noCredit) {
+			res.status(402).json(result);
 		} else {
 			res.status(400).json(result);
 		}
@@ -833,6 +837,16 @@ app.get(
 	},
 );
 
+app.get(
+	"/api/participants/:participantId/credits",
+	requireParticipantScope,
+	async (req, res) => {
+		const participantId = req.params.participantId as string;
+		const credits = await CreditDB.getActiveByParticipant(participantId);
+		res.json({ count: credits.length, credits });
+	},
+);
+
 // Admin Override
 app.post("/api/admin/register-participant", requireAdmin, async (req, res) => {
 	const { lessonId, participantId, forceCapacity } = req.body;
@@ -857,7 +871,7 @@ app.post("/api/admin/register-participant", requireAdmin, async (req, res) => {
 });
 
 app.post("/api/admin/cancel-registration", requireAdmin, async (req, res) => {
-	const { registrationId } = req.body;
+	const { registrationId, excused } = req.body;
 
 	if (!registrationId) {
 		return res.status(400).json({ error: "Registration ID is required" });
@@ -866,11 +880,25 @@ app.post("/api/admin/cancel-registration", requireAdmin, async (req, res) => {
 	const result =
 		await registrationManager.adminCancelRegistration(registrationId);
 
-	if (result.success) {
-		res.json(result);
-	} else {
-		res.status(404).json(result);
+	if (!result.success) {
+		return res.status(404).json(result);
 	}
+
+	if (excused) {
+		const reg = await RegistrationDB.getById(registrationId);
+		if (reg) {
+			const lesson = await LessonDB.getById(reg.lessonId as string);
+			if (lesson?.courseId) {
+				await issueCredit(
+					reg.participantId as string,
+					registrationId,
+					lesson.courseId as string,
+				);
+			}
+		}
+	}
+
+	res.json(result);
 });
 
 app.post(
@@ -891,6 +919,42 @@ app.post(
 		);
 
 		res.status(result.success ? 201 : 400).json(result);
+	},
+);
+
+app.post(
+	"/api/admin/participants/:participantId/credits/:creditId/extend",
+	requireAdmin,
+	async (req, res) => {
+		const creditId = req.params.creditId as string;
+		const { newExpiresAt } = req.body;
+		if (!newExpiresAt) {
+			return res.status(400).json({ error: "newExpiresAt is required" });
+		}
+		const result = await CreditDB.updateExpiry(creditId, newExpiresAt);
+		if (result.changes === 0) {
+			return res.status(404).json({ error: "Credit not found" });
+		}
+		const updated = await CreditDB.getById(creditId);
+		res.json(updated);
+	},
+);
+
+app.post(
+	"/api/admin/participants/:participantId/credits/:creditId/shorten",
+	requireAdmin,
+	async (req, res) => {
+		const creditId = req.params.creditId as string;
+		const { newExpiresAt } = req.body;
+		if (!newExpiresAt) {
+			return res.status(400).json({ error: "newExpiresAt is required" });
+		}
+		const result = await CreditDB.updateExpiry(creditId, newExpiresAt);
+		if (result.changes === 0) {
+			return res.status(404).json({ error: "Credit not found" });
+		}
+		const updated = await CreditDB.getById(creditId);
+		res.json(updated);
 	},
 );
 

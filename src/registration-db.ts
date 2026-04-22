@@ -1,3 +1,4 @@
+import { consumeCredit, issueCredit } from "./credit.js";
 import { LessonDB, ParticipantDB, RegistrationDB } from "./database.js";
 import type { EmailServiceInterface } from "./email-factory.js";
 import type { Participant } from "./participant.js";
@@ -330,6 +331,15 @@ export class RegistrationManagerDB {
 		// Cancel the registration
 		await this.cancelRegistration(registrationId);
 
+		// Issue substitution credit
+		if (lesson?.courseId) {
+			await issueCredit(
+				participantId,
+				registrationId,
+				lesson.courseId as string,
+			);
+		}
+
 		return { success: true, message: "Registration successfully cancelled" };
 	}
 
@@ -385,6 +395,18 @@ export class RegistrationManagerDB {
 			};
 		}
 
+		// Determine if this is a substitution (lesson's course ≠ participant's own courses)
+		const lessonCourseId = lesson.courseId as string | null;
+		let isSubstitution = false;
+		if (lessonCourseId) {
+			const participantCourses =
+				await ParticipantDB.getCoursesForParticipant(participantId);
+			const ownCourseIds = new Set(
+				participantCourses.map((c) => c.id as string),
+			);
+			isSubstitution = !ownCourseIds.has(lessonCourseId);
+		}
+
 		// Register participant
 		const participantObj = {
 			id: participantId,
@@ -399,6 +421,21 @@ export class RegistrationManagerDB {
 				lessonId,
 				participantObj,
 			);
+
+			// Consume credit for substitution registrations
+			if (isSubstitution) {
+				const consumed = await consumeCredit(participantId, registration.id);
+				if (!consumed) {
+					// Roll back the registration
+					await this.cancelRegistration(registration.id);
+					return {
+						success: false,
+						error: "No active substitution credit available",
+						noCredit: true,
+					} as { success: false; error: string; noCredit: boolean };
+				}
+			}
+
 			return { success: true, registration };
 		} catch (error) {
 			return {
