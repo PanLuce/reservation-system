@@ -355,6 +355,13 @@ app.get("/api/lessons/:id", async (req, res) => {
 
 app.post("/api/lessons", requireAdmin, async (req, res) => {
 	const lessonData = req.body;
+	if (!lessonData.courseId) {
+		return res.status(400).json({ error: "courseId is required" });
+	}
+	const courseExists = await CourseDB.getById(lessonData.courseId as string);
+	if (!courseExists) {
+		return res.status(400).json({ error: "Course not found" });
+	}
 	const lesson = createLesson({
 		title: lessonData.title,
 		date: lessonData.date,
@@ -363,6 +370,7 @@ app.post("/api/lessons", requireAdmin, async (req, res) => {
 		location: lessonData.location,
 		ageGroup: lessonData.ageGroup,
 		capacity: Number(lessonData.capacity),
+		courseId: lessonData.courseId as string,
 	});
 	await calendar.addLesson(lesson);
 	res.status(201).json(lesson);

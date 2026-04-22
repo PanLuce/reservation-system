@@ -95,10 +95,6 @@ document.querySelectorAll(".tab").forEach((tab) => {
 			loadLessons();
 		} else if (targetTab === "courses") {
 			loadCourses();
-		} else if (targetTab === "register") {
-			loadLessonSelect();
-		} else if (targetTab === "excel") {
-			loadExcelLessonSelect();
 		}
 	});
 });
@@ -203,8 +199,27 @@ function translateAgeGroup(ageGroup) {
 }
 
 // Show/hide add lesson form
-function showAddLessonForm() {
+async function showAddLessonForm() {
+	await populateLessonCourseSelect();
 	document.getElementById("add-lesson-form").style.display = "block";
+}
+
+async function populateLessonCourseSelect() {
+	try {
+		const res = await fetch(`${API_URL}/courses`, { credentials: "include" });
+		const courses = await res.json();
+		const select = document.getElementById("lesson-course");
+		select.innerHTML =
+			'<option value="">-- Vyberte skupinku --</option>' +
+			courses
+				.map(
+					(c) =>
+						`<option value="${c.id}">[${translateAgeGroup(c.ageGroup)}] ${c.name}</option>`,
+				)
+				.join("");
+	} catch (error) {
+		console.error("Failed to load courses for lesson form", error);
+	}
 }
 
 function hideAddLessonForm() {
@@ -225,6 +240,7 @@ async function addLesson(event) {
 		location: formData.get("location"),
 		ageGroup: formData.get("ageGroup"),
 		capacity: parseInt(formData.get("capacity"), 10),
+		courseId: formData.get("courseId"),
 	};
 
 	try {
@@ -266,160 +282,6 @@ async function deleteLesson(lessonId) {
 		}
 	} catch (error) {
 		showNotification("Chyba při mazání lekce", "error");
-		console.error(error);
-	}
-}
-
-// Load lesson select options
-async function loadLessonSelect() {
-	try {
-		const response = await fetch(`${API_URL}/lessons`);
-		const lessons = await response.json();
-
-		const select = document.getElementById("lesson-select");
-		select.innerHTML =
-			'<option value="">-- Vyberte lekci --</option>' +
-			lessons
-				.map(
-					(lesson) =>
-						`<option value="${lesson.id}">${lesson.title} - ${translateDay(lesson.dayOfWeek)} ${lesson.time}</option>`,
-				)
-				.join("");
-	} catch (error) {
-		console.error(error);
-	}
-}
-
-// Load lesson select for Excel
-async function loadExcelLessonSelect() {
-	try {
-		const response = await fetch(`${API_URL}/lessons`);
-		const lessons = await response.json();
-
-		const select = document.getElementById("excel-lesson-select");
-		select.innerHTML =
-			'<option value="">-- Vyberte lekci --</option>' +
-			lessons
-				.map(
-					(lesson) =>
-						`<option value="${lesson.id}">${lesson.title} - ${translateDay(lesson.dayOfWeek)} ${lesson.time}</option>`,
-				)
-				.join("");
-	} catch (error) {
-		console.error(error);
-	}
-}
-
-// Register participant
-async function registerParticipant(event) {
-	event.preventDefault();
-	const form = event.target;
-	const formData = new FormData(form);
-
-	const registrationData = {
-		lessonId: formData.get("lessonId"),
-		participant: {
-			name: formData.get("name"),
-			email: formData.get("email"),
-			phone: formData.get("phone"),
-			ageGroup: formData.get("ageGroup"),
-		},
-	};
-
-	try {
-		const response = await fetch(`${API_URL}/registrations`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(registrationData),
-		});
-
-		const result = await response.json();
-
-		if (response.ok) {
-			if (result.status === "confirmed") {
-				showNotification("Účastník byl úspěšně zaregistrován!");
-			} else if (result.status === "waitlist") {
-				showNotification(
-					"Lekce je plná. Účastník byl přidán na čekací listinu.",
-					"info",
-				);
-			}
-			form.reset();
-			loadLessons();
-		} else {
-			showNotification("Chyba při registraci účastníka", "error");
-		}
-	} catch (error) {
-		showNotification("Chyba při registraci účastníka", "error");
-		console.error(error);
-	}
-}
-
-// Load substitution lessons
-async function loadSubstitutionLessons() {
-	const ageGroup = document.getElementById("sub-age-group").value;
-	const container = document.getElementById("substitution-lessons");
-
-	if (!ageGroup) {
-		container.innerHTML = "";
-		return;
-	}
-
-	try {
-		const response = await fetch(
-			`${API_URL}/substitutions/${encodeURIComponent(ageGroup)}`,
-		);
-		const lessons = await response.json();
-
-		if (lessons.length === 0) {
-			container.innerHTML =
-				'<p style="text-align: center; color: #999; padding: 20px;">Žádné dostupné náhradní lekce pro tuto věkovou skupinu.</p>';
-			return;
-		}
-
-		container.innerHTML = `
-            <h3 style="margin-top: 20px; margin-bottom: 15px;">Dostupné náhradní lekce:</h3>
-            <div class="lessons-grid">
-                ${lessons
-									.map((lesson) => {
-										const fillPercent =
-											(lesson.enrolledCount / lesson.capacity) * 100;
-										const available = lesson.capacity - lesson.enrolledCount;
-
-										return `
-                        <div class="lesson-card">
-                            <h3>${lesson.title}</h3>
-                            <div class="lesson-info">
-                                <div class="lesson-info-item">
-                                    <strong>📅 Den:</strong> ${translateDay(lesson.dayOfWeek)}
-                                </div>
-                                <div class="lesson-info-item">
-                                    <strong>🕐 Čas:</strong> ${lesson.time}
-                                </div>
-                                <div class="lesson-info-item">
-                                    <strong>📍 Místo:</strong> ${lesson.location}
-                                </div>
-                                <div class="lesson-info-item">
-                                    <strong>✅ Volná místa:</strong> ${available}
-                                </div>
-                            </div>
-                            <div class="capacity-bar">
-                                <div class="capacity-bar-label">
-                                    <span>Obsazenost</span>
-                                    <span><strong>${lesson.enrolledCount}/${lesson.capacity}</strong></span>
-                                </div>
-                                <div class="capacity-bar-track">
-                                    <div class="capacity-bar-fill" style="width: ${fillPercent}%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-									})
-									.join("")}
-            </div>
-        `;
-	} catch (error) {
-		showNotification("Chyba při načítání náhradních lekcí", "error");
 		console.error(error);
 	}
 }

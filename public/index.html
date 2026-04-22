@@ -16,23 +16,21 @@
             <div class="user-info" style="text-align: right;">
                 <span id="user-name" style="margin-right: 10px; font-weight: bold;"></span>
                 <span id="user-role" style="margin-right: 10px; padding: 4px 8px; background: #e8f5e9; border-radius: 4px; font-size: 12px;"></span>
-                <button class="btn btn-secondary" onclick="handleLogout()" style="font-size: 14px;">Odhlásit se</button>
+                <button type="button" class="btn btn-secondary" onclick="handleLogout()" style="font-size: 14px;">Odhlásit se</button>
             </div>
         </header>
 
         <nav class="tabs">
-            <button class="tab active" data-tab="lessons">📅 Lekce</button>
-            <button class="tab" data-tab="courses">🎯 Skupinky</button>
-            <button class="tab" data-tab="register">👥 Registrace</button>
-            <button class="tab" data-tab="substitution">🔄 Náhradní Lekce</button>
-            <button class="tab" data-tab="excel">📊 Import Excel</button>
+            <button type="button" class="tab active" data-tab="lessons">📅 Lekce</button>
+            <button type="button" class="tab" data-tab="courses">🎯 Skupinky</button>
+            <button type="button" class="tab admin-only" data-tab="excel">📊 Import Excel</button>
         </nav>
 
         <!-- Lessons Tab -->
         <div class="tab-content active" id="lessons">
             <div class="section-header">
                 <h2>Přehled Lekcí</h2>
-                <button class="btn btn-primary" onclick="showAddLessonForm()">+ Přidat Lekci</button>
+                <button type="button" class="btn btn-primary admin-only" onclick="showAddLessonForm()">+ Přidat Lekci</button>
             </div>
 
             <div id="add-lesson-form" class="form-card" style="display: none;">
@@ -61,6 +59,10 @@
                     <div class="form-group">
                         <label>Lokace:</label>
                         <input type="text" name="location" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Skupinka:</label>
+                        <select name="courseId" id="lesson-course" required></select>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -136,58 +138,6 @@
             <div id="courses-list" class="lessons-grid"></div>
         </div>
 
-        <!-- Register Tab -->
-        <div class="tab-content" id="register">
-            <h2>Registrace Účastníka</h2>
-            <form onsubmit="registerParticipant(event)" class="form-card">
-                <div class="form-group">
-                    <label>Vyberte lekci:</label>
-                    <select name="lessonId" id="lesson-select" required></select>
-                </div>
-                <h3>Údaje účastníka</h3>
-                <div class="form-group">
-                    <label>Jméno:</label>
-                    <input type="text" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label>Email:</label>
-                    <input type="email" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label>Telefon:</label>
-                    <input type="tel" name="phone" required>
-                </div>
-                <div class="form-group">
-                    <label>Věková skupina:</label>
-                    <select name="ageGroup" required>
-                        <option value="3-12 months">3-12 měsíců</option>
-                        <option value="1-2 years">1-2 roky</option>
-                        <option value="2-3 years">2-3 roky</option>
-                        <option value="3-4 years">3-4 roky</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary">Registrovat</button>
-            </form>
-        </div>
-
-        <!-- Substitution Tab -->
-        <div class="tab-content" id="substitution">
-            <h2>Náhradní Lekce</h2>
-            <div class="form-card">
-                <div class="form-group">
-                    <label>Věková skupina:</label>
-                    <select id="sub-age-group" onchange="loadSubstitutionLessons()">
-                        <option value="">-- Vyberte --</option>
-                        <option value="3-12 months">3-12 měsíců</option>
-                        <option value="1-2 years">1-2 roky</option>
-                        <option value="2-3 years">2-3 roky</option>
-                        <option value="3-4 years">3-4 roky</option>
-                    </select>
-                </div>
-                <div id="substitution-lessons"></div>
-            </div>
-        </div>
-
         <!-- Excel Import Tab -->
         <div class="tab-content" id="excel">
             <h2>Import Účastníků z Excel</h2>
@@ -196,23 +146,20 @@
                     <h3>📋 Formát Excel souboru:</h3>
                     <p>Soubor musí obsahovat sloupce:</p>
                     <ul>
-                        <li><strong>name</strong> - Jméno účastníka</li>
-                        <li><strong>email</strong> - Email</li>
-                        <li><strong>phone</strong> - Telefon</li>
-                        <li><strong>ageGroup</strong> - Věková skupina (např. "3-12 months")</li>
+                        <li><strong>name</strong> - Jméno dítěte</li>
+                        <li><strong>email</strong> - Email rodiče</li>
+                        <li><strong>skupinka</strong> - Název skupinky (přesně jak je v systému)</li>
                     </ul>
+                    <p style="color: #666; font-size: 13px;">Každý řádek bude přiřazen do příslušné skupinky. Věková skupina se převezme ze skupinky automaticky.</p>
                 </div>
                 <form onsubmit="uploadExcel(event)">
-                    <div class="form-group">
-                        <label>Vyberte lekci pro registraci:</label>
-                        <select name="lessonId" id="excel-lesson-select" required></select>
-                    </div>
                     <div class="form-group">
                         <label>Excel soubor:</label>
                         <input type="file" name="file" accept=".xlsx,.xls" required>
                     </div>
-                    <button type="submit" class="btn btn-primary">Nahrát a Registrovat</button>
+                    <button type="submit" class="btn btn-primary">Nahrát a přiřadit do skupinek</button>
                 </form>
+                <div id="excel-results"></div>
             </div>
         </div>
     </div>

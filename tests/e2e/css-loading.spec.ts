@@ -132,9 +132,9 @@ test.describe("Interactive Elements - Function Names Fixed", () => {
 		expect(source).toContain("function showAddLessonForm()");
 		expect(source).toContain("async function addLesson(event)");
 		expect(source).toContain("async function deleteLesson(lessonId)");
-		expect(source).toContain("async function registerParticipant(event)");
-		expect(source).toContain("async function loadSubstitutionLessons()");
 		expect(source).toContain("async function uploadExcel(event)");
+		expect(source).toContain("async function loadCourses()");
+		expect(source).toContain("async function populateLessonCourseSelect()");
 
 		// Assert: Old underscore versions should NOT exist
 		expect(source).not.toContain("function _handleLogout()");
