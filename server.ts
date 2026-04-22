@@ -368,7 +368,18 @@ app.post("/api/auth/logout", (req, res) => {
 
 // Lessons (public read, admin write)
 app.get("/api/lessons", async (_req, res) => {
-	res.json(await calendar.getAllLessons());
+	const lessons = await calendar.getAllLessons();
+	const courses = await CourseDB.getAll();
+	const courseMap = new Map(courses.map((c) => [c.id as string, c]));
+	const enriched = lessons.map((l) => {
+		const course = l.courseId ? courseMap.get(l.courseId as string) : undefined;
+		return {
+			...l,
+			courseColor: course?.color ?? null,
+			courseName: course?.name ?? null,
+		};
+	});
+	res.json(enriched);
 });
 
 app.get("/api/lessons/:id", async (req, res) => {

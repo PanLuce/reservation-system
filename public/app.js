@@ -91,7 +91,7 @@ document.querySelectorAll(".tab").forEach((tab) => {
 
 		// Load data for specific tabs
 		if (targetTab === "lessons") {
-			loadLessons();
+			loadCalendar();
 		} else if (targetTab === "courses") {
 			loadCourses();
 		} else if (targetTab === "my-reservations") {
@@ -111,69 +111,155 @@ function showNotification(message, type = "success") {
 	}, 3000);
 }
 
-// Load lessons
-async function loadLessons() {
+// ─── Calendar state ───────────────────────────────────────────────────────────
+
+let calendarYear = new Date().getFullYear();
+let calendarMonth = new Date().getMonth(); // 0-indexed
+let calendarLessons = []; // cached from last fetch
+
+const CZECH_MONTHS = [
+	"Leden","Únor","Březen","Duben","Květen","Červen",
+	"Červenec","Srpen","Září","Říjen","Listopad","Prosinec",
+];
+const CZECH_DAYS_SHORT = ["Po","Út","St","Čt","Pá","So","Ne"];
+
+async function loadCalendar() {
 	try {
-		const response = await fetch(`${API_URL}/lessons`);
-		const lessons = await response.json();
-
-		const container = document.getElementById("lessons-list");
-
-		if (lessons.length === 0) {
-			container.innerHTML =
-				'<p style="text-align: center; color: #999; padding: 40px;">Žádné lekce k zobrazení. Přidejte první lekci!</p>';
-			return;
-		}
-
-		container.innerHTML = lessons
-			.map((lesson) => {
-				const fillPercent = (lesson.enrolledCount / lesson.capacity) * 100;
-				const isFull = lesson.enrolledCount >= lesson.capacity;
-				const isAdmin = currentUser && currentUser.role === "admin";
-
-				return `
-                <div class="lesson-card">
-                    <h3>${lesson.title}</h3>
-                    <div class="lesson-info">
-                        <div class="lesson-info-item">
-                            <strong>📅 Den:</strong> ${translateDay(lesson.dayOfWeek)}
-                        </div>
-                        <div class="lesson-info-item">
-                            <strong>🕐 Čas:</strong> ${lesson.time}
-                        </div>
-                        <div class="lesson-info-item">
-                            <strong>📍 Místo:</strong> ${lesson.location}
-                        </div>
-                        <div class="lesson-info-item">
-                            <strong>👶 Věk:</strong> ${translateAgeGroup(lesson.ageGroup)}
-                        </div>
-                    </div>
-                    <div class="capacity-bar">
-                        <div class="capacity-bar-label">
-                            <span>Obsazenost</span>
-                            <span><strong>${lesson.enrolledCount}/${lesson.capacity}</strong></span>
-                        </div>
-                        <div class="capacity-bar-track">
-                            <div class="capacity-bar-fill ${isFull ? "full" : ""}" style="width: ${fillPercent}%"></div>
-                        </div>
-                    </div>
-                    ${
-											isAdmin
-												? `
-                    <div class="lesson-actions">
-                        <button class="btn btn-danger" onclick="deleteLesson('${lesson.id}')">Smazat</button>
-                    </div>
-                    `
-												: ""
-										}
-                </div>
-            `;
-			})
-			.join("");
+		const res = await fetch(`${API_URL}/lessons`, { credentials: "include" });
+		calendarLessons = await res.json();
+		renderMonthCalendar(calendarYear, calendarMonth);
 	} catch (error) {
 		showNotification("Chyba při načítání lekcí", "error");
 		console.error(error);
 	}
+}
+
+function calendarPrevMonth() {
+	calendarMonth--;
+	if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+	renderMonthCalendar(calendarYear, calendarMonth);
+}
+
+function calendarNextMonth() {
+	calendarMonth++;
+	if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+	renderMonthCalendar(calendarYear, calendarMonth);
+}
+
+function renderMonthCalendar(year, month) {
+	document.getElementById("calendar-month-label").textContent =
+		`${CZECH_MONTHS[month]} ${year}`;
+
+	const byDate = {};
+	for (const l of calendarLessons) {
+		if (!byDate[l.date]) byDate[l.date] = [];
+		byDate[l.date].push(l);
+	}
+
+	const firstDay = new Date(year, month, 1);
+	const startOffset = (firstDay.getDay() + 6) % 7; // Mon=0
+	const daysInMonth = new Date(year, month + 1, 0).getDate();
+	const todayStr = new Date().toISOString().slice(0, 10);
+
+	let html = CZECH_DAYS_SHORT.map(
+		(d) => `<div class="calendar-day-header">${d}</div>`
+	).join("");
+
+	for (let i = 0; i < startOffset; i++) {
+		html += `<div class="calendar-day other-month"></div>`;
+	}
+
+	for (let day = 1; day <= daysInMonth; day++) {
+		const dateStr = `${year}-${String(month + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+		const isToday = dateStr === todayStr;
+		const lessons = byDate[dateStr] || [];
+
+		const MAX_DOTS = 4;
+		const dots = lessons.slice(0, MAX_DOTS).map(
+			(l) => `<span class="calendar-dot" style="background:${l.courseColor || "#ccc"}" title="${l.title}"></span>`
+		).join("");
+		const overflow = lessons.length > MAX_DOTS
+			? `<span class="calendar-dot-overflow">+${lessons.length - MAX_DOTS}</span>`
+			: "";
+
+		html += `
+			<div class="calendar-day${isToday ? " today" : ""}" onclick="openDayModal('${dateStr}')">
+				<div class="calendar-day-number">${day}</div>
+				<div class="calendar-dots">${dots}${overflow}</div>
+			</div>`;
+	}
+
+	const totalCells = startOffset + daysInMonth;
+	const trailingCells = (7 - (totalCells % 7)) % 7;
+	for (let i = 0; i < trailingCells; i++) {
+		html += `<div class="calendar-day other-month"></div>`;
+	}
+
+	document.getElementById("calendar-grid").innerHTML = html;
+}
+
+function openDayModal(dateStr) {
+	const lessons = calendarLessons.filter((l) => l.date === dateStr);
+	const [year, month, day] = dateStr.split("-");
+	document.getElementById("day-modal-title").textContent =
+		`${parseInt(day, 10)}. ${parseInt(month, 10)}. ${year}`;
+	document.getElementById("day-modal-body").innerHTML = renderDayLessons(lessons, dateStr);
+	document.getElementById("day-modal").style.display = "flex";
+}
+
+function renderDayLessons(lessons, dateStr) {
+	if (lessons.length === 0) {
+		return '<p style="color:#999;text-align:center;padding:20px;">Žádné lekce tento den.</p>';
+	}
+	const isAdmin = currentUser && currentUser.role === "admin";
+	const todayStr = new Date().toISOString().slice(0, 10);
+	const canCancel = dateStr > todayStr;
+
+	return lessons.map((l) => {
+		const fillPercent = Math.min(100, (l.enrolledCount / l.capacity) * 100);
+		const isFull = l.enrolledCount >= l.capacity;
+		const colorDot = l.courseColor
+			? `<span class="calendar-dot" style="background:${l.courseColor};width:12px;height:12px;"></span>`
+			: "";
+
+		const actions = isAdmin
+			? `<button class="btn btn-danger" onclick="deleteLesson('${l.id}');closeDayModalDirect()">Smazat</button>`
+			: `<button class="btn btn-danger" onclick="selfCancel('${l.id}')"
+					${canCancel ? "" : "disabled title='Nelze odhlásit po půlnoci před lekcí'"}>
+					Odhlásit
+				</button>`;
+
+		return `
+			<div class="day-lesson-row">
+				<div class="day-lesson-title">
+					${colorDot}
+					${l.title}
+					${l.courseName ? `<span style="font-size:0.8rem;font-weight:400;color:#888;">(${l.courseName})</span>` : ""}
+				</div>
+				<div class="day-lesson-meta">
+					<span>🕐 ${l.time}</span>
+					<span>📍 ${l.location}</span>
+					<span>👶 ${translateAgeGroup(l.ageGroup)}</span>
+					<span>👥 ${l.enrolledCount}/${l.capacity}</span>
+				</div>
+				<div class="capacity-bar" style="margin:8px 0;">
+					<div class="capacity-bar-track">
+						<div class="capacity-bar-fill ${isFull ? "full" : ""}" style="width:${fillPercent}%"></div>
+					</div>
+				</div>
+				<div class="day-lesson-actions">${actions}</div>
+			</div>`;
+	}).join("");
+}
+
+function closeDayModal(event) {
+	if (event.target === document.getElementById("day-modal")) {
+		document.getElementById("day-modal").style.display = "none";
+	}
+}
+
+function closeDayModalDirect() {
+	document.getElementById("day-modal").style.display = "none";
 }
 
 // Translate day names
@@ -254,7 +340,7 @@ async function addLesson(event) {
 		if (response.ok) {
 			showNotification("Lekce byla úspěšně přidána!");
 			hideAddLessonForm();
-			loadLessons();
+			loadCalendar();
 		} else {
 			showNotification("Chyba při přidávání lekce", "error");
 		}
@@ -277,7 +363,7 @@ async function deleteLesson(lessonId) {
 
 		if (response.ok) {
 			showNotification("Lekce byla smazána");
-			loadLessons();
+			loadCalendar();
 		} else {
 			showNotification("Chyba při mazání lekce", "error");
 		}
@@ -304,7 +390,7 @@ async function uploadExcel(event) {
 		if (response.ok) {
 			showNotification(result.message);
 			form.reset();
-			loadLessons();
+			loadCalendar();
 		} else {
 			showNotification(result.error || "Chyba při nahrávání souboru", "error");
 		}
@@ -352,7 +438,7 @@ async function uploadCoursesExcel(event) {
 
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
-	loadLessons();
+	loadCalendar();
 });
 
 // ─── Skupinky (Courses) ───────────────────────────────────────────────────────

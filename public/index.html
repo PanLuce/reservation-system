@@ -30,7 +30,7 @@
         <!-- Lessons Tab -->
         <div class="tab-content active" id="lessons">
             <div class="section-header">
-                <h2>Přehled Lekcí</h2>
+                <h2>Kalendář Lekcí</h2>
                 <button type="button" class="btn btn-primary admin-only" onclick="showAddLessonForm()">+ Přidat Lekci</button>
             </div>
 
@@ -87,7 +87,24 @@
                 </form>
             </div>
 
-            <div id="lessons-list" class="lessons-grid"></div>
+            <!-- Month Calendar -->
+            <div class="calendar-nav">
+                <button type="button" class="btn btn-secondary calendar-nav-btn" onclick="calendarPrevMonth()">‹</button>
+                <span id="calendar-month-label" class="calendar-month-label"></span>
+                <button type="button" class="btn btn-secondary calendar-nav-btn" onclick="calendarNextMonth()">›</button>
+            </div>
+            <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+
+        <!-- Day Detail Modal -->
+        <div id="day-modal" class="day-modal-overlay" onclick="closeDayModal(event)" style="display:none;">
+            <div class="day-modal">
+                <div class="day-modal-header">
+                    <h3 id="day-modal-title"></h3>
+                    <button type="button" class="day-modal-close" onclick="closeDayModalDirect()">✕</button>
+                </div>
+                <div id="day-modal-body" class="day-modal-body"></div>
+            </div>
         </div>
 
         <!-- Skupinky Tab -->
