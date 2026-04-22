@@ -314,6 +314,42 @@ async function uploadExcel(event) {
 	}
 }
 
+async function uploadCoursesExcel(event) {
+	event.preventDefault();
+	const form = event.target;
+	const formData = new FormData(form);
+
+	try {
+		const response = await fetch(`${API_URL}/admin/courses/import`, {
+			method: "POST",
+			credentials: "include",
+			body: formData,
+		});
+
+		const result = await response.json();
+		const resultsEl = document.getElementById("courses-excel-results");
+
+		if (response.ok) {
+			const errors = (result.perRow || []).filter((r) => !r.ok);
+			if (errors.length > 0) {
+				const errList = errors.map((r) => `${r.name}: ${r.error}`).join("<br>");
+				if (resultsEl) resultsEl.innerHTML = `<div class="error-list" style="margin-top:12px;color:#c62828;">${errList}</div>`;
+				showNotification(`Nahrání dokončeno s ${errors.length} chybami`, "error");
+			} else {
+				if (resultsEl) resultsEl.innerHTML = "";
+				showNotification(`Skupinky nahrány: ${result.processed}`);
+			}
+			form.reset();
+			loadCourses();
+		} else {
+			showNotification(result.error || "Chyba při nahrávání souboru", "error");
+		}
+	} catch (error) {
+		showNotification("Chyba při nahrávání souboru", "error");
+		console.error(error);
+	}
+}
+
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
 	loadLessons();

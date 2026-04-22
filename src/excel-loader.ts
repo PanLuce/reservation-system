@@ -10,6 +10,27 @@ export type SkupinkaRow = {
 	skupinkaName: string;
 };
 
+export type CourseRow = {
+	name: string;
+	ageGroup: string;
+	color: string;
+	description?: string;
+	lessonTemplate?: {
+		dayOfWeek: string;
+		time: string;
+		location: string;
+		capacity: number;
+		startDate: string;
+		endDate: string;
+	};
+};
+
+export type CourseRowResult = {
+	ok: boolean;
+	name: string;
+	error?: string;
+};
+
 export class ExcelParticipantLoader {
 	parseParticipantsFromFile(filePath: string): Participant[] {
 		const workbook = XLSX.readFile(filePath);
@@ -46,6 +67,54 @@ export class ExcelParticipantLoader {
 				email: (r.email as string).trim(),
 				skupinkaName: (r.skupinka as string).trim(),
 			}));
+	}
+
+	parseCourseRowsFromBuffer(buffer: Buffer): { rows: CourseRow[]; errors: CourseRowResult[] } {
+		const workbook = XLSX.read(buffer, { type: "buffer" });
+		const sheetName = workbook.SheetNames[0];
+		if (!sheetName) return { rows: [], errors: [] };
+		const worksheet = workbook.Sheets[sheetName];
+		if (!worksheet) return { rows: [], errors: [] };
+
+		const raw = XLSX.utils.sheet_to_json(worksheet) as Record<string, unknown>[];
+		const rows: CourseRow[] = [];
+		const errors: CourseRowResult[] = [];
+		const hexColor = /^#([0-9A-Fa-f]{3}){1,2}$/;
+
+		for (const r of raw) {
+			const name = typeof r.name === "string" ? r.name.trim() : "";
+			const ageGroup = typeof r.ageGroup === "string" ? r.ageGroup.trim() : "";
+			const color = typeof r.color === "string" ? r.color.trim() : "";
+
+			if (!name || !ageGroup || !color) {
+				errors.push({ ok: false, name: name || "(missing)", error: "Required columns: name, ageGroup, color" });
+				continue;
+			}
+			if (!hexColor.test(color)) {
+				errors.push({ ok: false, name, error: `Invalid color hex: ${color}` });
+				continue;
+			}
+
+			const rawDesc = typeof r.description === "string" ? r.description.trim() : "";
+			const row: CourseRow = rawDesc
+				? { name, ageGroup, color, description: rawDesc }
+				: { name, ageGroup, color };
+
+			const dayOfWeek = typeof r.dayOfWeek === "string" ? r.dayOfWeek.trim() : "";
+			const time = typeof r.time === "string" ? r.time.trim() : "";
+			const location = typeof r.location === "string" ? r.location.trim() : "";
+			const capacity = typeof r.capacity === "number" ? r.capacity : Number(r.capacity);
+			const startDate = typeof r.startDate === "string" ? r.startDate.trim() : "";
+			const endDate = typeof r.endDate === "string" ? r.endDate.trim() : "";
+
+			if (dayOfWeek && time && location && capacity > 0 && startDate && endDate) {
+				row.lessonTemplate = { dayOfWeek, time, location, capacity, startDate, endDate };
+			}
+
+			rows.push(row);
+		}
+
+		return { rows, errors };
 	}
 
 	async bulkLoadAndRegister(

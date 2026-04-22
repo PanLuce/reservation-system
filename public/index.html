@@ -157,17 +157,18 @@
 
         <!-- Excel Import Tab -->
         <div class="tab-content" id="excel">
-            <h2>Import Účastníků z Excel</h2>
-            <div class="form-card">
+            <h2>Import z Excel</h2>
+
+            <div class="form-card" style="margin-bottom: 24px;">
+                <h3>👩 Import účastníků do skupinek</h3>
                 <div class="info-box">
-                    <h3>📋 Formát Excel souboru:</h3>
-                    <p>Soubor musí obsahovat sloupce:</p>
+                    <p>Povinné sloupce:</p>
                     <ul>
                         <li><strong>name</strong> - Jméno dítěte</li>
                         <li><strong>email</strong> - Email rodiče</li>
                         <li><strong>skupinka</strong> - Název skupinky (přesně jak je v systému)</li>
                     </ul>
-                    <p style="color: #666; font-size: 13px;">Každý řádek bude přiřazen do příslušné skupinky. Věková skupina se převezme ze skupinky automaticky.</p>
+                    <p style="color: #666; font-size: 13px;">Věková skupina se převezme ze skupinky automaticky.</p>
                 </div>
                 <form onsubmit="uploadExcel(event)">
                     <div class="form-group">
@@ -177,6 +178,32 @@
                     <button type="submit" class="btn btn-primary">Nahrát a přiřadit do skupinek</button>
                 </form>
                 <div id="excel-results"></div>
+            </div>
+
+            <div class="form-card">
+                <h3>🏫 Import skupinek (vytvoření/aktualizace)</h3>
+                <div class="info-box">
+                    <p>Povinné sloupce:</p>
+                    <ul>
+                        <li><strong>name</strong> - Název skupinky</li>
+                        <li><strong>ageGroup</strong> - Věková skupina (např. 1-2 years)</li>
+                        <li><strong>color</strong> - Barva v hex formátu (např. #FF6B6B)</li>
+                    </ul>
+                    <p>Volitelné sloupce:</p>
+                    <ul>
+                        <li><strong>description</strong> - Popis skupinky</li>
+                        <li><strong>dayOfWeek, time, location, capacity, startDate, endDate</strong> - Pro automatické vytvoření lekcí</li>
+                    </ul>
+                    <p style="color: #666; font-size: 13px;">Existující skupinka se stejným názvem bude aktualizována.</p>
+                </div>
+                <form onsubmit="uploadCoursesExcel(event)">
+                    <div class="form-group">
+                        <label>Excel soubor:</label>
+                        <input type="file" name="file" accept=".xlsx,.xls" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Nahrát skupinky</button>
+                </form>
+                <div id="courses-excel-results"></div>
             </div>
         </div>
     </div>

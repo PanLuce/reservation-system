@@ -1054,6 +1054,85 @@ app.post(
 	},
 );
 
+// Courses Excel import — creates/updates skupinky, optionally seeds lesson schedule
+app.post(
+	"/api/admin/courses/import",
+	requireAdmin,
+	upload.single("file"),
+	async (req, res) => {
+		if (!req.file) {
+			return res.status(400).json({ error: "No file uploaded" });
+		}
+
+		const buffer = fs.readFileSync(req.file.path);
+		const { rows, errors } = excelLoader.parseCourseRowsFromBuffer(buffer);
+
+		const results: { ok: boolean; name: string; error?: string }[] = [...errors];
+
+		for (const row of rows) {
+			try {
+				const existing = await CourseDB.getByName(row.name);
+				let courseId: string;
+
+				if (existing) {
+					const updatePayload: { ageGroup: string; color: string; description?: string } = {
+						ageGroup: row.ageGroup,
+						color: row.color,
+					};
+					if (row.description) updatePayload.description = row.description;
+					await CourseDB.update(existing.id as string, updatePayload);
+					courseId = existing.id as string;
+				} else {
+					const courseInput: { name: string; ageGroup: string; color: string; description?: string } = {
+						name: row.name,
+						ageGroup: row.ageGroup,
+						color: row.color,
+					};
+					if (row.description) courseInput.description = row.description;
+					const course = createCourse(courseInput);
+					await CourseDB.insert(course);
+					courseId = course.id;
+				}
+
+				if (row.lessonTemplate) {
+					const { dayOfWeek, time, location, capacity, startDate, endDate } = row.lessonTemplate;
+					const calendarDB = new LessonCalendarDB();
+					const dates: string[] = [];
+					const current = new Date(startDate);
+					const end = new Date(endDate);
+					const targetDay = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].indexOf(dayOfWeek);
+
+					while (current <= end) {
+						if (current.getDay() === targetDay) {
+							dates.push(current.toISOString().slice(0, 10));
+						}
+						current.setDate(current.getDate() + 1);
+					}
+
+					if (dates.length > 0) {
+						await calendarDB.bulkCreateLessons({
+							courseId,
+							title: row.name,
+							location,
+							time,
+							dayOfWeek,
+							capacity,
+							dates,
+						});
+						await registrationManager.syncGroupEnrollments(courseId);
+					}
+				}
+
+				results.push({ ok: true, name: row.name });
+			} catch (error) {
+				results.push({ ok: false, name: row.name, error: String(error) });
+			}
+		}
+
+		res.json({ processed: results.filter((r) => r.ok).length, perRow: results });
+	},
+);
+
 // Serve frontend
 app.get("/", (req, res) => {
 	// Check if user is authenticated
