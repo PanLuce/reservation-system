@@ -5,6 +5,7 @@ export type Course = {
 	name: string;
 	ageGroup: string;
 	color: string;
+	location: string;
 	description?: string;
 	createdAt?: Date;
 };
@@ -12,6 +13,7 @@ export type Course = {
 type CourseInput = {
 	name: string;
 	ageGroup: string;
+	location?: string;
 	color?: string;
 	description?: string;
 };
@@ -42,6 +44,7 @@ export function createCourse(input: CourseInput): Course {
 		name: input.name.trim(),
 		ageGroup: input.ageGroup.trim(),
 		color,
+		location: (input.location ?? "").trim(),
 		...(trimmedDescription !== undefined && {
 			description: trimmedDescription,
 		}),

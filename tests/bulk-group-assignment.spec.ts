@@ -56,7 +56,6 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Morning Yoga",
-			location: "Studio A",
 			time: "09:00",
 			dayOfWeek: "Monday",
 			capacity: 10,
@@ -118,7 +117,6 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Dance Class",
-			location: "Main Hall",
 			time: "15:00",
 			dayOfWeek: "Wednesday",
 			capacity: 10,
@@ -178,7 +176,6 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Small Group",
-			location: "Room 1",
 			time: "10:00",
 			dayOfWeek: "Friday",
 			capacity: 3,
@@ -244,7 +241,6 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Art Workshop",
-			location: "Art Room",
 			time: "14:00",
 			dayOfWeek: "Thursday",
 			capacity: 10,

@@ -58,12 +58,9 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Lokace:</label>
-                        <input type="text" name="location" required>
-                    </div>
-                    <div class="form-group">
                         <label>Skupinka:</label>
                         <select name="courseId" id="lesson-course" required></select>
+                        <small style="color: #888; font-size: 12px;">Místo se přebírá ze skupinky.</small>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -126,6 +123,11 @@
                             <!-- populated by loadAgeGroups() on boot -->
                         </select>
                         <small style="color: #888; font-size: 12px;">Barva skupinky se přiřadí automaticky.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Místo:</label>
+                        <input type="text" id="course-location" required placeholder="např. CVČ Vietnamská">
+                        <span class="field-error" id="course-location-error"></span>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Uložit</button>

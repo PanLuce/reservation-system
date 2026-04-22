@@ -68,7 +68,6 @@ test.describe.serial("Admin flow", () => {
 		await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Weekly Class",
-			location: "Studio",
 			time: "10:00",
 			dayOfWeek: "Monday",
 			capacity: 10,

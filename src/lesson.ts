@@ -4,7 +4,7 @@ export type Lesson = {
 	date: string; // YYYY-MM-DD format
 	dayOfWeek: string;
 	time: string;
-	location: string;
+	location?: string; // derived from course at read time; not stored on lessons
 	ageGroup: string;
 	capacity: number;
 	enrolledCount: number;

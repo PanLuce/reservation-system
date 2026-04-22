@@ -39,7 +39,6 @@ export class LessonCalendarDB {
 	async bulkCreateLessons(config: {
 		courseId: string;
 		title: string;
-		location: string;
 		time: string;
 		dayOfWeek: string;
 		capacity: number;
@@ -66,7 +65,6 @@ export class LessonCalendarDB {
 				date,
 				dayOfWeek: config.dayOfWeek,
 				time: config.time,
-				location: config.location,
 				ageGroup: course.ageGroup as string,
 				capacity: config.capacity,
 				enrolledCount: 0,
@@ -82,7 +80,6 @@ export class LessonCalendarDB {
 	async bulkCreateLessonsRecurring(config: {
 		courseId: string;
 		title: string;
-		location: string;
 		time: string;
 		dayOfWeek: string;
 		capacity: number;
@@ -102,7 +99,6 @@ export class LessonCalendarDB {
 		return this.bulkCreateLessons({
 			courseId: config.courseId,
 			title: config.title,
-			location: config.location,
 			time: config.time,
 			dayOfWeek: config.dayOfWeek,
 			capacity: config.capacity,

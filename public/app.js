@@ -365,7 +365,6 @@ async function addLesson(event) {
 		title: formData.get("title"),
 		dayOfWeek: formData.get("dayOfWeek"),
 		time: formData.get("time"),
-		location: formData.get("location"),
 		ageGroup: formData.get("ageGroup"),
 		capacity: parseInt(formData.get("capacity"), 10),
 		courseId: formData.get("courseId"),
@@ -516,7 +515,7 @@ function renderCourseCard(course) {
 				<div class="lesson-info-item">
 					<strong>👶 Věk:</strong> ${(course.ageGroup)}
 				</div>
-				${course.description ? `<div class="lesson-info-item"><strong>📝</strong> ${course.description}</div>` : ""}
+				${course.location ? `<div class="lesson-info-item"><strong>📍</strong> ${course.location}</div>` : ""}
 			</div>
 			${
 				isAdmin
@@ -535,6 +534,7 @@ function showAddCourseForm() {
 	document.getElementById("course-edit-id").value = "";
 	document.getElementById("course-name").value = "";
 	document.getElementById("course-age-group").value = "";
+	document.getElementById("course-location").value = "";
 	clearCourseErrors();
 	document.getElementById("add-course-form").style.display = "block";
 }
@@ -555,6 +555,7 @@ async function editCourse(id) {
 		document.getElementById("course-edit-id").value = course.id;
 		document.getElementById("course-name").value = course.name;
 		document.getElementById("course-age-group").value = course.ageGroup;
+		document.getElementById("course-location").value = course.location || "";
 		clearCourseErrors();
 		document.getElementById("add-course-form").style.display = "block";
 		document.getElementById("add-course-form").scrollIntoView({
@@ -572,11 +573,17 @@ async function submitCourseForm(event) {
 	const id = document.getElementById("course-edit-id").value;
 	const name = document.getElementById("course-name").value.trim();
 	const ageGroup = document.getElementById("course-age-group").value;
+	const location = document.getElementById("course-location").value.trim();
 
 	let hasError = false;
 	if (!name) {
 		document.getElementById("course-name-error").textContent =
 			"Název je povinný";
+		hasError = true;
+	}
+	if (!location) {
+		document.getElementById("course-location-error").textContent =
+			"Místo je povinné";
 		hasError = true;
 	}
 	if (hasError) return;
@@ -588,7 +595,7 @@ async function submitCourseForm(event) {
 			method,
 			headers: { "Content-Type": "application/json" },
 			credentials: "include",
-			body: JSON.stringify({ name, ageGroup }),
+			body: JSON.stringify({ name, ageGroup, location }),
 		});
 
 		if (!res.ok) {
@@ -631,6 +638,7 @@ async function deleteCourse(id) {
 
 function clearCourseErrors() {
 	document.getElementById("course-name-error").textContent = "";
+	document.getElementById("course-location-error").textContent = "";
 }
 
 // ─── Moje rezervace (Participant self-service) ────────────────────────────────

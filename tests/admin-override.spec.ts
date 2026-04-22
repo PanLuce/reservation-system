@@ -30,7 +30,6 @@ test.describe("Admin Override - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Baby Yoga",
-			location: "Studio A",
 			time: "09:00",
 			dayOfWeek: "Monday",
 			capacity: 10,
@@ -73,7 +72,6 @@ test.describe("Admin Override - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Dance",
-			location: "Studio B",
 			time: "15:00",
 			dayOfWeek: "Wednesday",
 			capacity: 10,
@@ -127,7 +125,6 @@ test.describe("Admin Override - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Art Workshop",
-			location: "Art Room",
 			time: "14:00",
 			dayOfWeek: "Thursday",
 			capacity: 10,
@@ -170,7 +167,6 @@ test.describe("Admin Override - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Small Group",
-			location: "Room 1",
 			time: "10:00",
 			dayOfWeek: "Friday",
 			capacity: 2, // Very small capacity
@@ -241,7 +237,6 @@ test.describe("Admin Override - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Baby Fitness",
-			location: "Gym",
 			time: "16:00",
 			dayOfWeek: "Tuesday",
 			capacity: 10,
@@ -283,7 +278,6 @@ test.describe("Admin Override - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Test Lesson",
-			location: "Room 1",
 			time: "11:00",
 			dayOfWeek: "Saturday",
 			capacity: 10,

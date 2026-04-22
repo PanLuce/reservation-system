@@ -19,6 +19,7 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 			name: "Baby Yoga",
 			ageGroup: "6-9 měsíců (do lezení)",
 			color: "#FF5733",
+			location: "Studio A",
 			description: "Yoga for babies",
 		});
 		await CourseDB.insert(course);
@@ -27,7 +28,6 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		const bulkConfig = {
 			courseId: course.id,
 			title: "Morning Baby Yoga",
-			location: "Studio A",
 			time: "09:00",
 			dayOfWeek: "Monday",
 			capacity: 8,
@@ -40,8 +40,10 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		// Assert
 		expect(createdLessons).toHaveLength(4);
 
-		// Verify all lessons have correct properties
-		for (const lesson of createdLessons) {
+		// Verify all lessons have correct properties (location comes from course via DB join)
+		const lessonsFromDb = await calendar.getLessonsByCourse(course.id);
+		expect(lessonsFromDb).toHaveLength(4);
+		for (const lesson of lessonsFromDb) {
 			expect(lesson.title).toBe("Morning Baby Yoga");
 			expect(lesson.location).toBe("Studio A");
 			expect(lesson.time).toBe("09:00");
@@ -74,7 +76,6 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		const bulkConfig = {
 			courseId: course.id,
 			title: "Dance Party",
-			location: "Main Hall",
 			time: "15:00",
 			dayOfWeek: "Wednesday",
 			capacity: 12,
@@ -107,7 +108,6 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		const bulkConfig = {
 			courseId: course.id,
 			title: "Friday Fitness",
-			location: "Gym",
 			time: "16:00",
 			dayOfWeek: "Friday",
 			capacity: 15,
@@ -145,7 +145,6 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		const bulkConfig = {
 			courseId: course.id,
 			title: "Test Lesson",
-			location: "Studio",
 			time: "10:00",
 			dayOfWeek: "Tuesday",
 			capacity: 10,
@@ -171,7 +170,6 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Creative Art",
-			location: "Art Room",
 			time: "14:00",
 			dayOfWeek: "Thursday",
 			capacity: 10,

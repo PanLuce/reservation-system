@@ -1,13 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { LessonCalendarDB } from "../src/calendar-db.js";
 import {
+	CourseDB,
 	initializeDatabase,
+	LessonDB,
 	ParticipantDB,
 	RegistrationDB,
 	resetDatabaseForTests,
 } from "../src/database.js";
 import { createLesson } from "../src/lesson.js";
 import { createParticipant } from "../src/participant.js";
+import { createCourse } from "../src/course.js";
 import { RegistrationManagerDB } from "../src/registration-db.js";
 
 test.describe("Participant View - Get Own Registrations", () => {
@@ -97,17 +100,23 @@ test.describe("Participant View - Get Own Registrations", () => {
 		const calendar = new LessonCalendarDB();
 		const registrationManager = new RegistrationManagerDB();
 
+		const course = createCourse({
+			name: "Test Course",
+			ageGroup: "1 - 2 roky",
+			location: "Main Hall",
+		});
+		await CourseDB.insert(course);
+
 		const lesson = createLesson({
 			title: "Test Lesson",
 			date: "2024-02-20",
 			dayOfWeek: "Tuesday",
 			time: "10:00",
-			location: "Main Hall",
 			ageGroup: "1 - 2 roky",
 			capacity: 5,
 		});
 
-		await calendar.addLesson(lesson);
+		await LessonDB.insertWithCourse(lesson, course.id);
 
 		const participant = createParticipant({
 			name: "Test User",

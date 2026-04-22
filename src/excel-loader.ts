@@ -14,11 +14,11 @@ export type CourseRow = {
 	name: string;
 	ageGroup: string;
 	color: string;
+	location?: string;
 	description?: string;
 	lessonTemplate?: {
 		dayOfWeek: string;
 		time: string;
-		location: string;
 		capacity: number;
 		startDate: string;
 		endDate: string;
@@ -96,19 +96,23 @@ export class ExcelParticipantLoader {
 			}
 
 			const rawDesc = typeof r.description === "string" ? r.description.trim() : "";
-			const row: CourseRow = rawDesc
-				? { name, ageGroup, color, description: rawDesc }
-				: { name, ageGroup, color };
+			const rawLocation = typeof r.location === "string" ? r.location.trim() : "";
+			const row: CourseRow = {
+				name,
+				ageGroup,
+				color,
+				...(rawDesc ? { description: rawDesc } : {}),
+				...(rawLocation ? { location: rawLocation } : {}),
+			};
 
 			const dayOfWeek = typeof r.dayOfWeek === "string" ? r.dayOfWeek.trim() : "";
 			const time = typeof r.time === "string" ? r.time.trim() : "";
-			const location = typeof r.location === "string" ? r.location.trim() : "";
 			const capacity = typeof r.capacity === "number" ? r.capacity : Number(r.capacity);
 			const startDate = typeof r.startDate === "string" ? r.startDate.trim() : "";
 			const endDate = typeof r.endDate === "string" ? r.endDate.trim() : "";
 
-			if (dayOfWeek && time && location && capacity > 0 && startDate && endDate) {
-				row.lessonTemplate = { dayOfWeek, time, location, capacity, startDate, endDate };
+			if (dayOfWeek && time && capacity > 0 && startDate && endDate) {
+				row.lessonTemplate = { dayOfWeek, time, capacity, startDate, endDate };
 			}
 
 			rows.push(row);

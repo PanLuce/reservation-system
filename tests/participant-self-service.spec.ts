@@ -30,7 +30,6 @@ test.describe("Participant Self-Service - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Morning Yoga",
-			location: "Studio A",
 			time: "09:00",
 			dayOfWeek: "Monday",
 			capacity: 10,
@@ -79,7 +78,6 @@ test.describe("Participant Self-Service - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Dance",
-			location: "Studio B",
 			time: "15:00",
 			dayOfWeek: "Wednesday",
 			capacity: 10,
@@ -131,7 +129,6 @@ test.describe("Participant Self-Service - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Painting",
-			location: "Art Room",
 			time: "14:00",
 			dayOfWeek: "Thursday",
 			capacity: 10,
@@ -178,7 +175,6 @@ test.describe("Participant Self-Service - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Music Time",
-			location: "Music Room",
 			time: "10:00",
 			dayOfWeek: "Friday",
 			capacity: 10,
@@ -219,7 +215,6 @@ test.describe("Participant Self-Service - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Kids Fitness",
-			location: "Gym",
 			time: "16:00",
 			dayOfWeek: "Tuesday",
 			capacity: 10,
@@ -287,7 +282,6 @@ test.describe("Participant Self-Service - TDD", () => {
 		await calendar.bulkCreateLessons({
 			courseId: course1.id,
 			title: "Baby Yoga",
-			location: "Studio A",
 			time: "09:00",
 			dayOfWeek: "Monday",
 			capacity: 10,
@@ -297,7 +291,6 @@ test.describe("Participant Self-Service - TDD", () => {
 		await calendar.bulkCreateLessons({
 			courseId: course2.id,
 			title: "Toddler Dance",
-			location: "Studio B",
 			time: "10:00",
 			dayOfWeek: "Monday",
 			capacity: 10,
@@ -339,7 +332,6 @@ test.describe("Participant Self-Service - TDD", () => {
 		const lessons = await calendar.bulkCreateLessons({
 			courseId: course.id,
 			title: "Test Lesson",
-			location: "Room 1",
 			time: "11:00",
 			dayOfWeek: "Saturday",
 			capacity: 10,

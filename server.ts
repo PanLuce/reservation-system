@@ -405,7 +405,6 @@ app.post("/api/lessons", requireAdmin, async (req, res) => {
 		date: lessonData.date,
 		dayOfWeek: lessonData.dayOfWeek,
 		time: lessonData.time,
-		location: lessonData.location,
 		ageGroup: lessonData.ageGroup,
 		capacity: Number(lessonData.capacity),
 		courseId: lessonData.courseId as string,
@@ -446,6 +445,7 @@ app.post("/api/courses", requireAdmin, async (req, res) => {
 		const course = createCourse({
 			name: req.body.name,
 			ageGroup: req.body.ageGroup,
+			location: req.body.location,
 			color: req.body.color, // optional — derived from ageGroup if absent
 			description: req.body.description,
 		});
@@ -465,7 +465,7 @@ app.put("/api/courses/:id", requireAdmin, async (req, res) => {
 		return res.status(404).json({ error: "Course not found" });
 	}
 	try {
-		const { name, ageGroup, description } = req.body;
+		const { name, ageGroup, location, description } = req.body;
 		// Always derive color when ageGroup is valid; otherwise keep color from body (manual override)
 		const color =
 			ageGroup && isValidAgeGroup(ageGroup)
@@ -473,8 +473,8 @@ app.put("/api/courses/:id", requireAdmin, async (req, res) => {
 				: (req.body.color as string | undefined);
 		const updatePayload =
 			color !== undefined
-				? { name, ageGroup, color, description }
-				: { name, ageGroup, description };
+				? { name, ageGroup, location, color, description }
+				: { name, ageGroup, location, description };
 		await CourseDB.update(id, updatePayload);
 		res.json(await CourseDB.getById(id));
 	} catch (error) {
@@ -519,7 +519,6 @@ app.post(
 
 		const {
 			title,
-			location,
 			time,
 			dayOfWeek,
 			capacity,
@@ -535,7 +534,6 @@ app.post(
 				lessons = await calendar.bulkCreateLessons({
 					courseId,
 					title,
-					location,
 					time,
 					dayOfWeek,
 					capacity: Number(capacity),
@@ -546,7 +544,6 @@ app.post(
 				lessons = await calendar.bulkCreateLessonsRecurring({
 					courseId,
 					title,
-					location,
 					time,
 					dayOfWeek,
 					capacity: Number(capacity),
@@ -1101,27 +1098,28 @@ app.post(
 				let courseId: string;
 
 				if (existing) {
-					const updatePayload: { ageGroup: string; color: string; description?: string } = {
+					const updatePayload: { ageGroup: string; color: string; location?: string; description?: string } = {
 						ageGroup: row.ageGroup,
 						color: row.color,
 					};
+					if (row.location) updatePayload.location = row.location;
 					if (row.description) updatePayload.description = row.description;
 					await CourseDB.update(existing.id as string, updatePayload);
 					courseId = existing.id as string;
 				} else {
-					const courseInput: { name: string; ageGroup: string; color: string; description?: string } = {
+					const course = createCourse({
 						name: row.name,
 						ageGroup: row.ageGroup,
 						color: row.color,
-					};
-					if (row.description) courseInput.description = row.description;
-					const course = createCourse(courseInput);
+						...(row.location ? { location: row.location } : {}),
+						...(row.description ? { description: row.description } : {}),
+					});
 					await CourseDB.insert(course);
 					courseId = course.id;
 				}
 
 				if (row.lessonTemplate) {
-					const { dayOfWeek, time, location, capacity, startDate, endDate } = row.lessonTemplate;
+					const { dayOfWeek, time, capacity, startDate, endDate } = row.lessonTemplate;
 					const calendarDB = new LessonCalendarDB();
 					const dates: string[] = [];
 					const current = new Date(startDate);
@@ -1139,7 +1137,6 @@ app.post(
 						await calendarDB.bulkCreateLessons({
 							courseId,
 							title: row.name,
-							location,
 							time,
 							dayOfWeek,
 							capacity,

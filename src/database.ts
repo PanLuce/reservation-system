@@ -44,6 +44,7 @@ export async function initializeDatabase() {
 				name TEXT NOT NULL,
 				ageGroup TEXT NOT NULL,
 				color TEXT NOT NULL,
+				location TEXT NOT NULL DEFAULT '',
 				description TEXT,
 				createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 			)`,
@@ -56,7 +57,6 @@ export async function initializeDatabase() {
 				date TEXT NOT NULL,
 				dayOfWeek TEXT NOT NULL,
 				time TEXT NOT NULL,
-				location TEXT NOT NULL,
 				ageGroup TEXT NOT NULL,
 				capacity INTEGER NOT NULL,
 				enrolledCount INTEGER NOT NULL DEFAULT 0,
@@ -187,6 +187,7 @@ export async function initializeDatabase() {
 	);
 
 	await migrateAgeGroups();
+	await migrateLocationToCourses();
 
 	logger.info("Database initialized successfully");
 }
@@ -211,6 +212,44 @@ async function migrateAgeGroups() {
 			],
 			"write",
 		);
+	}
+}
+
+async function migrateLocationToCourses() {
+	// Add location column to courses if it doesn't exist yet (idempotent)
+	try {
+		await client.execute(
+			"ALTER TABLE courses ADD COLUMN location TEXT NOT NULL DEFAULT ''",
+		);
+	} catch {
+		// Column already exists — nothing to do
+	}
+
+	// Backfill courses.location from their first lesson's location BEFORE dropping the column
+	try {
+		await client.execute(`
+			UPDATE courses
+			SET location = (
+				SELECT location FROM lessons
+				WHERE lessons.courseId = courses.id
+				  AND location IS NOT NULL AND location != ''
+				LIMIT 1
+			)
+			WHERE location = '' AND EXISTS (
+				SELECT 1 FROM lessons
+				WHERE lessons.courseId = courses.id
+				  AND location IS NOT NULL AND location != ''
+			)
+		`);
+	} catch {
+		// lessons.location may already be gone — ignore
+	}
+
+	// Remove location column from lessons (it now lives on courses)
+	try {
+		await client.execute("ALTER TABLE lessons DROP COLUMN location");
+	} catch {
+		// Already removed or not supported — nothing to do
 	}
 }
 
@@ -300,8 +339,8 @@ export async function ensureDemoParticipant() {
 		const lessonId = `demo_lesson_seed_${i + 1}`;
 		const dayOfWeek: string = dayNames[lessonDate.getDay()] ?? "Monday";
 		await client.execute({
-			sql: "INSERT OR IGNORE INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount, courseId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-			args: [lessonId, `Demo lekce ${i + 1}`, toDateString(lessonDate), dayOfWeek, "10:00", "Studio", "1 - 2 roky", 10, 1, courseId],
+			sql: "INSERT OR IGNORE INTO lessons (id, title, date, dayOfWeek, time, ageGroup, capacity, enrolledCount, courseId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			args: [lessonId, `Demo lekce ${i + 1}`, toDateString(lessonDate), dayOfWeek, "10:00", "1 - 2 roky", 10, 1, courseId],
 		});
 		await client.execute({
 			sql: "INSERT OR IGNORE INTO registrations (id, lessonId, participantId, status) VALUES (?, ?, ?, ?)",
@@ -348,44 +387,14 @@ export async function seedSampleData() {
 		const wednesdayDate = toDateString(nextWednesday);
 
 		const sampleLessons: InValue[][] = [
-			[
-				"lesson_1",
-				"Cvičení pro maminky s dětmi - Pondělí dopoledne",
-				mondayDate,
-				"Monday",
-				"10:00",
-				"CVČ Vietnamská",
-				"6-9 měsíců (do lezení)",
-				10,
-				3,
-			],
-			[
-				"lesson_2",
-				"Cvičení pro maminky s dětmi - Úterý odpoledne",
-				tuesdayDate,
-				"Tuesday",
-				"14:00",
-				"CVČ Jeremiáše",
-				"1 - 2 roky",
-				12,
-				8,
-			],
-			[
-				"lesson_3",
-				"Cvičení pro maminky s dětmi - Středa dopoledne",
-				wednesdayDate,
-				"Wednesday",
-				"10:00",
-				"DK Poklad",
-				"2 - 3 roky",
-				15,
-				12,
-			],
+			["lesson_1", "Cvičení pro maminky s dětmi - Pondělí dopoledne", mondayDate, "Monday", "10:00", "6-9 měsíců (do lezení)", 10, 3],
+			["lesson_2", "Cvičení pro maminky s dětmi - Úterý odpoledne", tuesdayDate, "Tuesday", "14:00", "1 - 2 roky", 12, 8],
+			["lesson_3", "Cvičení pro maminky s dětmi - Středa dopoledne", wednesdayDate, "Wednesday", "10:00", "2 - 3 roky", 15, 12],
 		];
 
 		for (const lesson of sampleLessons) {
 			await client.execute({
-				sql: "INSERT INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+				sql: "INSERT INTO lessons (id, title, date, dayOfWeek, time, ageGroup, capacity, enrolledCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 				args: lesson,
 			});
 		}
@@ -436,15 +445,17 @@ export const CourseDB = {
 		name: string;
 		ageGroup: string;
 		color: string;
+		location?: string;
 		description?: string;
 	}) {
 		const result = await client.execute({
-			sql: "INSERT INTO courses (id, name, ageGroup, color, description) VALUES (?, ?, ?, ?, ?)",
+			sql: "INSERT INTO courses (id, name, ageGroup, color, location, description) VALUES (?, ?, ?, ?, ?, ?)",
 			args: [
 				course.id,
 				course.name,
 				course.ageGroup,
 				course.color,
+				course.location ?? "",
 				course.description || null,
 			],
 		});
@@ -457,6 +468,7 @@ export const CourseDB = {
 			name?: string;
 			ageGroup?: string;
 			color?: string;
+			location?: string;
 			description?: string;
 		},
 	) {
@@ -493,7 +505,10 @@ export const CourseDB = {
 export const LessonDB = {
 	async getAll() {
 		const result = await client.execute({
-			sql: "SELECT * FROM lessons ORDER BY dayOfWeek, time",
+			sql: `SELECT l.*, COALESCE(c.location, '') AS location
+				FROM lessons l
+				LEFT JOIN courses c ON l.courseId = c.id
+				ORDER BY l.dayOfWeek, l.time`,
 			args: [],
 		});
 		return result.rows;
@@ -501,7 +516,10 @@ export const LessonDB = {
 
 	async getById(id: string) {
 		const result = await client.execute({
-			sql: "SELECT * FROM lessons WHERE id = ?",
+			sql: `SELECT l.*, COALESCE(c.location, '') AS location
+				FROM lessons l
+				LEFT JOIN courses c ON l.courseId = c.id
+				WHERE l.id = ?`,
 			args: [id],
 		});
 		return result.rows[0];
@@ -509,7 +527,10 @@ export const LessonDB = {
 
 	async getByDay(dayOfWeek: string) {
 		const result = await client.execute({
-			sql: "SELECT * FROM lessons WHERE dayOfWeek = ?",
+			sql: `SELECT l.*, COALESCE(c.location, '') AS location
+				FROM lessons l
+				LEFT JOIN courses c ON l.courseId = c.id
+				WHERE l.dayOfWeek = ?`,
 			args: [dayOfWeek],
 		});
 		return result.rows;
@@ -522,7 +543,7 @@ export const LessonDB = {
 			date: string;
 			dayOfWeek: string;
 			time: string;
-			location: string;
+			location?: string; // ignored — location lives on courses now
 			ageGroup: string;
 			capacity: number;
 			enrolledCount: number;
@@ -532,14 +553,13 @@ export const LessonDB = {
 	) {
 		const resolvedCourseId = courseId ?? lesson.courseId ?? null;
 		const result = await client.execute({
-			sql: "INSERT INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount, courseId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			sql: "INSERT INTO lessons (id, title, date, dayOfWeek, time, ageGroup, capacity, enrolledCount, courseId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 			args: [
 				lesson.id,
 				lesson.title,
 				lesson.date,
 				lesson.dayOfWeek,
 				lesson.time,
-				lesson.location,
 				lesson.ageGroup,
 				lesson.capacity,
 				lesson.enrolledCount,
@@ -606,7 +626,7 @@ export const LessonDB = {
 			date: string;
 			dayOfWeek: string;
 			time: string;
-			location: string;
+			location?: string; // ignored — location lives on courses now
 			ageGroup: string;
 			capacity: number;
 			enrolledCount: number;
@@ -614,14 +634,13 @@ export const LessonDB = {
 		courseId: string,
 	) {
 		const result = await client.execute({
-			sql: "INSERT INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount, courseId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			sql: "INSERT INTO lessons (id, title, date, dayOfWeek, time, ageGroup, capacity, enrolledCount, courseId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 			args: [
 				lesson.id,
 				lesson.title,
 				lesson.date,
 				lesson.dayOfWeek,
 				lesson.time,
-				lesson.location,
 				lesson.ageGroup,
 				lesson.capacity,
 				lesson.enrolledCount,
@@ -633,7 +652,11 @@ export const LessonDB = {
 
 	async getByCourse(courseId: string) {
 		const result = await client.execute({
-			sql: "SELECT * FROM lessons WHERE courseId = ? ORDER BY date, time",
+			sql: `SELECT l.*, COALESCE(c.location, '') AS location
+				FROM lessons l
+				LEFT JOIN courses c ON l.courseId = c.id
+				WHERE l.courseId = ?
+				ORDER BY l.date, l.time`,
 			args: [courseId],
 		});
 		return result.rows;
@@ -702,12 +725,13 @@ export const ParticipantDB = {
 				l.date as lessonDate,
 				l.time as lessonTime,
 				l.dayOfWeek as lessonDayOfWeek,
-				l.location as lessonLocation,
+				COALESCE(c.location, '') as lessonLocation,
 				l.ageGroup as lessonAgeGroup,
 				l.capacity as lessonCapacity,
 				l.enrolledCount as lessonEnrolledCount
 			FROM registrations r
 			INNER JOIN lessons l ON r.lessonId = l.id
+			LEFT JOIN courses c ON l.courseId = c.id
 			WHERE r.participantId = ?
 			ORDER BY l.date ASC, l.time ASC`,
 			args: [participantId],
