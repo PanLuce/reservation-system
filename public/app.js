@@ -69,6 +69,20 @@ async function handleLogout() {
 	}
 }
 
+// Disable button + show spinner for the duration of an async operation.
+async function withLoading(triggerEl, asyncFn) {
+	if (!triggerEl) return asyncFn();
+	const originalText = triggerEl.innerHTML;
+	triggerEl.disabled = true;
+	triggerEl.innerHTML = originalText + '<span class="spinner"></span>';
+	try {
+		return await asyncFn();
+	} finally {
+		triggerEl.disabled = false;
+		triggerEl.innerHTML = originalText;
+	}
+}
+
 // Age groups cache
 let ageGroups = [];
 
@@ -266,15 +280,15 @@ function renderDayLessons(lessons, dateStr) {
 
 		let actions;
 		if (isAdmin) {
-			actions = `<button class="btn btn-danger" onclick="deleteLesson('${l.id}');closeDayModalDirect()">Smazat</button>`;
+			actions = `<button class="btn btn-danger" onclick="deleteLesson('${l.id}', this)">Smazat</button>`;
 		} else if (calendarSubCandidateIds.has(l.id)) {
 			const noCredit = calendarCreditCount <= 0;
-			actions = `<button class="btn btn-primary" onclick="selfRegister('${l.id}')"
+			actions = `<button class="btn btn-primary" onclick="selfRegister('${l.id}', this)"
 				${noCredit ? `disabled title="Potřebujete náhradu (aktuálně 0 kreditů)"` : ""}>
 				Přihlásit jako náhrada
 			</button>`;
 		} else {
-			actions = `<button class="btn btn-danger" onclick="selfCancel('${l.id}')"
+			actions = `<button class="btn btn-danger" onclick="selfCancel('${l.id}', this)"
 				${canCancel ? "" : "disabled title='Nelze odhlásit po půlnoci před lekcí'"}>
 				Odhlásit
 			</button>`;
@@ -370,47 +384,52 @@ async function addLesson(event) {
 		courseId: formData.get("courseId"),
 	};
 
-	try {
-		const response = await fetch(`${API_URL}/lessons`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(lessonData),
-		});
+	await withLoading(event.submitter, async () => {
+		try {
+			const response = await fetch(`${API_URL}/lessons`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(lessonData),
+			});
 
-		if (response.ok) {
-			showNotification("Lekce byla úspěšně přidána!");
-			hideAddLessonForm();
-			loadCalendar();
-		} else {
+			if (response.ok) {
+				showNotification("Lekce byla úspěšně přidána!");
+				hideAddLessonForm();
+				loadCalendar();
+			} else {
+				showNotification("Chyba při přidávání lekce", "error");
+			}
+		} catch (error) {
 			showNotification("Chyba při přidávání lekce", "error");
+			console.error(error);
 		}
-	} catch (error) {
-		showNotification("Chyba při přidávání lekce", "error");
-		console.error(error);
-	}
+	});
 }
 
 // Delete lesson
-async function deleteLesson(lessonId) {
+async function deleteLesson(lessonId, triggerEl) {
 	if (!confirm("Opravdu chcete smazat tuto lekci?")) {
 		return;
 	}
 
-	try {
-		const response = await fetch(`${API_URL}/lessons/${lessonId}`, {
-			method: "DELETE",
-		});
+	await withLoading(triggerEl, async () => {
+		try {
+			const response = await fetch(`${API_URL}/lessons/${lessonId}`, {
+				method: "DELETE",
+			});
 
-		if (response.ok) {
-			showNotification("Lekce byla smazána");
-			loadCalendar();
-		} else {
+			if (response.ok) {
+				showNotification("Lekce byla smazána");
+				closeDayModalDirect();
+				loadCalendar();
+			} else {
+				showNotification("Chyba při mazání lekce", "error");
+			}
+		} catch (error) {
 			showNotification("Chyba při mazání lekce", "error");
+			console.error(error);
 		}
-	} catch (error) {
-		showNotification("Chyba při mazání lekce", "error");
-		console.error(error);
-	}
+	});
 }
 
 // Upload Excel
@@ -419,25 +438,27 @@ async function uploadExcel(event) {
 	const form = event.target;
 	const formData = new FormData(form);
 
-	try {
-		const response = await fetch(`${API_URL}/excel/import`, {
-			method: "POST",
-			body: formData,
-		});
+	await withLoading(event.submitter, async () => {
+		try {
+			const response = await fetch(`${API_URL}/excel/import`, {
+				method: "POST",
+				body: formData,
+			});
 
-		const result = await response.json();
+			const result = await response.json();
 
-		if (response.ok) {
-			showNotification(result.message);
-			form.reset();
-			loadCalendar();
-		} else {
-			showNotification(result.error || "Chyba při nahrávání souboru", "error");
+			if (response.ok) {
+				showNotification(result.message);
+				form.reset();
+				loadCalendar();
+			} else {
+				showNotification(result.error || "Chyba při nahrávání souboru", "error");
+			}
+		} catch (error) {
+			showNotification("Chyba při nahrávání souboru", "error");
+			console.error(error);
 		}
-	} catch (error) {
-		showNotification("Chyba při nahrávání souboru", "error");
-		console.error(error);
-	}
+	});
 }
 
 async function uploadCoursesExcel(event) {
@@ -445,35 +466,37 @@ async function uploadCoursesExcel(event) {
 	const form = event.target;
 	const formData = new FormData(form);
 
-	try {
-		const response = await fetch(`${API_URL}/admin/courses/import`, {
-			method: "POST",
-			credentials: "include",
-			body: formData,
-		});
+	await withLoading(event.submitter, async () => {
+		try {
+			const response = await fetch(`${API_URL}/admin/courses/import`, {
+				method: "POST",
+				credentials: "include",
+				body: formData,
+			});
 
-		const result = await response.json();
-		const resultsEl = document.getElementById("courses-excel-results");
+			const result = await response.json();
+			const resultsEl = document.getElementById("courses-excel-results");
 
-		if (response.ok) {
-			const errors = (result.perRow || []).filter((r) => !r.ok);
-			if (errors.length > 0) {
-				const errList = errors.map((r) => `${r.name}: ${r.error}`).join("<br>");
-				if (resultsEl) resultsEl.innerHTML = `<div class="error-list" style="margin-top:12px;color:#c62828;">${errList}</div>`;
-				showNotification(`Nahrání dokončeno s ${errors.length} chybami`, "error");
+			if (response.ok) {
+				const errors = (result.perRow || []).filter((r) => !r.ok);
+				if (errors.length > 0) {
+					const errList = errors.map((r) => `${r.name}: ${r.error}`).join("<br>");
+					if (resultsEl) resultsEl.innerHTML = `<div class="error-list" style="margin-top:12px;color:#c62828;">${errList}</div>`;
+					showNotification(`Nahrání dokončeno s ${errors.length} chybami`, "error");
+				} else {
+					if (resultsEl) resultsEl.innerHTML = "";
+					showNotification(`Skupinky nahrány: ${result.processed}`);
+				}
+				form.reset();
+				loadCourses();
 			} else {
-				if (resultsEl) resultsEl.innerHTML = "";
-				showNotification(`Skupinky nahrány: ${result.processed}`);
+				showNotification(result.error || "Chyba při nahrávání souboru", "error");
 			}
-			form.reset();
-			loadCourses();
-		} else {
-			showNotification(result.error || "Chyba při nahrávání souboru", "error");
+		} catch (error) {
+			showNotification("Chyba při nahrávání souboru", "error");
+			console.error(error);
 		}
-	} catch (error) {
-		showNotification("Chyba při nahrávání souboru", "error");
-		console.error(error);
-	}
+	});
 }
 
 // Initialize
@@ -522,7 +545,7 @@ function renderCourseCard(course) {
 					? `
 			<div class="lesson-actions">
 				<button class="btn btn-secondary" onclick="editCourse('${course.id}')">Upravit</button>
-				<button class="btn btn-danger" onclick="deleteCourse('${course.id}')">Smazat</button>
+				<button class="btn btn-danger" onclick="deleteCourse('${course.id}', this)">Smazat</button>
 			</div>`
 					: ""
 			}
@@ -588,52 +611,56 @@ async function submitCourseForm(event) {
 	}
 	if (hasError) return;
 
-	try {
-		const url = id ? `${API_URL}/courses/${id}` : `${API_URL}/courses`;
-		const method = id ? "PUT" : "POST";
-		const res = await fetch(url, {
-			method,
-			headers: { "Content-Type": "application/json" },
-			credentials: "include",
-			body: JSON.stringify({ name, ageGroup, location }),
-		});
+	await withLoading(event.submitter, async () => {
+		try {
+			const url = id ? `${API_URL}/courses/${id}` : `${API_URL}/courses`;
+			const method = id ? "PUT" : "POST";
+			const res = await fetch(url, {
+				method,
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ name, ageGroup, location }),
+			});
 
-		if (!res.ok) {
-			const data = await res.json();
-			showNotification(data.error || "Chyba při ukládání", "error");
-			return;
+			if (!res.ok) {
+				const data = await res.json();
+				showNotification(data.error || "Chyba při ukládání", "error");
+				return;
+			}
+
+			hideAddCourseForm();
+			showNotification(
+				id ? "Skupinka byla upravena" : "Skupinka byla přidána",
+				"success",
+			);
+			loadCourses();
+		} catch (error) {
+			showNotification("Chyba při ukládání skupinky", "error");
+			console.error(error);
 		}
-
-		hideAddCourseForm();
-		showNotification(
-			id ? "Skupinka byla upravena" : "Skupinka byla přidána",
-			"success",
-		);
-		loadCourses();
-	} catch (error) {
-		showNotification("Chyba při ukládání skupinky", "error");
-		console.error(error);
-	}
+	});
 }
 
-async function deleteCourse(id) {
+async function deleteCourse(id, triggerEl) {
 	if (!confirm("Opravdu smazat tuto skupinku?")) return;
-	try {
-		const res = await fetch(`${API_URL}/courses/${id}`, {
-			method: "DELETE",
-			credentials: "include",
-		});
-		if (!res.ok) {
-			const data = await res.json();
-			showNotification(data.error || "Chyba při mazání", "error");
-			return;
+	await withLoading(triggerEl, async () => {
+		try {
+			const res = await fetch(`${API_URL}/courses/${id}`, {
+				method: "DELETE",
+				credentials: "include",
+			});
+			if (!res.ok) {
+				const data = await res.json();
+				showNotification(data.error || "Chyba při mazání", "error");
+				return;
+			}
+			showNotification("Skupinka byla smazána", "success");
+			loadCourses();
+		} catch (error) {
+			showNotification("Chyba při mazání skupinky", "error");
+			console.error(error);
 		}
-		showNotification("Skupinka byla smazána", "success");
-		loadCourses();
-	} catch (error) {
-		showNotification("Chyba při mazání skupinky", "error");
-		console.error(error);
-	}
+	});
 }
 
 function clearCourseErrors() {
@@ -708,7 +735,7 @@ async function loadMyLessons(participantId) {
 					<div class="lesson-info-item"><strong>👥 Obsazeno:</strong> ${r.lessonEnrolledCount}/${r.lessonCapacity}</div>
 				</div>
 				<div class="lesson-actions">
-					<button class="btn btn-danger" onclick="selfCancel('${r.id}')"
+					<button class="btn btn-danger" onclick="selfCancel('${r.id}', this)"
 						${canCancel ? "" : "disabled title='Nelze odhlásit po půlnoci před lekcí'"}>
 						Odhlásit
 					</button>
@@ -722,32 +749,34 @@ async function loadMyLessons(participantId) {
 	}
 }
 
-async function selfCancel(registrationId) {
+async function selfCancel(registrationId, triggerEl) {
 	if (!currentUser || !currentUser.participantId) return;
 	if (!confirm("Odhlásit se z této lekce?")) return;
 
 	const pId = currentUser.participantId;
-	try {
-		const res = await fetch(
-			`${API_URL}/participants/${pId}/cancel-registration`,
-			{
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				credentials: "include",
-				body: JSON.stringify({ registrationId }),
-			},
-		);
-		if (res.ok) {
-			showNotification("Odhlášení proběhlo úspěšně");
-			loadMyReservations();
-		} else {
-			const data = await res.json();
-			showNotification(data.error || "Nelze se odhlásit", "error");
+	await withLoading(triggerEl, async () => {
+		try {
+			const res = await fetch(
+				`${API_URL}/participants/${pId}/cancel-registration`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include",
+					body: JSON.stringify({ registrationId }),
+				},
+			);
+			if (res.ok) {
+				showNotification("Odhlášení proběhlo úspěšně");
+				loadMyReservations();
+			} else {
+				const data = await res.json();
+				showNotification(data.error || "Nelze se odhlásit", "error");
+			}
+		} catch (error) {
+			showNotification("Chyba při odhlašování", "error");
+			console.error(error);
 		}
-	} catch (error) {
-		showNotification("Chyba při odhlašování", "error");
-		console.error(error);
-	}
+	});
 }
 
 async function loadSubstitutionCandidates(participantId) {
@@ -778,7 +807,7 @@ async function loadSubstitutionCandidates(participantId) {
 					<div class="lesson-info-item"><strong>👥 Volná místa:</strong> ${l.capacity - l.enrolledCount}</div>
 				</div>
 				<div class="lesson-actions">
-					<button class="btn btn-primary" onclick="selfRegister('${l.id}')">Přihlásit jako náhrada</button>
+					<button class="btn btn-primary" onclick="selfRegister('${l.id}', this)">Přihlásit jako náhrada</button>
 				</div>
 			</div>`,
 			)
@@ -789,28 +818,30 @@ async function loadSubstitutionCandidates(participantId) {
 	}
 }
 
-async function selfRegister(lessonId) {
+async function selfRegister(lessonId, triggerEl) {
 	if (!currentUser || !currentUser.participantId) return;
 	const pId = currentUser.participantId;
 
-	try {
-		const res = await fetch(`${API_URL}/participants/${pId}/register-lesson`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			credentials: "include",
-			body: JSON.stringify({ lessonId }),
-		});
-		if (res.ok) {
-			showNotification("Přihlášení proběhlo úspěšně");
-			closeDayModalDirect();
-			loadCalendar();
-			loadMyReservations();
-		} else {
-			const data = await res.json();
-			showNotification(data.error || "Nelze se přihlásit", "error");
+	await withLoading(triggerEl, async () => {
+		try {
+			const res = await fetch(`${API_URL}/participants/${pId}/register-lesson`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ lessonId }),
+			});
+			if (res.ok) {
+				showNotification("Přihlášení proběhlo úspěšně");
+				closeDayModalDirect();
+				loadCalendar();
+				loadMyReservations();
+			} else {
+				const data = await res.json();
+				showNotification(data.error || "Nelze se přihlásit", "error");
+			}
+		} catch (error) {
+			showNotification("Chyba při přihlašování", "error");
+			console.error(error);
 		}
-	} catch (error) {
-		showNotification("Chyba při přihlašování", "error");
-		console.error(error);
-	}
+	});
 }

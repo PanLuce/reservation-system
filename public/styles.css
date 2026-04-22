@@ -627,3 +627,22 @@ header p {
 		min-width: 140px;
 	}
 }
+
+/* ─── Spinner ─────────────────────────────────────────────────────────────── */
+
+.spinner {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	border: 2px solid currentColor;
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: spin 0.6s linear infinite;
+	vertical-align: middle;
+	margin-left: 6px;
+	opacity: 0.8;
+}
+
+@keyframes spin {
+	to { transform: rotate(360deg); }
+}
