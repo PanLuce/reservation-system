@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { randomUUID } from "node:crypto";
 import { type Client, createClient, type InValue } from "@libsql/client";
 import bcrypt from "bcrypt";
 import { logger } from "./logger.js";
@@ -230,6 +231,74 @@ export async function ensureAdminUser() {
 	logger.info("Admin user ensured", { email: adminEmail });
 }
 
+export async function ensureDemoParticipant() {
+	const participantEmail = process.env.PARTICIPANT_EMAIL_SEED;
+	const participantPassword = process.env.PARTICIPANT_PASSWORD_SEED;
+
+	if (!participantEmail || !participantPassword) {
+		return;
+	}
+
+	const existing = await client.execute({
+		sql: "SELECT COUNT(*) as count FROM users WHERE email = ?",
+		args: [participantEmail],
+	});
+	if (Number(existing.rows[0]?.count ?? 0) > 0) {
+		return;
+	}
+
+	const courseId = "demo_skupinka_seed";
+	const participantId = "demo_participant_seed";
+	const userId = "demo_user_seed";
+
+	await client.execute({
+		sql: "INSERT OR IGNORE INTO courses (id, name, ageGroup, color) VALUES (?, ?, ?, ?)",
+		args: [courseId, "Demo skupinka", "1-2 years", "#FFB6B6"],
+	});
+
+	await client.execute({
+		sql: "INSERT OR IGNORE INTO participants (id, name, email, phone, ageGroup) VALUES (?, ?, ?, ?, ?)",
+		args: [participantId, "Maminka Testovací", participantEmail, "", "1-2 years"],
+	});
+
+	await client.execute({
+		sql: "INSERT OR IGNORE INTO course_participants (courseId, participantId) VALUES (?, ?)",
+		args: [courseId, participantId],
+	});
+
+	const today = new Date();
+	const dayNames: string[] = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+	for (let i = 0; i < 3; i++) {
+		const lessonDate = new Date(today);
+		lessonDate.setDate(today.getDate() + 7 * (i + 1));
+		const lessonId = `demo_lesson_seed_${i + 1}`;
+		const dayOfWeek: string = dayNames[lessonDate.getDay()] ?? "Monday";
+		await client.execute({
+			sql: "INSERT OR IGNORE INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount, courseId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			args: [lessonId, `Demo lekce ${i + 1}`, toDateString(lessonDate), dayOfWeek, "10:00", "Studio", "1-2 years", 10, 1, courseId],
+		});
+		await client.execute({
+			sql: "INSERT OR IGNORE INTO registrations (id, lessonId, participantId, status) VALUES (?, ?, ?, ?)",
+			args: [`demo_reg_seed_${i + 1}`, lessonId, participantId, "confirmed"],
+		});
+	}
+
+	const expiresAt = new Date(today);
+	expiresAt.setMonth(expiresAt.getMonth() + 3);
+	await client.execute({
+		sql: "INSERT OR IGNORE INTO substitution_credits (id, participantId, earnedFromRegistrationId, expiresAt) VALUES (?, ?, ?, ?)",
+		args: [randomUUID(), participantId, "demo_reg_seed_1", expiresAt.toISOString()],
+	});
+
+	const passwordHash = await bcrypt.hash(participantPassword, 10);
+	await client.execute({
+		sql: "INSERT OR IGNORE INTO users (id, email, passwordHash, name, role, participantId) VALUES (?, ?, ?, ?, ?, ?)",
+		args: [userId, participantEmail, passwordHash, "Maminka Testovací", "participant", participantId],
+	});
+
+	logger.info("Demo participant ensured", { email: participantEmail });
+}
+
 export async function seedSampleData() {
 	const result = await client.execute({
 		sql: "SELECT COUNT(*) as count FROM lessons",
@@ -299,6 +368,7 @@ export async function seedSampleData() {
 	}
 
 	await ensureAdminUser();
+	await ensureDemoParticipant();
 }
 
 // Database operations for Courses

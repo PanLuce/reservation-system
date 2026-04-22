@@ -25,6 +25,8 @@ export default defineConfig({
 		env: {
 			ADMIN_EMAIL_SEED: "admin@centrumrubacek.cz",
 			ADMIN_PASSWORD_SEED: "admin123",
+			PARTICIPANT_EMAIL_SEED: "maminka@test.cz",
+			PARTICIPANT_PASSWORD_SEED: "test123",
 		},
 	},
 });
