@@ -396,3 +396,8 @@ header p {
 	margin-top: 4px;
 	min-height: 1em;
 }
+
+/* Role-based visibility: JS toggles hidden class */
+.hidden {
+	display: none !important;
+}

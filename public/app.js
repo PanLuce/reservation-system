@@ -25,9 +25,10 @@ async function loadCurrentUser() {
 		document.getElementById("user-role").style.background =
 			currentUser.role === "admin" ? "#fff3cd" : "#e8f5e9";
 
-		// Hide admin-only features for participants
 		if (currentUser.role !== "admin") {
 			hideAdminFeatures();
+		} else {
+			hideParticipantFeatures();
 		}
 	} catch (error) {
 		console.error("Failed to load user:", error);
@@ -35,24 +36,22 @@ async function loadCurrentUser() {
 	}
 }
 
-// Hide admin-only features
+// Hide admin-only features and show participant-only features
 function hideAdminFeatures() {
-	// Hide "Add Lesson" button
-	const addLessonBtn = document.querySelector(
-		'[onclick="showAddLessonForm()"]',
-	);
-	if (addLessonBtn) addLessonBtn.style.display = "none";
-
-	// Hide "Add Skupinka" button
 	document.querySelectorAll(".admin-only").forEach((el) => {
-		el.style.display = "none";
+		el.classList.add("hidden");
 	});
 
-	// Hide edit/delete buttons for lessons (will be done in loadLessons function)
+	document.querySelectorAll(".participant-only").forEach((el) => {
+		el.classList.remove("hidden");
+	});
+}
 
-	// Hide Excel import tab
-	const excelTab = document.querySelector('[data-tab="excel"]');
-	if (excelTab) excelTab.style.display = "none";
+// Hide participant-only features (for admin view)
+function hideParticipantFeatures() {
+	document.querySelectorAll(".participant-only").forEach((el) => {
+		el.classList.add("hidden");
+	});
 }
 
 // Logout function
@@ -95,6 +94,8 @@ document.querySelectorAll(".tab").forEach((tab) => {
 			loadLessons();
 		} else if (targetTab === "courses") {
 			loadCourses();
+		} else if (targetTab === "my-reservations") {
+			loadMyReservations();
 		}
 	});
 });
@@ -493,4 +494,152 @@ function syncColorPicker(value) {
 function clearCourseErrors() {
 	document.getElementById("course-name-error").textContent = "";
 	document.getElementById("course-color-error").textContent = "";
+}
+
+// ─── Moje rezervace (Participant self-service) ────────────────────────────────
+
+async function loadMyReservations() {
+	if (!currentUser || !currentUser.participantId) return;
+	const pId = currentUser.participantId;
+
+	await Promise.all([loadMyLessons(pId), loadSubstitutionCandidates(pId)]);
+}
+
+async function loadMyLessons(participantId) {
+	try {
+		const res = await fetch(
+			`${API_URL}/participants/${participantId}/registrations`,
+			{ credentials: "include" },
+		);
+		const registrations = await res.json();
+
+		const container = document.getElementById("my-lessons-list");
+		const now = new Date().toISOString().slice(0, 10);
+
+		const upcoming = registrations.filter(
+			(r) => r.lessonDate >= now && r.status !== "cancelled",
+		);
+
+		if (upcoming.length === 0) {
+			container.innerHTML =
+				'<p style="text-align:center;color:#999;padding:20px;">Žádné nadcházející lekce.</p>';
+			return;
+		}
+
+		container.innerHTML = upcoming
+			.map((r) => {
+				const canCancel = r.lessonDate > now;
+				return `
+			<div class="lesson-card">
+				<h3>${r.lessonTitle || "Lekce"}</h3>
+				<div class="lesson-info">
+					<div class="lesson-info-item"><strong>📅 Datum:</strong> ${r.lessonDate}</div>
+					<div class="lesson-info-item"><strong>🕐 Čas:</strong> ${r.lessonTime || ""}</div>
+					<div class="lesson-info-item"><strong>📍 Místo:</strong> ${r.lessonLocation || ""}</div>
+					<div class="lesson-info-item"><strong>👥 Obsazeno:</strong> ${r.lessonEnrolledCount}/${r.lessonCapacity}</div>
+				</div>
+				<div class="lesson-actions">
+					<button class="btn btn-danger" onclick="selfCancel('${r.id}')"
+						${canCancel ? "" : "disabled title='Nelze odhlásit po půlnoci před lekcí'"}>
+						Odhlásit
+					</button>
+				</div>
+			</div>`;
+			})
+			.join("");
+	} catch (error) {
+		showNotification("Chyba při načítání rezervací", "error");
+		console.error(error);
+	}
+}
+
+async function selfCancel(registrationId) {
+	if (!currentUser || !currentUser.participantId) return;
+	if (!confirm("Odhlásit se z této lekce?")) return;
+
+	const pId = currentUser.participantId;
+	try {
+		const res = await fetch(
+			`${API_URL}/participants/${pId}/cancel-registration`,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ registrationId }),
+			},
+		);
+		if (res.ok) {
+			showNotification("Odhlášení proběhlo úspěšně");
+			loadMyReservations();
+		} else {
+			const data = await res.json();
+			showNotification(data.error || "Nelze se odhlásit", "error");
+		}
+	} catch (error) {
+		showNotification("Chyba při odhlašování", "error");
+		console.error(error);
+	}
+}
+
+async function loadSubstitutionCandidates(participantId) {
+	try {
+		const res = await fetch(
+			`${API_URL}/participants/${participantId}/substitution-candidates`,
+			{ credentials: "include" },
+		);
+		const lessons = await res.json();
+
+		const container = document.getElementById("substitution-candidates-list");
+
+		if (lessons.length === 0) {
+			container.innerHTML =
+				'<p style="text-align:center;color:#999;padding:20px;">Žádné dostupné náhrady.</p>';
+			return;
+		}
+
+		container.innerHTML = lessons
+			.map(
+				(l) => `
+			<div class="lesson-card">
+				<h3>${l.title}</h3>
+				<div class="lesson-info">
+					<div class="lesson-info-item"><strong>📅 Datum:</strong> ${l.date}</div>
+					<div class="lesson-info-item"><strong>🕐 Čas:</strong> ${l.time}</div>
+					<div class="lesson-info-item"><strong>📍 Místo:</strong> ${l.location}</div>
+					<div class="lesson-info-item"><strong>👥 Volná místa:</strong> ${l.capacity - l.enrolledCount}</div>
+				</div>
+				<div class="lesson-actions">
+					<button class="btn btn-primary" onclick="selfRegister('${l.id}')">Přihlásit jako náhrada</button>
+				</div>
+			</div>`,
+			)
+			.join("");
+	} catch (error) {
+		showNotification("Chyba při načítání náhrad", "error");
+		console.error(error);
+	}
+}
+
+async function selfRegister(lessonId) {
+	if (!currentUser || !currentUser.participantId) return;
+	const pId = currentUser.participantId;
+
+	try {
+		const res = await fetch(`${API_URL}/participants/${pId}/register-lesson`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify({ lessonId }),
+		});
+		if (res.ok) {
+			showNotification("Přihlášení proběhlo úspěšně");
+			loadMyReservations();
+		} else {
+			const data = await res.json();
+			showNotification(data.error || "Nelze se přihlásit", "error");
+		}
+	} catch (error) {
+		showNotification("Chyba při přihlašování", "error");
+		console.error(error);
+	}
 }

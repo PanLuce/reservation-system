@@ -24,6 +24,7 @@
             <button type="button" class="tab active" data-tab="lessons">📅 Lekce</button>
             <button type="button" class="tab" data-tab="courses">🎯 Skupinky</button>
             <button type="button" class="tab admin-only" data-tab="excel">📊 Import Excel</button>
+            <button type="button" class="tab participant-only hidden" data-tab="my-reservations">📋 Moje rezervace</button>
         </nav>
 
         <!-- Lessons Tab -->
@@ -136,6 +137,22 @@
             </div>
 
             <div id="courses-list" class="lessons-grid"></div>
+        </div>
+
+        <!-- Moje rezervace Tab (participant-only) -->
+        <div class="tab-content participant-only hidden" id="my-reservations">
+            <h2>Moje rezervace</h2>
+
+            <div class="section-header" style="margin-top: 0;">
+                <h3>Moje lekce</h3>
+                <span id="nahrad-count" style="font-size: 14px; color: #666;"></span>
+            </div>
+            <div id="my-lessons-list" class="lessons-grid"></div>
+
+            <div class="section-header" style="margin-top: 24px;">
+                <h3>Možné náhrady</h3>
+            </div>
+            <div id="substitution-candidates-list" class="lessons-grid"></div>
         </div>
 
         <!-- Excel Import Tab -->

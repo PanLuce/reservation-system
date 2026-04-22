@@ -14,7 +14,9 @@ import {
 	CourseDB,
 	client,
 	initializeDatabase,
+	LessonDB,
 	ParticipantDB,
+	RegistrationDB,
 	seedSampleData,
 } from "./src/database.js";
 import { createEmailService } from "./src/email-factory.js";
@@ -659,15 +661,19 @@ app.get("/api/registrations/lesson/:lessonId", async (req, res) => {
 	res.json(registrations);
 });
 
-app.get("/api/participants/:participantId/registrations", requireParticipantScope, async (req, res) => {
-	const participantId = req.params.participantId as string;
-	if (!participantId) {
-		return res.status(400).json({ error: "Participant ID is required" });
-	}
-	const registrations =
-		await ParticipantDB.getRegistrationsWithLessonDetails(participantId);
-	res.json(registrations);
-});
+app.get(
+	"/api/participants/:participantId/registrations",
+	requireParticipantScope,
+	async (req, res) => {
+		const participantId = req.params.participantId as string;
+		if (!participantId) {
+			return res.status(400).json({ error: "Participant ID is required" });
+		}
+		const registrations =
+			await ParticipantDB.getRegistrationsWithLessonDetails(participantId);
+		res.json(registrations);
+	},
+);
 
 // Participant Self-Service
 app.post(
@@ -728,6 +734,7 @@ app.post(
 
 app.post(
 	"/api/participants/:participantId/transfer-lesson",
+	requireParticipantScope,
 	async (req, res) => {
 		const participantId = req.params.participantId as string;
 		const { currentRegistrationId, newLessonId } = req.body;
@@ -758,6 +765,7 @@ app.post(
 
 app.get(
 	"/api/participants/:participantId/available-lessons",
+	requireParticipantScope,
 	async (req, res) => {
 		const participantId = req.params.participantId as string;
 
@@ -771,6 +779,57 @@ app.get(
 			);
 
 		res.json(lessons);
+	},
+);
+
+app.get(
+	"/api/participants/:participantId/substitution-candidates",
+	requireParticipantScope,
+	async (req, res) => {
+		const participantId = req.params.participantId as string;
+
+		const participantCourses =
+			await ParticipantDB.getCoursesForParticipant(participantId);
+		const participantColors = new Set(
+			participantCourses.map((c) => c.color as string),
+		);
+		const participantCourseIds = new Set(
+			participantCourses.map((c) => c.id as string),
+		);
+
+		const today = new Date().toISOString().slice(0, 10);
+
+		const existingRegs = await RegistrationDB.getByParticipantId(participantId);
+		const registeredLessonIds = new Set(
+			existingRegs
+				.filter((r) => r.status !== "cancelled")
+				.map((r) => r.lessonId as string),
+		);
+
+		const allCourses = await CourseDB.getAll();
+		const sameColorCourseIds = allCourses
+			.filter(
+				(c) =>
+					participantColors.has(c.color as string) &&
+					!participantCourseIds.has(c.id as string),
+			)
+			.map((c) => c.id as string);
+
+		const candidates: unknown[] = [];
+		for (const courseId of sameColorCourseIds) {
+			const lessons = await LessonDB.getByCourse(courseId);
+			for (const lesson of lessons) {
+				if (
+					(lesson.date as string) >= today &&
+					!registeredLessonIds.has(lesson.id as string) &&
+					(lesson.enrolledCount as number) < (lesson.capacity as number)
+				) {
+					candidates.push(lesson);
+				}
+			}
+		}
+
+		res.json(candidates);
 	},
 );
 

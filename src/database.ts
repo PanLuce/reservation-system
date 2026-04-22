@@ -622,6 +622,16 @@ export const ParticipantDB = {
 		});
 		return result.rows;
 	},
+
+	async getCoursesForParticipant(participantId: string) {
+		const result = await client.execute({
+			sql: `SELECT c.* FROM courses c
+			INNER JOIN course_participants cp ON c.id = cp.courseId
+			WHERE cp.participantId = ?`,
+			args: [participantId],
+		});
+		return result.rows;
+	},
 };
 
 // Database operations for Registrations
