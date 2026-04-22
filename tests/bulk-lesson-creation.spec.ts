@@ -17,7 +17,7 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Baby Yoga",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			color: "#FF5733",
 			description: "Yoga for babies",
 		});
@@ -47,7 +47,7 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 			expect(lesson.time).toBe("09:00");
 			expect(lesson.dayOfWeek).toBe("Monday");
 			expect(lesson.capacity).toBe(8);
-			expect(lesson.ageGroup).toBe("3-12 months");
+			expect(lesson.ageGroup).toBe("6-9 měsíců (do lezení)");
 			expect(lesson.enrolledCount).toBe(0);
 		}
 
@@ -65,7 +65,7 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Toddler Dance",
-			ageGroup: "2-3 years",
+			ageGroup: "2 - 3 roky",
 			color: "#33FF57",
 		});
 		await CourseDB.insert(course);
@@ -97,7 +97,7 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Kids Fitness",
-			ageGroup: "3-4 years",
+			ageGroup: "2,5 - 4 roky",
 			color: "#5733FF",
 		});
 		await CourseDB.insert(course);
@@ -136,7 +136,7 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Test Course",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#FF5733",
 		});
 		await CourseDB.insert(course);
@@ -162,7 +162,7 @@ test.describe("Bulk Lesson Creation - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Art Class",
-			ageGroup: "3-4 years",
+			ageGroup: "2,5 - 4 roky",
 			color: "#FF3357",
 		});
 		await CourseDB.insert(course);

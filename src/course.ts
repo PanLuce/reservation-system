@@ -1,6 +1,5 @@
-/**
- * Course (Kurz) represents a group of lessons with shared characteristics
- */
+import { ageGroupToColor, isValidAgeGroup } from "./age-groups.js";
+
 export type Course = {
 	id: string;
 	name: string;
@@ -13,15 +12,11 @@ export type Course = {
 type CourseInput = {
 	name: string;
 	ageGroup: string;
-	color: string;
+	color?: string;
 	description?: string;
 };
 
-/**
- * Creates a new course with validation
- */
 export function createCourse(input: CourseInput): Course {
-	// ✨ Clean Code Suggestion: Validate inputs at the boundary
 	if (!input.name || input.name.trim() === "") {
 		throw new Error("Course name is required");
 	}
@@ -30,21 +25,23 @@ export function createCourse(input: CourseInput): Course {
 		throw new Error("Age group is required");
 	}
 
-	// 📘 Clean Code Principle: Validate format early to fail fast
-	if (!isValidHexColor(input.color)) {
-		throw new Error("Color must be a valid hex color");
+	if (!isValidAgeGroup(input.ageGroup.trim())) {
+		throw new Error(`Invalid age group: "${input.ageGroup}"`);
 	}
 
-	// Generate unique ID
-	const id = `course_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+	const color =
+		input.color && isValidHexColor(input.color)
+			? input.color
+			: ageGroupToColor(input.ageGroup.trim());
 
+	const id = `course_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 	const trimmedDescription = input.description?.trim();
 
 	return {
 		id,
 		name: input.name.trim(),
 		ageGroup: input.ageGroup.trim(),
-		color: input.color,
+		color,
 		...(trimmedDescription !== undefined && {
 			description: trimmedDescription,
 		}),
@@ -52,9 +49,6 @@ export function createCourse(input: CourseInput): Course {
 	};
 }
 
-/**
- * Validates hex color format (#RRGGBB or #RGB)
- */
 function isValidHexColor(color: string): boolean {
 	return /^#([0-9A-F]{3}){1,2}$/i.test(color);
 }

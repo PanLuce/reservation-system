@@ -6,6 +6,7 @@ import { type Client, createClient, type InValue } from "@libsql/client";
 import bcrypt from "bcrypt";
 import { logger } from "./logger.js";
 import { toDateString } from "./types.js";
+import { AGE_GROUP_MIGRATION, ageGroupToColor } from "./age-groups.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -185,7 +186,32 @@ export async function initializeDatabase() {
 		"write",
 	);
 
+	await migrateAgeGroups();
+
 	logger.info("Database initialized successfully");
+}
+
+async function migrateAgeGroups() {
+	for (const [oldName, newName] of Object.entries(AGE_GROUP_MIGRATION)) {
+		const newColor = ageGroupToColor(newName);
+		await client.batch(
+			[
+				{
+					sql: "UPDATE courses SET ageGroup = ?, color = ? WHERE ageGroup = ?",
+					args: [newName, newColor, oldName],
+				},
+				{
+					sql: "UPDATE participants SET ageGroup = ? WHERE ageGroup = ?",
+					args: [newName, oldName],
+				},
+				{
+					sql: "UPDATE lessons SET ageGroup = ? WHERE ageGroup = ?",
+					args: [newName, oldName],
+				},
+			],
+			"write",
+		);
+	}
 }
 
 export async function resetDatabaseForTests() {
@@ -253,12 +279,12 @@ export async function ensureDemoParticipant() {
 
 	await client.execute({
 		sql: "INSERT OR IGNORE INTO courses (id, name, ageGroup, color) VALUES (?, ?, ?, ?)",
-		args: [courseId, "Demo skupinka", "1-2 years", "#FFB6B6"],
+		args: [courseId, "Demo skupinka", "1 - 2 roky", "#B3E5FC"],
 	});
 
 	await client.execute({
 		sql: "INSERT OR IGNORE INTO participants (id, name, email, phone, ageGroup) VALUES (?, ?, ?, ?, ?)",
-		args: [participantId, "Maminka Testovací", participantEmail, "", "1-2 years"],
+		args: [participantId, "Maminka Testovací", participantEmail, "", "1 - 2 roky"],
 	});
 
 	await client.execute({
@@ -275,7 +301,7 @@ export async function ensureDemoParticipant() {
 		const dayOfWeek: string = dayNames[lessonDate.getDay()] ?? "Monday";
 		await client.execute({
 			sql: "INSERT OR IGNORE INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount, courseId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-			args: [lessonId, `Demo lekce ${i + 1}`, toDateString(lessonDate), dayOfWeek, "10:00", "Studio", "1-2 years", 10, 1, courseId],
+			args: [lessonId, `Demo lekce ${i + 1}`, toDateString(lessonDate), dayOfWeek, "10:00", "Studio", "1 - 2 roky", 10, 1, courseId],
 		});
 		await client.execute({
 			sql: "INSERT OR IGNORE INTO registrations (id, lessonId, participantId, status) VALUES (?, ?, ?, ?)",
@@ -329,7 +355,7 @@ export async function seedSampleData() {
 				"Monday",
 				"10:00",
 				"CVČ Vietnamská",
-				"3-12 months",
+				"6-9 měsíců (do lezení)",
 				10,
 				3,
 			],
@@ -340,7 +366,7 @@ export async function seedSampleData() {
 				"Tuesday",
 				"14:00",
 				"CVČ Jeremiáše",
-				"1-2 years",
+				"1 - 2 roky",
 				12,
 				8,
 			],
@@ -351,7 +377,7 @@ export async function seedSampleData() {
 				"Wednesday",
 				"10:00",
 				"DK Poklad",
-				"2-3 years",
+				"2 - 3 roky",
 				15,
 				12,
 			],

@@ -10,6 +10,7 @@ import multer from "multer";
 import { AuthService } from "./src/auth.js";
 import { LessonCalendarDB } from "./src/calendar-db.js";
 import { createCourse } from "./src/course.js";
+import { AGE_GROUPS, ageGroupToColor, isValidAgeGroup } from "./src/age-groups.js";
 import { issueCredit } from "./src/credit.js";
 import {
 	CourseDB,
@@ -415,6 +416,11 @@ app.post("/api/lessons", requireAdmin, async (req, res) => {
 	res.status(201).json(lesson);
 });
 
+// Age groups list (for populating dropdowns)
+app.get("/api/age-groups", requireAuth, (_req, res) => {
+	res.json(AGE_GROUPS);
+});
+
 // Courses (skupinky) — CRUD
 app.get("/api/courses", requireAuth, async (_req, res) => {
 	res.json(await CourseDB.getAll());
@@ -440,7 +446,7 @@ app.post("/api/courses", requireAdmin, async (req, res) => {
 		const course = createCourse({
 			name: req.body.name,
 			ageGroup: req.body.ageGroup,
-			color: req.body.color,
+			color: req.body.color, // optional — derived from ageGroup if absent
 			description: req.body.description,
 		});
 		await CourseDB.insert(course);
@@ -459,8 +465,17 @@ app.put("/api/courses/:id", requireAdmin, async (req, res) => {
 		return res.status(404).json({ error: "Course not found" });
 	}
 	try {
-		const { name, ageGroup, color, description } = req.body;
-		await CourseDB.update(id, { name, ageGroup, color, description });
+		const { name, ageGroup, description } = req.body;
+		// Always derive color when ageGroup is valid; otherwise keep color from body (manual override)
+		const color =
+			ageGroup && isValidAgeGroup(ageGroup)
+				? ageGroupToColor(ageGroup)
+				: (req.body.color as string | undefined);
+		const updatePayload =
+			color !== undefined
+				? { name, ageGroup, color, description }
+				: { name, ageGroup, description };
+		await CourseDB.update(id, updatePayload);
 		res.json(await CourseDB.getById(id));
 	} catch (error) {
 		res

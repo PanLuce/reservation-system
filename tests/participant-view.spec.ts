@@ -27,7 +27,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 			dayOfWeek: "Thursday",
 			time: "09:00",
 			location: "Studio A",
-			ageGroup: "3-4 years",
+			ageGroup: "2,5 - 4 roky",
 			capacity: 10,
 		});
 
@@ -37,7 +37,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 			dayOfWeek: "Friday",
 			time: "17:00",
 			location: "Studio B",
-			ageGroup: "3-4 years",
+			ageGroup: "2,5 - 4 roky",
 			capacity: 10,
 		});
 
@@ -48,7 +48,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 			name: "John Doe",
 			email: "john@example.com",
 			phone: "123456789",
-			ageGroup: "3-4 years",
+			ageGroup: "2,5 - 4 roky",
 		});
 
 		// Register participant to first lesson (this will insert the participant)
@@ -80,7 +80,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 			name: "Jane Doe",
 			email: "jane@example.com",
 			phone: "987654321",
-			ageGroup: "2-3 years",
+			ageGroup: "2 - 3 roky",
 		});
 
 		// Act
@@ -103,7 +103,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 			dayOfWeek: "Tuesday",
 			time: "10:00",
 			location: "Main Hall",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			capacity: 5,
 		});
 
@@ -113,7 +113,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 			name: "Test User",
 			email: "test@example.com",
 			phone: "111222333",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 		});
 
 		await registrationManager.registerParticipant(lesson.id, participant);

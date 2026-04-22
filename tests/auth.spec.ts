@@ -253,7 +253,7 @@ test.describe("Authentication Service", () => {
 				name: "Child Name",
 				email: email,
 				phone: "+420 777 888 999",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			});
 
 			// Act

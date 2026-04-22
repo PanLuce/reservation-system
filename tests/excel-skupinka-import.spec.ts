@@ -57,12 +57,12 @@ test.describe
 
 			courseA = createCourse({
 				name: "3-6 měsíců, Vietnamská",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 				color: "#FF6B6B",
 			});
 			courseB = createCourse({
 				name: "1-2 roky, Poklad",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#4CAF50",
 			});
 			await CourseDB.insert(courseA);

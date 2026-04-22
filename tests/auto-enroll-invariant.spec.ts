@@ -42,7 +42,7 @@ test.describe
 			// Arrange — skupinka with 2 participants already linked
 			const course = createCourse({
 				name: "Auto Test Skupinka",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#AABBCC",
 			});
 			await CourseDB.insert(course);
@@ -51,13 +51,13 @@ test.describe
 				name: "Alice",
 				email: "alice@t.cz",
 				phone: "",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 			});
 			const p2 = createParticipant({
 				name: "Bob",
 				email: "bob@t.cz",
 				phone: "",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 			});
 			await ParticipantDB.insert(p1);
 			await ParticipantDB.insert(p2);
@@ -74,7 +74,7 @@ test.describe
 					dayOfWeek: "Monday",
 					time: "10:00",
 					location: "Studio",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					capacity: 10,
 					courseId: course.id,
 				}),
@@ -94,7 +94,7 @@ test.describe
 			// Arrange — course with 2 future lessons, no participants yet
 			const course = createCourse({
 				name: "Link Test Skupinka",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 				color: "#112233",
 			});
 			await CourseDB.insert(course);
@@ -107,7 +107,7 @@ test.describe
 					dayOfWeek: "Tuesday",
 					time: "09:00",
 					location: "Room 1",
-					ageGroup: "3-12 months",
+					ageGroup: "6-9 měsíců (do lezení)",
 					capacity: 10,
 					enrolledCount: 0,
 				},
@@ -122,7 +122,7 @@ test.describe
 					dayOfWeek: "Tuesday",
 					time: "09:00",
 					location: "Room 1",
-					ageGroup: "3-12 months",
+					ageGroup: "6-9 měsíců (do lezení)",
 					capacity: 10,
 					enrolledCount: 0,
 				},
@@ -133,7 +133,7 @@ test.describe
 				name: "Carol",
 				email: "carol@t.cz",
 				phone: "",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			});
 			await ParticipantDB.insert(p);
 
@@ -170,7 +170,7 @@ test.describe
 		test("sync is idempotent — running twice does not create duplicate registrations", async () => {
 			const course = createCourse({
 				name: "Idempotent Skupinka",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#CCBBAA",
 			});
 			await CourseDB.insert(course);
@@ -179,7 +179,7 @@ test.describe
 				name: "Dave",
 				email: "dave@t.cz",
 				phone: "",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 			});
 			await ParticipantDB.insert(p);
 			await ParticipantDB.linkToCourse(p.id, course.id);
@@ -194,7 +194,7 @@ test.describe
 					dayOfWeek: "Friday",
 					time: "11:00",
 					location: "Studio",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					capacity: 10,
 					courseId: course.id,
 				}),

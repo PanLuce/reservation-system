@@ -69,6 +69,29 @@ async function handleLogout() {
 	}
 }
 
+// Age groups cache
+let ageGroups = [];
+
+async function loadAgeGroups() {
+	try {
+		const res = await fetch(`${API_URL}/age-groups`, { credentials: "include" });
+		ageGroups = await res.json();
+		populateAgeGroupSelect(document.getElementById("course-age-group"));
+		populateAgeGroupSelect(document.getElementById("lesson-age-group"));
+	} catch (e) {
+		console.error("Failed to load age groups", e);
+	}
+}
+
+function populateAgeGroupSelect(selectEl) {
+	if (!selectEl) return;
+	const current = selectEl.value;
+	selectEl.innerHTML =
+		'<option value="">-- Věková skupina --</option>' +
+		ageGroups.map((g) => `<option value="${g.name}">${g.name}</option>`).join("");
+	if (current) selectEl.value = current;
+}
+
 // Load user info on page load
 loadCurrentUser();
 
@@ -267,7 +290,7 @@ function renderDayLessons(lessons, dateStr) {
 				<div class="day-lesson-meta">
 					<span>🕐 ${l.time}</span>
 					<span>📍 ${l.location}</span>
-					<span>👶 ${translateAgeGroup(l.ageGroup)}</span>
+					<span>👶 ${(l.ageGroup)}</span>
 					<span>👥 ${l.enrolledCount}/${l.capacity}</span>
 				</div>
 				<div class="capacity-bar" style="margin:8px 0;">
@@ -302,16 +325,6 @@ function translateDay(day) {
 	return days[day] || day;
 }
 
-// Translate age groups
-function translateAgeGroup(ageGroup) {
-	const groups = {
-		"3-12 months": "3-12 měsíců",
-		"1-2 years": "1-2 roky",
-		"2-3 years": "2-3 roky",
-		"3-4 years": "3-4 roky",
-	};
-	return groups[ageGroup] || ageGroup;
-}
 
 // Show/hide add lesson form
 async function showAddLessonForm() {
@@ -329,7 +342,7 @@ async function populateLessonCourseSelect() {
 			courses
 				.map(
 					(c) =>
-						`<option value="${c.id}">[${translateAgeGroup(c.ageGroup)}] ${c.name}</option>`,
+						`<option value="${c.id}">[${(c.ageGroup)}] ${c.name}</option>`,
 				)
 				.join("");
 	} catch (error) {
@@ -467,6 +480,7 @@ async function uploadCoursesExcel(event) {
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
 	loadCalendar();
+	loadAgeGroups();
 });
 
 // ─── Skupinky (Courses) ───────────────────────────────────────────────────────
@@ -500,7 +514,7 @@ function renderCourseCard(course) {
 			</div>
 			<div class="lesson-info">
 				<div class="lesson-info-item">
-					<strong>👶 Věk:</strong> ${translateAgeGroup(course.ageGroup)}
+					<strong>👶 Věk:</strong> ${(course.ageGroup)}
 				</div>
 				${course.description ? `<div class="lesson-info-item"><strong>📝</strong> ${course.description}</div>` : ""}
 			</div>
@@ -520,10 +534,7 @@ function showAddCourseForm() {
 	document.getElementById("course-form-title").textContent = "Nová skupinka";
 	document.getElementById("course-edit-id").value = "";
 	document.getElementById("course-name").value = "";
-	document.getElementById("course-age-group").value = "3-12 months";
-	document.getElementById("course-color").value = "#4CAF50";
-	document.getElementById("course-color-picker").value = "#4CAF50";
-	document.getElementById("course-description").value = "";
+	document.getElementById("course-age-group").value = "";
 	clearCourseErrors();
 	document.getElementById("add-course-form").style.display = "block";
 }
@@ -544,10 +555,6 @@ async function editCourse(id) {
 		document.getElementById("course-edit-id").value = course.id;
 		document.getElementById("course-name").value = course.name;
 		document.getElementById("course-age-group").value = course.ageGroup;
-		document.getElementById("course-color").value = course.color;
-		document.getElementById("course-color-picker").value = course.color;
-		document.getElementById("course-description").value =
-			course.description || "";
 		clearCourseErrors();
 		document.getElementById("add-course-form").style.display = "block";
 		document.getElementById("add-course-form").scrollIntoView({
@@ -565,20 +572,11 @@ async function submitCourseForm(event) {
 	const id = document.getElementById("course-edit-id").value;
 	const name = document.getElementById("course-name").value.trim();
 	const ageGroup = document.getElementById("course-age-group").value;
-	const color = document.getElementById("course-color").value.trim();
-	const description = document
-		.getElementById("course-description")
-		.value.trim();
 
 	let hasError = false;
 	if (!name) {
 		document.getElementById("course-name-error").textContent =
 			"Název je povinný";
-		hasError = true;
-	}
-	if (!/^#([0-9A-Fa-f]{3}){1,2}$/.test(color)) {
-		document.getElementById("course-color-error").textContent =
-			"Barva musí být platný hex kód (např. #FF6B6B)";
 		hasError = true;
 	}
 	if (hasError) return;
@@ -590,7 +588,7 @@ async function submitCourseForm(event) {
 			method,
 			headers: { "Content-Type": "application/json" },
 			credentials: "include",
-			body: JSON.stringify({ name, ageGroup, color, description }),
+			body: JSON.stringify({ name, ageGroup }),
 		});
 
 		if (!res.ok) {
@@ -631,19 +629,8 @@ async function deleteCourse(id) {
 	}
 }
 
-function syncColorHex(value) {
-	document.getElementById("course-color").value = value;
-}
-
-function syncColorPicker(value) {
-	if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(value)) {
-		document.getElementById("course-color-picker").value = value;
-	}
-}
-
 function clearCourseErrors() {
 	document.getElementById("course-name-error").textContent = "";
-	document.getElementById("course-color-error").textContent = "";
 }
 
 // ─── Moje rezervace (Participant self-service) ────────────────────────────────

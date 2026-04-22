@@ -68,11 +68,8 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Věková skupina:</label>
-                            <select name="ageGroup" required>
-                                <option value="3-12 months">3-12 měsíců</option>
-                                <option value="1-2 years">1-2 roky</option>
-                                <option value="2-3 years">2-3 roky</option>
-                                <option value="3-4 years">3-4 roky</option>
+                            <select name="ageGroup" id="lesson-age-group" required>
+                                <!-- populated by loadAgeGroups() on boot -->
                             </select>
                         </div>
                         <div class="form-group">
@@ -123,28 +120,12 @@
                         <input type="text" id="course-name" required placeholder="např. 3-6 měsíců, Vietnamská">
                         <span class="field-error" id="course-name-error"></span>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Věková skupina:</label>
-                            <select id="course-age-group" required>
-                                <option value="3-12 months">3-12 měsíců</option>
-                                <option value="1-2 years">1-2 roky</option>
-                                <option value="2-3 years">2-3 roky</option>
-                                <option value="3-4 years">3-4 roky</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Barva skupinky:</label>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <input type="color" id="course-color-picker" value="#4CAF50" oninput="syncColorHex(this.value)">
-                                <input type="text" id="course-color" value="#4CAF50" maxlength="7" placeholder="#4CAF50" oninput="syncColorPicker(this.value)" style="width: 90px;">
-                            </div>
-                            <span class="field-error" id="course-color-error"></span>
-                        </div>
-                    </div>
                     <div class="form-group">
-                        <label>Popis (volitelné):</label>
-                        <textarea id="course-description" rows="2" placeholder="např. Středa 10:00"></textarea>
+                        <label>Věková skupina:</label>
+                        <select id="course-age-group" required>
+                            <!-- populated by loadAgeGroups() on boot -->
+                        </select>
+                        <small style="color: #888; font-size: 12px;">Barva skupinky se přiřadí automaticky.</small>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Uložit</button>

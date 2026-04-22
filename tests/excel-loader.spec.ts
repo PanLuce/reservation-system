@@ -22,19 +22,19 @@ test.describe("Excel Participant Loader", () => {
 				name: "Jana Nováková",
 				email: "jana@example.cz",
 				phone: "+420777888999",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			},
 			{
 				name: "Petr Svoboda",
 				email: "petr@example.cz",
 				phone: "+420666555444",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 			},
 			{
 				name: "Marie Dvořáková",
 				email: "marie@example.cz",
 				phone: "+420555444333",
-				ageGroup: "2-3 years",
+				ageGroup: "2 - 3 roky",
 			},
 		];
 
@@ -48,7 +48,7 @@ test.describe("Excel Participant Loader", () => {
 		expect(participants[0]!.name).toBe("Jana Nováková");
 		expect(participants[0]!.email).toBe("jana@example.cz");
 		expect(participants[0]!.phone).toBe("+420777888999");
-		expect(participants[0]!.ageGroup).toBe("3-12 months");
+		expect(participants[0]!.ageGroup).toBe("6-9 měsíců (do lezení)");
 
 		expect(participants[1]!.name).toBe("Petr Svoboda");
 		expect(participants[2]!.name).toBe("Marie Dvořáková");
@@ -74,19 +74,19 @@ test.describe("Excel Participant Loader", () => {
 				name: "Jana Nováková",
 				email: "jana@example.cz",
 				phone: "+420777888999",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			},
 			{
 				name: "",
 				email: "missing-name@example.cz",
 				phone: "+420666555444",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 			},
 			{
 				name: "Valid Person",
 				email: "valid@example.cz",
 				phone: "+420555444333",
-				ageGroup: "2-3 years",
+				ageGroup: "2 - 3 roky",
 			},
 		];
 

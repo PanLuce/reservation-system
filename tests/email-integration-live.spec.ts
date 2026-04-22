@@ -13,7 +13,7 @@ test.describe("Email Integration - Live Test", () => {
 				name: "Test User Playwright",
 				email: "playwright@example.com",
 				phone: "+420 999 888 777",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			},
 		};
 

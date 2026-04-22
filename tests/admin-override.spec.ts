@@ -21,7 +21,7 @@ test.describe("Admin Override - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Baby Class",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			color: "#FF5733",
 		});
 		await CourseDB.insert(course);
@@ -42,7 +42,7 @@ test.describe("Admin Override - TDD", () => {
 			name: "Alice",
 			email: "alice@example.com",
 			phone: "111",
-			ageGroup: "3-4 years", // Different from lesson's "3-12 months"
+			ageGroup: "2,5 - 4 roky", // Different from lesson's "6-9 měsíců (do lezení)"
 		});
 		await ParticipantDB.insert(participant);
 
@@ -64,7 +64,7 @@ test.describe("Admin Override - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Dance Class",
-			ageGroup: "2-3 years",
+			ageGroup: "2 - 3 roky",
 			color: "#33FF57",
 		});
 		await CourseDB.insert(course);
@@ -84,7 +84,7 @@ test.describe("Admin Override - TDD", () => {
 			name: "Bob",
 			email: "bob@example.com",
 			phone: "222",
-			ageGroup: "2-3 years",
+			ageGroup: "2 - 3 roky",
 		});
 		await ParticipantDB.insert(participant);
 
@@ -112,7 +112,7 @@ test.describe("Admin Override - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Art Class",
-			ageGroup: "3-4 years",
+			ageGroup: "2,5 - 4 roky",
 			color: "#5733FF",
 		});
 		await CourseDB.insert(course);
@@ -138,7 +138,7 @@ test.describe("Admin Override - TDD", () => {
 			name: "Charlie",
 			email: "charlie@example.com",
 			phone: "333",
-			ageGroup: "3-4 years",
+			ageGroup: "2,5 - 4 roky",
 		});
 		await ParticipantDB.insert(participant);
 
@@ -161,7 +161,7 @@ test.describe("Admin Override - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Small Class",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#FF3357",
 		});
 		await CourseDB.insert(course);
@@ -182,19 +182,19 @@ test.describe("Admin Override - TDD", () => {
 			name: "David",
 			email: "david@example.com",
 			phone: "444",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 		});
 		const participant2 = createParticipant({
 			name: "Emma",
 			email: "emma@example.com",
 			phone: "555",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 		});
 		const participant3 = createParticipant({
 			name: "Frank",
 			email: "frank@example.com",
 			phone: "666",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 		});
 
 		await ParticipantDB.insert(participant1);
@@ -232,7 +232,7 @@ test.describe("Admin Override - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Fitness Course",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			color: "#3357FF",
 		});
 		await CourseDB.insert(course);
@@ -252,7 +252,7 @@ test.describe("Admin Override - TDD", () => {
 			name: "Grace",
 			email: "grace@example.com",
 			phone: "777",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		});
 		await ParticipantDB.insert(participant);
 
@@ -274,7 +274,7 @@ test.describe("Admin Override - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Test Class",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#FF5733",
 		});
 		await CourseDB.insert(course);
@@ -294,7 +294,7 @@ test.describe("Admin Override - TDD", () => {
 			name: "Henry",
 			email: "henry@example.com",
 			phone: "888",
-			ageGroup: "3-4 years", // Wrong age group
+			ageGroup: "2,5 - 4 roky", // Wrong age group
 		});
 		await ParticipantDB.insert(participant);
 

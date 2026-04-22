@@ -39,17 +39,17 @@ test.describe
 			// Two courses, same ageGroup (same substitution group), one different ageGroup
 			const courseA = createCourse({
 				name: "3-6 měsíců, Vietnamská",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 				color: "#FF6B6B",
 			});
 			const courseB = createCourse({
 				name: "3-6 měsíců, Poklad",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 				color: "#FF6B6B",
 			}); // same ageGroup
 			const courseC = createCourse({
 				name: "1-2 roky, Jeremiáš",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#4CAF50",
 			}); // different ageGroup
 			await CourseDB.insert(courseA);
@@ -62,7 +62,7 @@ test.describe
 				name: "Participant",
 				email: "sub@t.cz",
 				phone: "",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			});
 			await ParticipantDB.insert(p);
 			pId = p.id;
@@ -88,7 +88,7 @@ test.describe
 					dayOfWeek: "Tuesday",
 					time: "09:00",
 					location: "Studio",
-					ageGroup: "3-12 months",
+					ageGroup: "6-9 měsíců (do lezení)",
 					capacity: 10,
 					enrolledCount: 1,
 				},
@@ -110,7 +110,7 @@ test.describe
 					dayOfWeek: "Tuesday",
 					time: "09:00",
 					location: "Studio",
-					ageGroup: "3-12 months",
+					ageGroup: "6-9 měsíců (do lezení)",
 					capacity: 10,
 					enrolledCount: 2,
 				},
@@ -126,7 +126,7 @@ test.describe
 					dayOfWeek: "Tuesday",
 					time: "09:00",
 					location: "Studio",
-					ageGroup: "3-12 months",
+					ageGroup: "6-9 měsíců (do lezení)",
 					capacity: 2,
 					enrolledCount: 2,
 				},
@@ -142,7 +142,7 @@ test.describe
 					dayOfWeek: "Tuesday",
 					time: "10:00",
 					location: "Studio",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					capacity: 10,
 					enrolledCount: 0,
 				},
@@ -158,7 +158,7 @@ test.describe
 					dayOfWeek: "Monday",
 					time: "09:00",
 					location: "Studio",
-					ageGroup: "3-12 months",
+					ageGroup: "6-9 měsíců (do lezení)",
 					capacity: 10,
 					enrolledCount: 0,
 				},
@@ -191,7 +191,7 @@ test.describe
 				name: "Outsider",
 				email: "out@t.cz",
 				phone: "",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			});
 			await ParticipantDB.insert(p2);
 			await UserDB.insert({

@@ -37,14 +37,14 @@ test.describe
 
 			const course = createCourse({
 				name: "Consume Test Course",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#112233",
 			});
 			await CourseDB.insert(course);
 
 			const courseB = createCourse({
 				name: "Consume Test Course B",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#112233", // same color
 			});
 			await CourseDB.insert(courseB);
@@ -53,7 +53,7 @@ test.describe
 				name: "Frank",
 				email: "frank@consume.cz",
 				phone: "",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 			});
 			await ParticipantDB.insert(p);
 			participantId = p.id;
@@ -68,7 +68,7 @@ test.describe
 					dayOfWeek: "Sunday",
 					time: "10:00",
 					location: "Studio",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					capacity: 10,
 					enrolledCount: 1,
 				},
@@ -91,7 +91,7 @@ test.describe
 					dayOfWeek: "Sunday",
 					time: "10:00",
 					location: "Studio",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					capacity: 10,
 					enrolledCount: 0,
 				},

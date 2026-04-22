@@ -118,7 +118,7 @@ test.describe("Email Factory", () => {
 			name: "Test User",
 			email: "test@example.com",
 			phone: "+420 123 456 789",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		const mockLesson = {
@@ -128,7 +128,7 @@ test.describe("Email Factory", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "Test Location",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 5,
 		};

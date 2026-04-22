@@ -75,10 +75,10 @@ test.describe.serial("Excel import → skupinky (courses)", () => {
 	test("parseCourseRowsFromBuffer: valid rows are parsed correctly", () => {
 		const buffer = Buffer.from(
 			makeCoursesExcel([
-				{ name: "Skupinka A", ageGroup: "1-2 years", color: "#FF6B6B" },
+				{ name: "Skupinka A", ageGroup: "1 - 2 roky", color: "#FF6B6B" },
 				{
 					name: "Skupinka B",
-					ageGroup: "2-3 years",
+					ageGroup: "2 - 3 roky",
 					color: "#4CAF50",
 					description: "Popis",
 				},
@@ -95,8 +95,8 @@ test.describe.serial("Excel import → skupinky (courses)", () => {
 	test("parseCourseRowsFromBuffer: invalid color returns error, valid row passes", () => {
 		const buffer = Buffer.from(
 			makeCoursesExcel([
-				{ name: "Valid", ageGroup: "1-2 years", color: "#AABBCC" },
-				{ name: "BadColor", ageGroup: "1-2 years", color: "red" },
+				{ name: "Valid", ageGroup: "1 - 2 roky", color: "#AABBCC" },
+				{ name: "BadColor", ageGroup: "1 - 2 roky", color: "red" },
 			]),
 		);
 		const loader = new ExcelParticipantLoader();
@@ -122,7 +122,7 @@ test.describe.serial("Excel import → skupinky (courses)", () => {
 			makeCoursesExcel([
 				{
 					name: "With Lessons",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					color: "#112233",
 					dayOfWeek: "Monday",
 					time: "10:00",
@@ -144,8 +144,8 @@ test.describe.serial("Excel import → skupinky (courses)", () => {
 
 	test("valid file creates two new courses in the DB", async () => {
 		const buffer = makeCoursesExcel([
-			{ name: "Nová skupinka A", ageGroup: "1-2 years", color: "#AABBCC" },
-			{ name: "Nová skupinka B", ageGroup: "2-3 years", color: "#CCBBAA" },
+			{ name: "Nová skupinka A", ageGroup: "1 - 2 roky", color: "#AABBCC" },
+			{ name: "Nová skupinka B", ageGroup: "2 - 3 roky", color: "#CCBBAA" },
 		]);
 
 		const res = await postFile(
@@ -167,8 +167,8 @@ test.describe.serial("Excel import → skupinky (courses)", () => {
 
 	test("invalid color row returns per-row error; valid rows still processed", async () => {
 		const buffer = makeCoursesExcel([
-			{ name: "Good Course", ageGroup: "1-2 years", color: "#AABBCC" },
-			{ name: "Bad Color", ageGroup: "1-2 years", color: "notahex" },
+			{ name: "Good Course", ageGroup: "1 - 2 roky", color: "#AABBCC" },
+			{ name: "Bad Color", ageGroup: "1 - 2 roky", color: "notahex" },
 		]);
 
 		const res = await postFile(
@@ -189,7 +189,7 @@ test.describe.serial("Excel import → skupinky (courses)", () => {
 
 	test("re-uploading same course is idempotent — no duplicate", async () => {
 		const buffer = makeCoursesExcel([
-			{ name: "Idempotent Course", ageGroup: "1-2 years", color: "#112233" },
+			{ name: "Idempotent Course", ageGroup: "1 - 2 roky", color: "#112233" },
 		]);
 
 		await postFile(`${BASE}/api/admin/courses/import`, buffer, adminCookie);
@@ -206,14 +206,14 @@ test.describe.serial("Excel import → skupinky (courses)", () => {
 			name: "AutoEnroll Test",
 			email: "autoenroll@test.cz",
 			phone: "",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 		});
 		await ParticipantDB.insert(p);
 
 		const buffer = makeCoursesExcel([
 			{
 				name: "Lesson Template Course",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#AABBCC",
 				dayOfWeek: "Monday",
 				time: "10:00",
@@ -244,7 +244,7 @@ test.describe.serial("Excel import → skupinky (courses)", () => {
 		const reUploadBuffer = makeCoursesExcel([
 			{
 				name: "Lesson Template Course",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#AABBCC",
 				dayOfWeek: "Monday",
 				time: "10:00",
@@ -277,7 +277,7 @@ test.describe.serial("Excel import → skupinky (courses)", () => {
 		const participantCookie = loginRes.headers.get("set-cookie") ?? "";
 
 		const buffer = makeCoursesExcel([
-			{ name: "Hacker course", ageGroup: "1-2 years", color: "#AABBCC" },
+			{ name: "Hacker course", ageGroup: "1 - 2 roky", color: "#AABBCC" },
 		]);
 		const res = await postFile(
 			`${BASE}/api/admin/courses/import`,

@@ -33,22 +33,22 @@ test.describe.serial("Substitution candidates — ageGroup filter", () => {
 		await initializeDatabase();
 		await resetDatabaseForTests();
 
-		// Participant's own course: 1-2 years, color A
+		// Participant's own course: 1 - 2 roky, color A
 		const ownCourse = createCourse({
 			name: "1-2 roky, Vietnamská",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#FF0000",
 		});
 		// Sister course: same ageGroup, different color — SHOULD appear
 		const sisterCourse = createCourse({
 			name: "1-2 roky, Poklad",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#00FF00",
 		});
 		// Different ageGroup course — MUST NOT appear
 		const wrongAgeCourse = createCourse({
 			name: "2-3 roky, Vietnamská",
-			ageGroup: "2-3 years",
+			ageGroup: "2 - 3 roky",
 			color: "#FF0000", // same color as ownCourse — proves filter is ageGroup not color
 		});
 
@@ -60,7 +60,7 @@ test.describe.serial("Substitution candidates — ageGroup filter", () => {
 			name: "Maminka",
 			email: "agefilter@t.cz",
 			phone: "",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 		});
 		await ParticipantDB.insert(p);
 		pId = p.id;
@@ -84,7 +84,7 @@ test.describe.serial("Substitution candidates — ageGroup filter", () => {
 				dayOfWeek: "Monday",
 				time: "10:00",
 				location: "Studio",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				capacity: 10,
 				enrolledCount: 0,
 			},
@@ -100,7 +100,7 @@ test.describe.serial("Substitution candidates — ageGroup filter", () => {
 				dayOfWeek: "Monday",
 				time: "11:00",
 				location: "Studio",
-				ageGroup: "2-3 years",
+				ageGroup: "2 - 3 roky",
 				capacity: 10,
 				enrolledCount: 0,
 			},
@@ -116,7 +116,7 @@ test.describe.serial("Substitution candidates — ageGroup filter", () => {
 				dayOfWeek: "Monday",
 				time: "10:00",
 				location: "Studio",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				capacity: 2,
 				enrolledCount: 2,
 			},
@@ -132,7 +132,7 @@ test.describe.serial("Substitution candidates — ageGroup filter", () => {
 				dayOfWeek: "Wednesday",
 				time: "10:00",
 				location: "Studio",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				capacity: 10,
 				enrolledCount: 0,
 			},
@@ -148,7 +148,7 @@ test.describe.serial("Substitution candidates — ageGroup filter", () => {
 				dayOfWeek: "Monday",
 				time: "09:00",
 				location: "Studio",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				capacity: 10,
 				enrolledCount: 1,
 			},
@@ -225,7 +225,7 @@ test.describe.serial("Substitution candidates — ageGroup filter", () => {
 			name: "Outsider",
 			email: "outsider@t.cz",
 			phone: "",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 		});
 		await ParticipantDB.insert(p2);
 		await UserDB.insert({

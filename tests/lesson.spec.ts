@@ -10,7 +10,7 @@ test.describe("Lesson Management", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 		};
 
@@ -24,7 +24,7 @@ test.describe("Lesson Management", () => {
 		expect(lesson.dayOfWeek).toBe("Monday");
 		expect(lesson.time).toBe("10:00");
 		expect(lesson.location).toBe("CVČ Vietnamská");
-		expect(lesson.ageGroup).toBe("3-12 months");
+		expect(lesson.ageGroup).toBe("6-9 měsíců (do lezení)");
 		expect(lesson.capacity).toBe(10);
 		expect(lesson.enrolledCount).toBe(0);
 	});

@@ -8,7 +8,7 @@ test.describe("Participant Management", () => {
 			name: "Jana Nováková",
 			email: "jana@example.cz",
 			phone: "+420 777 888 999",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		// Act
@@ -20,6 +20,6 @@ test.describe("Participant Management", () => {
 		expect(participant.name).toBe("Jana Nováková");
 		expect(participant.email).toBe("jana@example.cz");
 		expect(participant.phone).toBe("+420 777 888 999");
-		expect(participant.ageGroup).toBe("3-12 months");
+		expect(participant.ageGroup).toBe("6-9 měsíců (do lezení)");
 	});
 });

@@ -101,7 +101,7 @@ test.describe("Registration with Email Integration", () => {
 			dayOfWeek: "Pond\u011bl\u00ed",
 			time: "10:00",
 			location: "CV\u010c Vietnamsk\u00e1",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -112,7 +112,7 @@ test.describe("Registration with Email Integration", () => {
 			name: "Jana Nov\u00e1kov\u00e1",
 			email: "jana@example.cz",
 			phone: "+420 777 888 999",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		// Act
@@ -161,7 +161,7 @@ test.describe("Registration with Email Integration", () => {
 			dayOfWeek: "\u00dater\u00fd",
 			time: "14:00",
 			location: "CV\u010c Vietnamsk\u00e1",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 5,
 			enrolledCount: 5, // Full
 		};
@@ -172,7 +172,7 @@ test.describe("Registration with Email Integration", () => {
 			name: "Petr Nov\u00e1k",
 			email: "petr@example.cz",
 			phone: "+420 888 999 111",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		// Act
@@ -214,7 +214,7 @@ test.describe("Registration with Email Integration", () => {
 			dayOfWeek: "Wednesday",
 			time: "10:00",
 			location: "Test Location",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -225,7 +225,7 @@ test.describe("Registration with Email Integration", () => {
 			name: "Test User",
 			email: "test@example.com",
 			phone: "+420 123 456 789",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		// Act - should not throw
@@ -258,7 +258,7 @@ test.describe("Registration with Email Integration", () => {
 			dayOfWeek: "Thursday",
 			time: "10:00",
 			location: "Test Location",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -269,7 +269,7 @@ test.describe("Registration with Email Integration", () => {
 			name: "No Email User",
 			email: "noemail@example.com",
 			phone: "+420 123 456 789",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		// Act - should work fine without email service
@@ -297,7 +297,7 @@ test.describe("Registration with Email Integration", () => {
 			dayOfWeek: "Friday",
 			time: "10:00",
 			location: "Test Location",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -309,14 +309,14 @@ test.describe("Registration with Email Integration", () => {
 				name: "User 1",
 				email: "user1@example.com",
 				phone: "+420 111 111 111",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			},
 			{
 				id: "p6",
 				name: "User 2",
 				email: "user2@example.com",
 				phone: "+420 222 222 222",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			},
 		];
 

@@ -55,7 +55,7 @@ test.describe
 
 			const course = createCourse({
 				name: "Validity Test",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#CCDDEE",
 			});
 			await CourseDB.insert(course);
@@ -64,7 +64,7 @@ test.describe
 				name: "Grace",
 				email: "grace@validity.cz",
 				phone: "",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 			});
 			await ParticipantDB.insert(p);
 			participantId = p.id;
@@ -78,7 +78,7 @@ test.describe
 					dayOfWeek: "Tuesday",
 					time: "10:00",
 					location: "Studio",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					capacity: 10,
 					enrolledCount: 1,
 				},

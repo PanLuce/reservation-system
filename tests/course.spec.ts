@@ -7,7 +7,7 @@ test.describe("Course/Group Management - TDD", () => {
 		// Arrange
 		const courseData = {
 			name: "Pond\u011bl\u00ed dopoledne - Batolata",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#4CAF50",
 			description:
 				"Cvi\u010den\u00ed pro batolata v pond\u011bl\u00ed dopoledne",
@@ -29,7 +29,7 @@ test.describe("Course/Group Management - TDD", () => {
 		// Arrange
 		const invalidCourseData = {
 			name: "",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#4CAF50",
 		};
 
@@ -39,19 +39,16 @@ test.describe("Course/Group Management - TDD", () => {
 		);
 	});
 
-	test("should validate color format", () => {
-		// Arrange
+	test("should derive color from ageGroup when color is invalid", () => {
 		const courseData = {
 			name: "Test Course",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "invalid-color",
 			description: "Test",
 		};
 
-		// Act & Assert
-		expect(() => createCourse(courseData)).toThrow(
-			"Color must be a valid hex color",
-		);
+		const course = createCourse(courseData);
+		expect(course.color).toMatch(/^#/);
 	});
 });
 
@@ -71,7 +68,7 @@ test.describe
 			// Arrange
 			const course = createCourse({
 				name: "Pond\u011bl\u00ed dopoledne - Batolata",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#4CAF50",
 				description: "Cvi\u010den\u00ed pro batolata",
 			});
@@ -91,12 +88,12 @@ test.describe
 			// Arrange
 			const course1 = createCourse({
 				name: "Zebra Course",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#FF0000",
 			});
 			const course2 = createCourse({
 				name: "Alpha Course",
-				ageGroup: "2-3 years",
+				ageGroup: "2 - 3 roky",
 				color: "#00FF00",
 			});
 
@@ -115,17 +112,17 @@ test.describe
 			// Arrange
 			const course1 = createCourse({
 				name: "Course 1",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#FF0000",
 			});
 			const course2 = createCourse({
 				name: "Course 2",
-				ageGroup: "2-3 years",
+				ageGroup: "2 - 3 roky",
 				color: "#00FF00",
 			});
 			const course3 = createCourse({
 				name: "Course 3",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#0000FF",
 			});
 
@@ -133,18 +130,18 @@ test.describe
 			await CourseDB.insert(course1);
 			await CourseDB.insert(course2);
 			await CourseDB.insert(course3);
-			const courses = await CourseDB.getByAgeGroup("1-2 years");
+			const courses = await CourseDB.getByAgeGroup("1 - 2 roky");
 
 			// Assert
 			expect(courses).toHaveLength(2);
-			expect(courses.every((c) => c.ageGroup === "1-2 years")).toBe(true);
+			expect(courses.every((c) => c.ageGroup === "1 - 2 roky")).toBe(true);
 		});
 
 		test("should update course", async () => {
 			// Arrange
 			const course = createCourse({
 				name: "Original Name",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#FF0000",
 			});
 			await CourseDB.insert(course);
@@ -159,14 +156,14 @@ test.describe
 			// Assert
 			expect(updated!.name).toBe("Updated Name");
 			expect(updated!.color).toBe("#00FF00");
-			expect(updated!.ageGroup).toBe("1-2 years"); // Unchanged
+			expect(updated!.ageGroup).toBe("1 - 2 roky"); // Unchanged
 		});
 
 		test("should delete course", async () => {
 			// Arrange
 			const course = createCourse({
 				name: "To Delete",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#FF0000",
 			});
 			await CourseDB.insert(course);

@@ -15,7 +15,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 5, // Has space
 		};
@@ -27,7 +27,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 			name: "Jana Nováková",
 			email: "jana@example.cz",
 			phone: "+420 777 888 999",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		// Act
@@ -58,7 +58,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 				dayOfWeek: "Monday",
 				time: "10:00",
 				location: "CVČ Vietnamská",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 				capacity: 10,
 				enrolledCount: 5, // Available
 			},
@@ -69,7 +69,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 				dayOfWeek: "Monday",
 				time: "11:00",
 				location: "CVČ Vietnamská",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 				capacity: 10,
 				enrolledCount: 10, // Full - not available
 			},
@@ -80,7 +80,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 				dayOfWeek: "Tuesday",
 				time: "10:00",
 				location: "CVČ Jeremiáše",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 				capacity: 12,
 				enrolledCount: 8, // Available
 			},
@@ -91,7 +91,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 				dayOfWeek: "Wednesday",
 				time: "10:00",
 				location: "DK Poklad",
-				ageGroup: "1-2 years", // Different age group
+				ageGroup: "1 - 2 roky", // Different age group
 				capacity: 10,
 				enrolledCount: 5,
 			},
@@ -105,7 +105,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 
 		// Act
 		const availableLessons =
-			registrationManager.getAvailableSubstitutionLessons("3-12 months");
+			registrationManager.getAvailableSubstitutionLessons("6-9 měsíců (do lezení)");
 
 		// Assert
 		expect(availableLessons).toHaveLength(2); // Only lesson_1 and lesson_3
@@ -126,7 +126,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -138,7 +138,7 @@ test.describe("Substitution Management - TDD Red Phase", () => {
 			name: "Jana Nováková",
 			email: "jana@example.cz",
 			phone: "+420 777 888 999",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		// Act

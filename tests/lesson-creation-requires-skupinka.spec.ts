@@ -58,7 +58,7 @@ test.describe
 					dayOfWeek: "Monday",
 					time: "10:00",
 					location: "Studio",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					capacity: 10,
 					// courseId intentionally omitted
 				}),
@@ -69,7 +69,7 @@ test.describe
 		test("POST /api/lessons with courseId creates lesson and returns 201 with courseId", async () => {
 			const course = createCourse({
 				name: "3-6 měsíců, Vietnamská",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 				color: "#FF6B6B",
 			});
 			await CourseDB.insert(course);
@@ -86,7 +86,7 @@ test.describe
 					dayOfWeek: "Monday",
 					time: "10:00",
 					location: "Studio",
-					ageGroup: "3-12 months",
+					ageGroup: "6-9 měsíců (do lezení)",
 					capacity: 10,
 					courseId: course.id,
 				}),

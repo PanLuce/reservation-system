@@ -51,7 +51,7 @@ test.describe("Email UI Tests", () => {
 		await page.fill('input[name="name"]', "Jana Nov\u00e1kov\u00e1");
 		await page.fill('input[name="email"]', "jana@example.com");
 		await page.fill('input[name="phone"]', "+420 777 888 999");
-		await page.selectOption('select[name="ageGroup"]', "3-12 months");
+		await page.selectOption('select[name="ageGroup"]', "6-9 měsíců (do lezení)");
 
 		// Submit registration
 		await page.click('#register form button[type="submit"]');

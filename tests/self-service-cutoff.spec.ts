@@ -39,7 +39,7 @@ test.describe
 				name: "Eve",
 				email: "eve@t.cz",
 				phone: "",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 			});
 			await ParticipantDB.insert(p);
 			participantId = p.id;
@@ -60,7 +60,7 @@ test.describe
 		test("participant can cancel a registration for a lesson in the future (before midnight)", async () => {
 			const course = createCourse({
 				name: "Cutoff Test",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#123456",
 			});
 			await CourseDB.insert(course);
@@ -74,7 +74,7 @@ test.describe
 					dayOfWeek: "Monday",
 					time: "10:00",
 					location: "Studio",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					capacity: 10,
 					enrolledCount: 1,
 				},
@@ -106,7 +106,7 @@ test.describe
 		test("participant cannot cancel a registration for a lesson that starts today or in the past", async () => {
 			const course = createCourse({
 				name: "Past Cutoff Test",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#654321",
 			});
 			await CourseDB.insert(course);
@@ -123,7 +123,7 @@ test.describe
 					dayOfWeek: "Monday",
 					time: "10:00",
 					location: "Studio",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					capacity: 10,
 					enrolledCount: 1,
 				},
@@ -155,7 +155,7 @@ test.describe
 		test("admin can cancel a registration regardless of the lesson date", async () => {
 			const course = createCourse({
 				name: "Admin Override Cutoff",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#ABCDEF",
 			});
 			await CourseDB.insert(course);
@@ -171,7 +171,7 @@ test.describe
 					dayOfWeek: "Monday",
 					time: "10:00",
 					location: "Studio",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					capacity: 10,
 					enrolledCount: 1,
 				},

@@ -32,13 +32,13 @@ test.describe.serial("Customer flow", () => {
 		// Mom's own skupinka
 		const ownCourse = createCourse({
 			name: "Customer Flow Own",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#AABBCC",
 		});
 		// Sister skupinka — same ageGroup, different course
 		const sisterCourse = createCourse({
 			name: "Customer Flow Sister",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#DDEEFF",
 		});
 
@@ -51,7 +51,7 @@ test.describe.serial("Customer flow", () => {
 			name: "Maminka",
 			email: "mom@flow.cz",
 			phone: "",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 		});
 		await ParticipantDB.insert(mom);
 		momId = mom.id;
@@ -71,7 +71,7 @@ test.describe.serial("Customer flow", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "Studio",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			capacity: 10,
 			enrolledCount: 1,
 			courseId: ownCourseId,
@@ -91,7 +91,7 @@ test.describe.serial("Customer flow", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "Studio",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			capacity: 10,
 			enrolledCount: 0,
 			courseId: sisterCourseId,
@@ -105,7 +105,7 @@ test.describe.serial("Customer flow", () => {
 			dayOfWeek: "Monday",
 			time: "11:00",
 			location: "Studio",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			capacity: 10,
 			enrolledCount: 0,
 			courseId: sisterCourseId,
@@ -119,7 +119,7 @@ test.describe.serial("Customer flow", () => {
 			dayOfWeek: "Wednesday",
 			time: "10:00",
 			location: "Studio",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			capacity: 10,
 			enrolledCount: 1,
 			courseId: ownCourseId,

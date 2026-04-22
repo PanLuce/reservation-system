@@ -20,7 +20,7 @@ test.describe.serial("GET /api/lessons includes courseColor and courseName", () 
 	test("lesson with courseId includes courseColor and courseName from the linked course", async () => {
 		const course = createCourse({
 			name: "Color Test Course",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#AABBCC",
 		});
 		await CourseDB.insert(course);
@@ -32,7 +32,7 @@ test.describe.serial("GET /api/lessons includes courseColor and courseName", () 
 			dayOfWeek: "Sunday",
 			time: "10:00",
 			location: "Studio",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			capacity: 10,
 			enrolledCount: 0,
 			courseId: course.id,
@@ -56,7 +56,7 @@ test.describe.serial("GET /api/lessons includes courseColor and courseName", () 
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "Studio",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			capacity: 10,
 			enrolledCount: 0,
 		});

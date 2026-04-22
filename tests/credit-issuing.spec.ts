@@ -37,7 +37,7 @@ test.describe
 
 			const course = createCourse({
 				name: "Credit Test",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#AABBCC",
 			});
 			await CourseDB.insert(course);
@@ -46,7 +46,7 @@ test.describe
 				name: "Eve",
 				email: "eve@credit.cz",
 				phone: "",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 			});
 			await ParticipantDB.insert(p);
 			participantId = p.id;
@@ -60,7 +60,7 @@ test.describe
 					dayOfWeek: "Thursday",
 					time: "10:00",
 					location: "Studio",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					capacity: 10,
 					enrolledCount: 1,
 				},
@@ -75,7 +75,7 @@ test.describe
 					dayOfWeek: "Monday",
 					time: "10:00",
 					location: "Studio",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					capacity: 10,
 					enrolledCount: 0,
 				},

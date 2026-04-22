@@ -22,7 +22,7 @@ test.describe("Cancellation Deadline Validation", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -34,7 +34,7 @@ test.describe("Cancellation Deadline Validation", () => {
 			name: "Jana Nováková",
 			email: "jana@example.cz",
 			phone: "+420 777 888 999",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		// Register participant
@@ -72,7 +72,7 @@ test.describe("Cancellation Deadline Validation", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -84,7 +84,7 @@ test.describe("Cancellation Deadline Validation", () => {
 			name: "Jana Nováková",
 			email: "jana@example.cz",
 			phone: "+420 777 888 999",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		// Register participant
@@ -129,7 +129,7 @@ test.describe("Cancellation Deadline Validation", () => {
 			dayOfWeek: "Tuesday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -141,7 +141,7 @@ test.describe("Cancellation Deadline Validation", () => {
 			name: "Jana Nováková",
 			email: "jana@example.cz",
 			phone: "+420 777 888 999",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		const registration = registrationManager.registerParticipant(

@@ -36,7 +36,7 @@ test.describe("Email Service", () => {
 		name: "Jana Nováková",
 		email: "jana@example.cz",
 		phone: "+420 777 888 999",
-		ageGroup: "3-12 months",
+		ageGroup: "6-9 měsíců (do lezení)",
 	};
 
 	const mockLesson: Lesson = {
@@ -46,7 +46,7 @@ test.describe("Email Service", () => {
 		dayOfWeek: "Pondělí",
 		time: "10:00",
 		location: "CVČ Vietnamská",
-		ageGroup: "3-12 months",
+		ageGroup: "6-9 měsíců (do lezení)",
 		capacity: 10,
 		enrolledCount: 5,
 	};
@@ -86,7 +86,7 @@ test.describe("Email Service", () => {
 		expect(email.text).toContain("Pondělí");
 		expect(email.text).toContain("10:00");
 		expect(email.text).toContain("CVČ Vietnamská");
-		expect(email.text).toContain("3-12 months");
+		expect(email.text).toContain("6-9 měsíců (do lezení)");
 		expect(email.text).toContain("POTVRZENO");
 		expect(email.text).toContain("Centrum Rubáček");
 	});
@@ -154,7 +154,7 @@ test.describe("Email Service", () => {
 		expect(email.text).toContain("Jana Nováková");
 		expect(email.text).toContain("jana@example.cz");
 		expect(email.text).toContain("+420 777 888 999");
-		expect(email.text).toContain("3-12 months");
+		expect(email.text).toContain("6-9 měsíců (do lezení)");
 		expect(email.text).toContain("Ranní cvičení");
 		expect(email.text).toContain("Pondělí");
 		expect(email.text).toContain("10:00");

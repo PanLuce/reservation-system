@@ -68,12 +68,12 @@ test.describe
 		test("GET /api/courses returns all courses", async () => {
 			const c1 = createCourse({
 				name: "Bravo",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#FF0000",
 			});
 			const c2 = createCourse({
 				name: "Alpha",
-				ageGroup: "2-3 years",
+				ageGroup: "2 - 3 roky",
 				color: "#00FF00",
 			});
 			await CourseDB.insert(c1);
@@ -97,7 +97,7 @@ test.describe
 		test("GET /api/courses/:id returns course", async () => {
 			const course = createCourse({
 				name: "Test Course",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#FF0000",
 			});
 			await CourseDB.insert(course);
@@ -120,7 +120,7 @@ test.describe
 				},
 				body: JSON.stringify({
 					name: "3-6 měsíců, Vietnamská",
-					ageGroup: "3-12 months",
+					ageGroup: "6-9 měsíců (do lezení)",
 					color: "#FF6B6B",
 					description: "Středa 10:00",
 				}),
@@ -140,14 +140,14 @@ test.describe
 				},
 				body: JSON.stringify({
 					name: "Sneaky Course",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					color: "#FF0000",
 				}),
 			});
 			expect(res.status).toBe(403);
 		});
 
-		test("POST /api/courses with invalid color returns 400", async () => {
+		test("POST /api/courses with invalid color derives color from ageGroup", async () => {
 			const res = await fetch(`${BASE}/api/courses`, {
 				method: "POST",
 				headers: {
@@ -155,12 +155,14 @@ test.describe
 					Cookie: adminCookie,
 				},
 				body: JSON.stringify({
-					name: "Bad Color",
-					ageGroup: "1-2 years",
+					name: "Auto Color Course",
+					ageGroup: "1 - 2 roky",
 					color: "not-a-color",
 				}),
 			});
-			expect(res.status).toBe(400);
+			expect(res.status).toBe(201);
+			const data = await res.json();
+			expect(data.color).toMatch(/^#/);
 		});
 
 		test("POST /api/courses with empty name returns 400", async () => {
@@ -172,7 +174,7 @@ test.describe
 				},
 				body: JSON.stringify({
 					name: "",
-					ageGroup: "1-2 years",
+					ageGroup: "1 - 2 roky",
 					color: "#FF0000",
 				}),
 			});
@@ -182,7 +184,7 @@ test.describe
 		test("PUT /api/courses/:id updates fields selectively", async () => {
 			const course = createCourse({
 				name: "Original",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#FF0000",
 			});
 			await CourseDB.insert(course);
@@ -199,13 +201,13 @@ test.describe
 			const data = await res.json();
 			expect(data.name).toBe("Updated");
 			expect(data.color).toBe("#00FF00");
-			expect(data.ageGroup).toBe("1-2 years");
+			expect(data.ageGroup).toBe("1 - 2 roky");
 		});
 
 		test("PUT /api/courses/:id as participant returns 403", async () => {
 			const course = createCourse({
 				name: "Protected",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#FF0000",
 			});
 			await CourseDB.insert(course);
@@ -224,7 +226,7 @@ test.describe
 		test("DELETE /api/courses/:id removes the course", async () => {
 			const course = createCourse({
 				name: "To Delete",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#FF0000",
 			});
 			await CourseDB.insert(course);
@@ -242,7 +244,7 @@ test.describe
 		test("DELETE /api/courses/:id sets lessons.courseId to NULL (cascade)", async () => {
 			const course = createCourse({
 				name: "With Lessons",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#FF0000",
 			});
 			await CourseDB.insert(course);
@@ -254,7 +256,7 @@ test.describe
 				dayOfWeek: "Monday",
 				time: "10:00",
 				location: "Studio",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				capacity: 10,
 				enrolledCount: 0,
 			});
@@ -273,23 +275,23 @@ test.describe
 		test("GET /api/courses/age-group/:ageGroup returns filtered courses", async () => {
 			const c1 = createCourse({
 				name: "Babies A",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 				color: "#FF0000",
 			});
 			const c2 = createCourse({
 				name: "Toddlers A",
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 				color: "#00FF00",
 			});
 			await CourseDB.insert(c1);
 			await CourseDB.insert(c2);
 
-			const res = await fetch(`${BASE}/api/courses/age-group/3-12 months`, {
+			const res = await fetch(`${BASE}/api/courses/age-group/6-9 měsíců (do lezení)`, {
 				headers: { Cookie: adminCookie },
 			});
 			expect(res.status).toBe(200);
 			const data = await res.json();
 			expect(data).toHaveLength(1);
-			expect(data[0].ageGroup).toBe("3-12 months");
+			expect(data[0].ageGroup).toBe("6-9 měsíců (do lezení)");
 		});
 	});

@@ -32,26 +32,26 @@ test.describe.serial("Admin flow", () => {
 	test("1. creates skupinka", async () => {
 		const course = createCourse({
 			name: "1-2 roky, Vietnamská",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#FF6B6B",
 		});
 		await CourseDB.insert(course);
 
 		const saved = await CourseDB.getByName("1-2 roky, Vietnamská");
 		expect(saved).toBeDefined();
-		expect(saved?.ageGroup).toBe("1-2 years");
+		expect(saved?.ageGroup).toBe("1 - 2 roky");
 	});
 
 	test("2. bulk-creates 3 future lessons and auto-enrolls linked participants", async () => {
 		const course = createCourse({
 			name: "Bulk Flow Course",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#AABBCC",
 		});
 		await CourseDB.insert(course);
 
-		const p1 = createParticipant({ name: "Alice", email: "alice@flow.cz", phone: "", ageGroup: "1-2 years" });
-		const p2 = createParticipant({ name: "Bob", email: "bob@flow.cz", phone: "", ageGroup: "1-2 years" });
+		const p1 = createParticipant({ name: "Alice", email: "alice@flow.cz", phone: "", ageGroup: "1 - 2 roky" });
+		const p2 = createParticipant({ name: "Bob", email: "bob@flow.cz", phone: "", ageGroup: "1 - 2 roky" });
 		await ParticipantDB.insert(p1);
 		await ParticipantDB.insert(p2);
 		await ParticipantDB.linkToCourse(p1.id, course.id);
@@ -88,10 +88,10 @@ test.describe.serial("Admin flow", () => {
 	});
 
 	test("3. admin cancels a registration (excused) → credit is issued", async () => {
-		const course = createCourse({ name: "Credit Flow", ageGroup: "1-2 years", color: "#112233" });
+		const course = createCourse({ name: "Credit Flow", ageGroup: "1 - 2 roky", color: "#112233" });
 		await CourseDB.insert(course);
 
-		const p = createParticipant({ name: "Carol", email: "carol@flow.cz", phone: "", ageGroup: "1-2 years" });
+		const p = createParticipant({ name: "Carol", email: "carol@flow.cz", phone: "", ageGroup: "1 - 2 roky" });
 		await ParticipantDB.insert(p);
 		await ParticipantDB.linkToCourse(p.id, course.id);
 
@@ -106,7 +106,7 @@ test.describe.serial("Admin flow", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "Studio",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			capacity: 10,
 			enrolledCount: 1,
 			courseId: course.id,
@@ -128,10 +128,10 @@ test.describe.serial("Admin flow", () => {
 	});
 
 	test("4. deleted lesson cascades registrations", async () => {
-		const course = createCourse({ name: "Cascade Flow", ageGroup: "1-2 years", color: "#CCDDEE" });
+		const course = createCourse({ name: "Cascade Flow", ageGroup: "1 - 2 roky", color: "#CCDDEE" });
 		await CourseDB.insert(course);
 
-		const p = createParticipant({ name: "Dave", email: "dave@flow.cz", phone: "", ageGroup: "1-2 years" });
+		const p = createParticipant({ name: "Dave", email: "dave@flow.cz", phone: "", ageGroup: "1 - 2 roky" });
 		await ParticipantDB.insert(p);
 
 		const today = new Date();
@@ -145,7 +145,7 @@ test.describe.serial("Admin flow", () => {
 			dayOfWeek: "Tuesday",
 			time: "10:00",
 			location: "Studio",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			capacity: 10,
 			enrolledCount: 1,
 			courseId: course.id,
@@ -165,10 +165,10 @@ test.describe.serial("Admin flow", () => {
 	});
 
 	test("5. admin extends credit validity", async () => {
-		const course = createCourse({ name: "Extend Flow", ageGroup: "1-2 years", color: "#EEDDCC" });
+		const course = createCourse({ name: "Extend Flow", ageGroup: "1 - 2 roky", color: "#EEDDCC" });
 		await CourseDB.insert(course);
 
-		const p = createParticipant({ name: "Eve", email: "eve@flow.cz", phone: "", ageGroup: "1-2 years" });
+		const p = createParticipant({ name: "Eve", email: "eve@flow.cz", phone: "", ageGroup: "1 - 2 roky" });
 		await ParticipantDB.insert(p);
 
 		await LessonDB.insert({
@@ -178,7 +178,7 @@ test.describe.serial("Admin flow", () => {
 			dayOfWeek: "Tuesday",
 			time: "10:00",
 			location: "Studio",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			capacity: 10,
 			enrolledCount: 1,
 			courseId: course.id,

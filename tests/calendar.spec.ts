@@ -13,7 +13,7 @@ test.describe("Calendar Management", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -37,7 +37,7 @@ test.describe("Calendar Management", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -48,7 +48,7 @@ test.describe("Calendar Management", () => {
 			dayOfWeek: "Tuesday",
 			time: "10:00",
 			location: "CVČ Jeremiáše",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			capacity: 12,
 			enrolledCount: 0,
 		};
@@ -73,7 +73,7 @@ test.describe("Calendar Management", () => {
 			dayOfWeek: "Wednesday",
 			time: "14:00",
 			location: "DK Poklad",
-			ageGroup: "2-3 years",
+			ageGroup: "2 - 3 roky",
 			capacity: 8,
 			enrolledCount: 0,
 		};

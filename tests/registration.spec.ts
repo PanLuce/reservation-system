@@ -20,7 +20,7 @@ test.describe("Registration Management", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -32,7 +32,7 @@ test.describe("Registration Management", () => {
 			name: "Jana Nováková",
 			email: "jana@example.cz",
 			phone: "+420 777 888 999",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		// Act
@@ -62,7 +62,7 @@ test.describe("Registration Management", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -75,21 +75,21 @@ test.describe("Registration Management", () => {
 				name: "Jana Nováková",
 				email: "jana@example.cz",
 				phone: "+420 777 888 999",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			},
 			{
 				id: "p2",
 				name: "Petr Svoboda",
 				email: "petr@example.cz",
 				phone: "+420 666 555 444",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			},
 			{
 				id: "p3",
 				name: "Marie Dvořáková",
 				email: "marie@example.cz",
 				phone: "+420 555 444 333",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			},
 		];
 
@@ -120,7 +120,7 @@ test.describe("Registration Management", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 2, // Only 2 spots
 			enrolledCount: 2, // Already full
 		};
@@ -132,7 +132,7 @@ test.describe("Registration Management", () => {
 			name: "Jana Nováková",
 			email: "jana@example.cz",
 			phone: "+420 777 888 999",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		// Act
@@ -159,7 +159,7 @@ test.describe("Registration Management", () => {
 			dayOfWeek: "Monday",
 			time: "10:00",
 			location: "CVČ Vietnamská",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			capacity: 10,
 			enrolledCount: 0,
 		};
@@ -171,7 +171,7 @@ test.describe("Registration Management", () => {
 			name: "Jana Nováková",
 			email: "jana@example.cz",
 			phone: "+420 777 888 999",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 		};
 
 		const registration = registrationManager.registerParticipant(

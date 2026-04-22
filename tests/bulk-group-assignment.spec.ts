@@ -20,7 +20,7 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Baby Yoga Course",
-			ageGroup: "3-12 months",
+			ageGroup: "6-9 měsíců (do lezení)",
 			color: "#FF5733",
 		});
 		await CourseDB.insert(course);
@@ -31,19 +31,19 @@ test.describe("Bulk Group Assignment - TDD", () => {
 				name: "Alice",
 				email: "alice@example.com",
 				phone: "111",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			}),
 			createParticipant({
 				name: "Bob",
 				email: "bob@example.com",
 				phone: "222",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			}),
 			createParticipant({
 				name: "Charlie",
 				email: "charlie@example.com",
 				phone: "333",
-				ageGroup: "3-12 months",
+				ageGroup: "6-9 měsíců (do lezení)",
 			}),
 		];
 
@@ -90,7 +90,7 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Toddler Dance",
-			ageGroup: "2-3 years",
+			ageGroup: "2 - 3 roky",
 			color: "#33FF57",
 		});
 		await CourseDB.insert(course);
@@ -100,13 +100,13 @@ test.describe("Bulk Group Assignment - TDD", () => {
 				name: "David",
 				email: "david@example.com",
 				phone: "444",
-				ageGroup: "2-3 years",
+				ageGroup: "2 - 3 roky",
 			}),
 			createParticipant({
 				name: "Emma",
 				email: "emma@example.com",
 				phone: "555",
-				ageGroup: "2-3 years",
+				ageGroup: "2 - 3 roky",
 			}),
 		];
 
@@ -155,7 +155,7 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Small Class",
-			ageGroup: "1-2 years",
+			ageGroup: "1 - 2 roky",
 			color: "#5733FF",
 		});
 		await CourseDB.insert(course);
@@ -167,7 +167,7 @@ test.describe("Bulk Group Assignment - TDD", () => {
 				name: `Participant ${i}`,
 				email: `p${i}@example.com`,
 				phone: `${i}${i}${i}`,
-				ageGroup: "1-2 years",
+				ageGroup: "1 - 2 roky",
 			});
 			await ParticipantDB.insert(p);
 			participants.push(p);
@@ -220,7 +220,7 @@ test.describe("Bulk Group Assignment - TDD", () => {
 		// Arrange
 		const course = createCourse({
 			name: "Art Class",
-			ageGroup: "3-4 years",
+			ageGroup: "2,5 - 4 roky",
 			color: "#FF3357",
 		});
 		await CourseDB.insert(course);
@@ -232,7 +232,7 @@ test.describe("Bulk Group Assignment - TDD", () => {
 				name: `Artist ${i}`,
 				email: `artist${i}@example.com`,
 				phone: `7${i}7`,
-				ageGroup: "3-4 years",
+				ageGroup: "2,5 - 4 roky",
 			});
 			await ParticipantDB.insert(p);
 			await ParticipantDB.linkToCourse(p.id, course.id);
