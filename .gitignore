@@ -46,3 +46,5 @@ data/
 
 # Test artifacts
 screenshots/
+/.playwright-mcp/
+*.png
