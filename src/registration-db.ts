@@ -1,6 +1,7 @@
 import { LessonDB, ParticipantDB, RegistrationDB } from "./database.js";
 import type { EmailServiceInterface } from "./email-factory.js";
 import type { Participant } from "./participant.js";
+import { isAfterMidnightCutoff } from "./registration-rules.js";
 import { type Registration, toDateString } from "./types.js";
 
 export class RegistrationManagerDB {
@@ -315,6 +316,17 @@ export class RegistrationManagerDB {
 			};
 		}
 
+		// Enforce midnight cutoff
+		const lesson = (await LessonDB.getById(registration.lessonId as string)) as
+			| Record<string, unknown>
+			| undefined;
+		if (lesson && isAfterMidnightCutoff(lesson.date as string)) {
+			return {
+				success: false,
+				error: "Cannot cancel after midnight before the lesson",
+			};
+		}
+
 		// Cancel the registration
 		await this.cancelRegistration(registrationId);
 
@@ -343,6 +355,14 @@ export class RegistrationManagerDB {
 			| undefined;
 		if (!lesson) {
 			return { success: false, error: "Lesson not found" };
+		}
+
+		// Enforce midnight cutoff
+		if (isAfterMidnightCutoff(lesson.date as string)) {
+			return {
+				success: false,
+				error: "Cannot register after midnight before the lesson",
+			};
 		}
 
 		// Check age group match
@@ -712,6 +732,53 @@ export class RegistrationManagerDB {
 		}
 
 		return result;
+	}
+
+	/**
+	 * Idempotent. Ensures every participant linked to courseId is registered
+	 * on every future lesson of that course. Skips past lessons and existing
+	 * registrations. Overflow → waitlist.
+	 */
+	async syncGroupEnrollments(
+		courseId: string,
+	): Promise<{ enrolled: number; skipped: number }> {
+		const today = new Date().toISOString().slice(0, 10);
+		const [members, lessons] = await Promise.all([
+			ParticipantDB.getByCourse(courseId),
+			LessonDB.getByCourse(courseId),
+		]);
+
+		const futureLesson = lessons.filter((l) => (l.date as string) >= today);
+
+		let enrolled = 0;
+		let skipped = 0;
+
+		for (const member of members) {
+			const participantId = member.id as string;
+			const participant = {
+				id: participantId,
+				name: member.name as string,
+				email: member.email as string,
+				phone: (member.phone as string) ?? "",
+				ageGroup: member.ageGroup as string,
+			};
+
+			for (const lesson of futureLesson) {
+				const lessonId = lesson.id as string;
+				const existing = await RegistrationDB.getByParticipantAndLesson(
+					participantId,
+					lessonId,
+				);
+				if (existing) {
+					skipped++;
+					continue;
+				}
+				await this.registerParticipant(lessonId, participant);
+				enrolled++;
+			}
+		}
+
+		return { enrolled, skipped };
 	}
 
 	private generateId(): string {

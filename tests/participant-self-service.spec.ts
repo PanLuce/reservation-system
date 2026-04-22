@@ -34,7 +34,7 @@ test.describe("Participant Self-Service - TDD", () => {
 			time: "09:00",
 			dayOfWeek: "Monday",
 			capacity: 10,
-			dates: ["2024-05-20"], // Future date
+			dates: ["2030-05-20"],
 		});
 
 		const participant = createParticipant({
@@ -83,7 +83,7 @@ test.describe("Participant Self-Service - TDD", () => {
 			time: "15:00",
 			dayOfWeek: "Wednesday",
 			capacity: 10,
-			dates: ["2024-05-22"],
+			dates: ["2030-05-22"],
 		});
 
 		const participant1 = createParticipant({
@@ -135,7 +135,7 @@ test.describe("Participant Self-Service - TDD", () => {
 			time: "14:00",
 			dayOfWeek: "Thursday",
 			capacity: 10,
-			dates: ["2024-05-23"],
+			dates: ["2030-05-23"],
 		});
 
 		const participant = createParticipant({
@@ -181,7 +181,7 @@ test.describe("Participant Self-Service - TDD", () => {
 			time: "10:00",
 			dayOfWeek: "Friday",
 			capacity: 10,
-			dates: ["2024-05-24"],
+			dates: ["2030-05-24"],
 		});
 
 		const participant = createParticipant({
@@ -222,7 +222,7 @@ test.describe("Participant Self-Service - TDD", () => {
 			time: "16:00",
 			dayOfWeek: "Tuesday",
 			capacity: 10,
-			dates: ["2024-05-21", "2024-05-28"],
+			dates: ["2030-05-21", "2030-05-28"],
 		});
 
 		const participant = createParticipant({
@@ -342,7 +342,7 @@ test.describe("Participant Self-Service - TDD", () => {
 			time: "11:00",
 			dayOfWeek: "Saturday",
 			capacity: 10,
-			dates: ["2024-05-25"],
+			dates: ["2030-05-25"],
 		});
 
 		const participant = createParticipant({

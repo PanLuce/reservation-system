@@ -373,6 +373,8 @@ app.post("/api/lessons", requireAdmin, async (req, res) => {
 		courseId: lessonData.courseId as string,
 	});
 	await calendar.addLesson(lesson);
+	// Auto-enroll all skupinka members onto this new lesson
+	await registrationManager.syncGroupEnrollments(lessonData.courseId as string);
 	res.status(201).json(lesson);
 });
 
@@ -439,6 +441,20 @@ app.delete("/api/courses/:id", requireAdmin, async (req, res) => {
 	await CourseDB.delete(id);
 	res.json({ message: "Course deleted" });
 });
+
+app.post(
+	"/api/courses/:id/sync-enrollments",
+	requireAdmin,
+	async (req, res) => {
+		const id = req.params.id as string;
+		const existing = await CourseDB.getById(id);
+		if (!existing) {
+			return res.status(404).json({ error: "Course not found" });
+		}
+		const result = await registrationManager.syncGroupEnrollments(id);
+		res.json(result);
+	},
+);
 
 app.post(
 	"/api/courses/:courseId/bulk-lessons",

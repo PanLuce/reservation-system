@@ -405,19 +405,24 @@ export const LessonDB = {
 		return result.rows;
 	},
 
-	async insert(lesson: {
-		id: string;
-		title: string;
-		date: string;
-		dayOfWeek: string;
-		time: string;
-		location: string;
-		ageGroup: string;
-		capacity: number;
-		enrolledCount: number;
-	}) {
+	async insert(
+		lesson: {
+			id: string;
+			title: string;
+			date: string;
+			dayOfWeek: string;
+			time: string;
+			location: string;
+			ageGroup: string;
+			capacity: number;
+			enrolledCount: number;
+			courseId?: string;
+		},
+		courseId?: string,
+	) {
+		const resolvedCourseId = courseId ?? lesson.courseId ?? null;
 		const result = await client.execute({
-			sql: "INSERT INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			sql: "INSERT INTO lessons (id, title, date, dayOfWeek, time, location, ageGroup, capacity, enrolledCount, courseId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 			args: [
 				lesson.id,
 				lesson.title,
@@ -428,6 +433,7 @@ export const LessonDB = {
 				lesson.ageGroup,
 				lesson.capacity,
 				lesson.enrolledCount,
+				resolvedCourseId,
 			],
 		});
 		return { changes: result.rowsAffected };
