@@ -116,6 +116,8 @@ function showNotification(message, type = "success") {
 let calendarYear = new Date().getFullYear();
 let calendarMonth = new Date().getMonth(); // 0-indexed
 let calendarLessons = []; // cached from last fetch
+let calendarSubCandidateIds = new Set(); // lessonIds eligible for substitution
+let calendarCreditCount = 0; // active substitution credits for current participant
 
 const CZECH_MONTHS = [
 	"Leden","Únor","Březen","Duben","Květen","Červen",
@@ -125,8 +127,25 @@ const CZECH_DAYS_SHORT = ["Po","Út","St","Čt","Pá","So","Ne"];
 
 async function loadCalendar() {
 	try {
-		const res = await fetch(`${API_URL}/lessons`, { credentials: "include" });
-		calendarLessons = await res.json();
+		const lessonsPromise = fetch(`${API_URL}/lessons`, { credentials: "include" }).then((r) => r.json());
+
+		const pId = currentUser?.participantId;
+		const subPromise = pId
+			? fetch(`${API_URL}/participants/${pId}/substitution-candidates`, { credentials: "include" })
+				.then((r) => r.ok ? r.json() : [])
+				.catch(() => [])
+			: Promise.resolve([]);
+		const creditPromise = pId
+			? fetch(`${API_URL}/participants/${pId}/credits`, { credentials: "include" })
+				.then((r) => r.ok ? r.json() : { count: 0 })
+				.catch(() => ({ count: 0 }))
+			: Promise.resolve({ count: 0 });
+
+		const [lessons, subCandidates, creditData] = await Promise.all([lessonsPromise, subPromise, creditPromise]);
+		calendarLessons = lessons;
+		calendarSubCandidateIds = new Set(subCandidates.map((l) => l.id));
+		calendarCreditCount = creditData.count ?? 0;
+
 		renderMonthCalendar(calendarYear, calendarMonth);
 	} catch (error) {
 		showNotification("Chyba při načítání lekcí", "error");
@@ -222,12 +241,21 @@ function renderDayLessons(lessons, dateStr) {
 			? `<span class="calendar-dot" style="background:${l.courseColor};width:12px;height:12px;"></span>`
 			: "";
 
-		const actions = isAdmin
-			? `<button class="btn btn-danger" onclick="deleteLesson('${l.id}');closeDayModalDirect()">Smazat</button>`
-			: `<button class="btn btn-danger" onclick="selfCancel('${l.id}')"
-					${canCancel ? "" : "disabled title='Nelze odhlásit po půlnoci před lekcí'"}>
-					Odhlásit
-				</button>`;
+		let actions;
+		if (isAdmin) {
+			actions = `<button class="btn btn-danger" onclick="deleteLesson('${l.id}');closeDayModalDirect()">Smazat</button>`;
+		} else if (calendarSubCandidateIds.has(l.id)) {
+			const noCredit = calendarCreditCount <= 0;
+			actions = `<button class="btn btn-primary" onclick="selfRegister('${l.id}')"
+				${noCredit ? `disabled title="Potřebujete náhradu (aktuálně 0 kreditů)"` : ""}>
+				Přihlásit jako náhrada
+			</button>`;
+		} else {
+			actions = `<button class="btn btn-danger" onclick="selfCancel('${l.id}')"
+				${canCancel ? "" : "disabled title='Nelze odhlásit po půlnoci před lekcí'"}>
+				Odhlásit
+			</button>`;
+		}
 
 		return `
 			<div class="day-lesson-row">
@@ -779,6 +807,8 @@ async function selfRegister(lessonId) {
 		});
 		if (res.ok) {
 			showNotification("Přihlášení proběhlo úspěšně");
+			closeDayModalDirect();
+			loadCalendar();
 			loadMyReservations();
 		} else {
 			const data = await res.json();

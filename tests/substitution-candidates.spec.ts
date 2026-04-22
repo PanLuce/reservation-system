@@ -36,7 +36,7 @@ test.describe
 			await initializeDatabase();
 			await resetDatabaseForTests();
 
-			// Two courses, same color (same substitution group), one different color
+			// Two courses, same ageGroup (same substitution group), one different ageGroup
 			const courseA = createCourse({
 				name: "3-6 měsíců, Vietnamská",
 				ageGroup: "3-12 months",
@@ -46,12 +46,12 @@ test.describe
 				name: "3-6 měsíců, Poklad",
 				ageGroup: "3-12 months",
 				color: "#FF6B6B",
-			}); // same color
+			}); // same ageGroup
 			const courseC = createCourse({
 				name: "1-2 roky, Jeremiáš",
 				ageGroup: "1-2 years",
 				color: "#4CAF50",
-			}); // different color
+			}); // different ageGroup
 			await CourseDB.insert(courseA);
 			await CourseDB.insert(courseB);
 			await CourseDB.insert(courseC);
@@ -182,7 +182,7 @@ test.describe
 			expect(ids).toContain("lesson_sub_avail");
 			expect(ids).not.toContain("lesson_registered"); // already on it
 			expect(ids).not.toContain("lesson_sub_full"); // full
-			expect(ids).not.toContain("lesson_diff_color"); // wrong color
+			expect(ids).not.toContain("lesson_diff_color"); // wrong ageGroup
 			expect(ids).not.toContain("lesson_past"); // past
 		});
 

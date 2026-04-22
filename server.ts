@@ -805,8 +805,8 @@ app.get(
 
 		const participantCourses =
 			await ParticipantDB.getCoursesForParticipant(participantId);
-		const participantColors = new Set(
-			participantCourses.map((c) => c.color as string),
+		const participantAgeGroups = new Set(
+			participantCourses.map((c) => c.ageGroup as string),
 		);
 		const participantCourseIds = new Set(
 			participantCourses.map((c) => c.id as string),
@@ -822,16 +822,16 @@ app.get(
 		);
 
 		const allCourses = await CourseDB.getAll();
-		const sameColorCourseIds = allCourses
+		const sameAgeGroupCourseIds = allCourses
 			.filter(
 				(c) =>
-					participantColors.has(c.color as string) &&
+					participantAgeGroups.has(c.ageGroup as string) &&
 					!participantCourseIds.has(c.id as string),
 			)
 			.map((c) => c.id as string);
 
 		const candidates: unknown[] = [];
-		for (const courseId of sameColorCourseIds) {
+		for (const courseId of sameAgeGroupCourseIds) {
 			const lessons = await LessonDB.getByCourse(courseId);
 			for (const lesson of lessons) {
 				if (
