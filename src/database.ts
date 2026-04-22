@@ -313,6 +313,14 @@ export const CourseDB = {
 		return result.rows;
 	},
 
+	async getByName(name: string) {
+		const result = await client.execute({
+			sql: "SELECT * FROM courses WHERE name = ?",
+			args: [name],
+		});
+		return result.rows[0];
+	},
+
 	async insert(course: {
 		id: string;
 		name: string;
@@ -552,6 +560,14 @@ export const ParticipantDB = {
 			args: [],
 		});
 		return result.rows;
+	},
+
+	async getByEmail(email: string) {
+		const result = await client.execute({
+			sql: "SELECT * FROM participants WHERE email = ?",
+			args: [email],
+		});
+		return result.rows[0];
 	},
 
 	async getRegistrationsByParticipantId(participantId: string) {

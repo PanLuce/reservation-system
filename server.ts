@@ -822,30 +822,74 @@ app.post("/api/substitutions", async (req, res) => {
 	res.status(201).json(registration);
 });
 
-// Excel Import
-app.post("/api/excel/import", upload.single("file"), async (req, res) => {
-	if (!req.file) {
-		return res.status(400).json({ error: "No file uploaded" });
-	}
+// Excel Import — binds participants to skupinky (not lessons)
+app.post(
+	"/api/excel/import",
+	requireAdmin,
+	upload.single("file"),
+	async (req, res) => {
+		if (!req.file) {
+			return res.status(400).json({ error: "No file uploaded" });
+		}
 
-	const lessonId = req.body.lessonId;
-	if (!lessonId) {
-		return res.status(400).json({ error: "Lesson ID required" });
-	}
+		const buffer = fs.readFileSync(req.file.path);
+		const rows = excelLoader.parseSkupinkaRowsFromBuffer(buffer);
 
-	try {
-		const count = await excelLoader.bulkLoadAndRegister(
-			req.file.path,
-			lessonId,
-			registrationManager,
-		);
-		res.json({ message: `Successfully registered ${count} participants` });
-	} catch (error) {
-		res
-			.status(500)
-			.json({ error: "Failed to process Excel file", details: String(error) });
-	}
-});
+		const results: {
+			ok: boolean;
+			email: string;
+			skupinka: string;
+			error?: string;
+		}[] = [];
+
+		for (const row of rows) {
+			try {
+				const course = await CourseDB.getByName(row.skupinkaName);
+				if (!course) {
+					results.push({
+						ok: false,
+						email: row.email,
+						skupinka: row.skupinkaName,
+						error: `Skupinka "${row.skupinkaName}" not found`,
+					});
+					continue;
+				}
+
+				let participant = await ParticipantDB.getByEmail(row.email);
+				if (!participant) {
+					const newParticipant = createParticipant({
+						name: row.name,
+						email: row.email,
+						phone: "",
+						ageGroup: course.ageGroup as string,
+					});
+					await ParticipantDB.insert(newParticipant);
+					participant = await ParticipantDB.getByEmail(row.email);
+				}
+
+				await ParticipantDB.linkToCourse(
+					participant!.id as string,
+					course.id as string,
+				);
+
+				results.push({
+					ok: true,
+					email: row.email,
+					skupinka: row.skupinkaName,
+				});
+			} catch (error) {
+				results.push({
+					ok: false,
+					email: row.email,
+					skupinka: row.skupinkaName,
+					error: String(error),
+				});
+			}
+		}
+
+		res.json({ results });
+	},
+);
 
 // Serve frontend
 app.get("/", (req, res) => {

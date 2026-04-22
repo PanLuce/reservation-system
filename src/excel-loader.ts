@@ -4,6 +4,12 @@ import { createParticipant } from "./participant.js";
 import type { RegistrationManager } from "./registration.js";
 import type { RegistrationManagerDB } from "./registration-db.js";
 
+export type SkupinkaRow = {
+	name: string;
+	email: string;
+	skupinkaName: string;
+};
+
 export class ExcelParticipantLoader {
 	parseParticipantsFromFile(filePath: string): Participant[] {
 		const workbook = XLSX.readFile(filePath);
@@ -13,6 +19,33 @@ export class ExcelParticipantLoader {
 	parseParticipantsFromBuffer(buffer: Buffer): Participant[] {
 		const workbook = XLSX.read(buffer, { type: "buffer" });
 		return this.parseWorkbook(workbook);
+	}
+
+	parseSkupinkaRowsFromBuffer(buffer: Buffer): SkupinkaRow[] {
+		const workbook = XLSX.read(buffer, { type: "buffer" });
+		const sheetName = workbook.SheetNames[0];
+		if (!sheetName) return [];
+		const worksheet = workbook.Sheets[sheetName];
+		if (!worksheet) return [];
+		const rows = XLSX.utils.sheet_to_json(worksheet) as Record<
+			string,
+			unknown
+		>[];
+		return rows
+			.filter(
+				(r) =>
+					typeof r.name === "string" &&
+					r.name.trim() !== "" &&
+					typeof r.email === "string" &&
+					r.email.trim() !== "" &&
+					typeof r.skupinka === "string" &&
+					r.skupinka.trim() !== "",
+			)
+			.map((r) => ({
+				name: (r.name as string).trim(),
+				email: (r.email as string).trim(),
+				skupinkaName: (r.skupinka as string).trim(),
+			}));
 	}
 
 	async bulkLoadAndRegister(
