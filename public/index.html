@@ -90,6 +90,37 @@
             <div class="calendar-grid" id="calendar-grid"></div>
         </div>
 
+        <!-- Add Mom Modal -->
+        <div id="add-mom-modal" class="day-modal-overlay" onclick="closeAddMomModal(event)" style="display:none;">
+            <div class="day-modal">
+                <div class="day-modal-header">
+                    <h3>Přidat maminku do skupinky</h3>
+                    <button type="button" class="day-modal-close" onclick="closeAddMomModalDirect()">✕</button>
+                </div>
+                <div class="day-modal-body">
+                    <form id="add-mom-form" onsubmit="submitAddMom(event)">
+                        <input type="hidden" id="add-mom-course-id">
+                        <div class="form-group">
+                            <label>Jméno:</label>
+                            <input type="text" id="add-mom-name" required placeholder="Jméno dítěte">
+                        </div>
+                        <div class="form-group">
+                            <label>Email:</label>
+                            <input type="email" id="add-mom-email" required placeholder="email@example.cz">
+                        </div>
+                        <div class="form-group">
+                            <label>Telefon (nepovinné):</label>
+                            <input type="tel" id="add-mom-phone" placeholder="+420 777 000 111">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Přidat</button>
+                            <button type="button" class="btn btn-secondary" onclick="closeAddMomModalDirect()">Zrušit</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- Day Detail Modal -->
         <div id="day-modal" class="day-modal-overlay" onclick="closeDayModal(event)" style="display:none;">
             <div class="day-modal">

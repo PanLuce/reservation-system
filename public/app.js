@@ -544,6 +544,7 @@ function renderCourseCard(course) {
 				isAdmin
 					? `
 			<div class="lesson-actions">
+				<button class="btn btn-primary" onclick="showAddMomModal('${course.id}')">+ Přidat maminku</button>
 				<button class="btn btn-secondary" onclick="editCourse('${course.id}')">Upravit</button>
 				<button class="btn btn-danger" onclick="deleteCourse('${course.id}', this)">Smazat</button>
 			</div>`
@@ -816,6 +817,62 @@ async function loadSubstitutionCandidates(participantId) {
 		showNotification("Chyba při načítání náhrad", "error");
 		console.error(error);
 	}
+}
+
+// ─── Add Mom to Course modal ──────────────────────────────────────────────────
+
+function showAddMomModal(courseId) {
+	document.getElementById("add-mom-course-id").value = courseId;
+	document.getElementById("add-mom-name").value = "";
+	document.getElementById("add-mom-email").value = "";
+	document.getElementById("add-mom-phone").value = "";
+	document.getElementById("add-mom-modal").style.display = "flex";
+}
+
+function closeAddMomModal(event) {
+	if (event.target === document.getElementById("add-mom-modal")) {
+		document.getElementById("add-mom-modal").style.display = "none";
+	}
+}
+
+function closeAddMomModalDirect() {
+	document.getElementById("add-mom-modal").style.display = "none";
+}
+
+async function submitAddMom(event) {
+	event.preventDefault();
+	const courseId = document.getElementById("add-mom-course-id").value;
+	const name = document.getElementById("add-mom-name").value.trim();
+	const email = document.getElementById("add-mom-email").value.trim();
+	const phone = document.getElementById("add-mom-phone").value.trim();
+
+	await withLoading(event.submitter, async () => {
+		try {
+			const res = await fetch(`${API_URL}/courses/${courseId}/participants`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ name, email, ...(phone ? { phone } : {}) }),
+			});
+
+			if (res.ok) {
+				const data = await res.json();
+				showNotification(
+					data.created ? "Maminka přidána a přihlášena na lekce" : "Maminka již existuje — přihlášena na lekce",
+					"success",
+				);
+				closeAddMomModalDirect();
+				loadCourses();
+				loadCalendar();
+			} else {
+				const data = await res.json();
+				showNotification(data.error || "Chyba při přidávání maminky", "error");
+			}
+		} catch (error) {
+			showNotification("Chyba při přidávání maminky", "error");
+			console.error(error);
+		}
+	});
 }
 
 async function selfRegister(lessonId, triggerEl) {

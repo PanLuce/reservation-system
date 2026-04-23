@@ -495,6 +495,57 @@ app.delete("/api/courses/:id", requireAdmin, async (req, res) => {
 });
 
 app.post(
+	"/api/courses/:id/participants",
+	requireAdmin,
+	async (req, res) => {
+		const courseId = req.params.id as string;
+		const { name, email, phone } = req.body as {
+			name?: string;
+			email?: string;
+			phone?: string;
+		};
+
+		if (!email || !name) {
+			return res.status(400).json({ error: "name and email are required" });
+		}
+
+		const course = await CourseDB.getById(courseId);
+		if (!course) {
+			return res.status(404).json({ error: "Course not found" });
+		}
+
+		// Upsert participant by email
+		let existingParticipant = await ParticipantDB.getByEmail(email) as Record<string, unknown> | undefined;
+		let created = false;
+
+		if (!existingParticipant) {
+			const newParticipant = createParticipant({
+				name,
+				email,
+				phone: phone ?? "",
+				ageGroup: course.ageGroup as string,
+			});
+			await ParticipantDB.insert(newParticipant);
+			existingParticipant = newParticipant as unknown as Record<string, unknown>;
+			created = true;
+		}
+
+		const participantId = existingParticipant.id as string;
+
+		// Idempotent link
+		await ParticipantDB.linkToCourse(participantId, courseId);
+
+		// Auto-enroll in all future lessons
+		await registrationManager.syncGroupEnrollments(courseId);
+
+		res.status(created ? 201 : 200).json({
+			participant: existingParticipant,
+			created,
+		});
+	},
+);
+
+app.post(
 	"/api/courses/:id/sync-enrollments",
 	requireAdmin,
 	async (req, res) => {
