@@ -819,6 +819,166 @@ async function loadSubstitutionCandidates(participantId) {
 	}
 }
 
+// ─── ODS two-step importer ────────────────────────────────────────────────────
+
+let odsPreviewData = null;
+
+async function uploadOdsForPreview(event) {
+	event.preventDefault();
+	const fileInput = document.getElementById("ods-file-input");
+	if (!fileInput.files || fileInput.files.length === 0) return;
+
+	const formData = new FormData();
+	formData.append("file", fileInput.files[0]);
+
+	await withLoading(event.submitter, async () => {
+		try {
+			const res = await fetch(`${API_URL}/admin/participants-import/preview`, {
+				method: "POST",
+				credentials: "include",
+				body: formData,
+			});
+
+			if (!res.ok) {
+				showNotification("Chyba při nahrávání souboru", "error");
+				return;
+			}
+
+			odsPreviewData = await res.json();
+			renderOdsPreview(odsPreviewData);
+			document.getElementById("ods-step2").style.display = "block";
+			document.getElementById("ods-step2").scrollIntoView({ behavior: "smooth" });
+		} catch (error) {
+			showNotification("Chyba při nahrávání souboru", "error");
+			console.error(error);
+		}
+	});
+}
+
+function renderOdsPreview(preview) {
+	const container = document.getElementById("ods-blocks-container");
+	let html = "";
+	let blockIndex = 0;
+
+	for (const sheet of preview.sheets) {
+		if (sheet.blocks.length === 0) continue;
+		html += `<div style="margin-bottom: 12px; color: #888; font-size: 13px; border-top: 1px solid #eee; padding-top: 12px;">
+			📋 List: <strong>${sheet.sheetName}</strong>
+			${sheet.detectedLocation ? `· místo: <em>${sheet.detectedLocation}</em>` : ""}
+		</div>`;
+
+		for (const block of sheet.blocks) {
+			const idx = blockIndex++;
+			const detectedLoc = sheet.detectedLocation || "";
+			const suggestedName = block.title.split("–")[0]?.trim() || block.title;
+
+			html += `
+			<div class="form-card" style="margin-bottom: 12px; background: #fafafa;" id="ods-block-${idx}">
+				<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+					<strong style="font-size: 14px;">${block.title || "(bez názvu)"}</strong>
+					<label style="font-size: 13px; color: #666;">
+						<input type="checkbox" id="ods-include-${idx}" checked> Importovat
+					</label>
+				</div>
+				<div class="form-row" style="gap: 8px; margin-bottom: 8px;">
+					<div class="form-group" style="flex:2; margin:0;">
+						<label style="font-size: 12px;">Název skupinky:</label>
+						<input type="text" id="ods-name-${idx}" value="${suggestedName}" style="font-size: 13px;">
+					</div>
+					<div class="form-group" style="flex:2; margin:0;">
+						<label style="font-size: 12px;">Věková skupina:</label>
+						<select id="ods-agegroup-${idx}" style="font-size: 13px;">
+							<option value="">-- Vyberte --</option>
+							${ageGroups.map((g) => `<option value="${g.name}">${g.name}</option>`).join("")}
+						</select>
+					</div>
+					<div class="form-group" style="flex:2; margin:0;">
+						<label style="font-size: 12px;">Místo:</label>
+						<input type="text" id="ods-location-${idx}" value="${detectedLoc}" style="font-size: 13px;">
+					</div>
+				</div>
+				<div style="font-size: 12px; color: #666;">${block.rows.length} účastník(ů)
+					${block.warnings.length > 0 ? `· <span style="color:#c62828;">${block.warnings.length} varování</span>` : ""}
+				</div>
+				${block.warnings.length > 0 ? `<ul style="font-size:11px;color:#c62828;margin-top:4px;">${block.warnings.map((w) => `<li>${w}</li>`).join("")}</ul>` : ""}
+			</div>`;
+		}
+	}
+
+	container.innerHTML = html || "<p>Žádné bloky nenalezeny.</p>";
+}
+
+async function submitOdsImport(triggerEl) {
+	if (!odsPreviewData) return;
+
+	const blocks = [];
+	let blockIndex = 0;
+
+	for (const sheet of odsPreviewData.sheets) {
+		for (const block of sheet.blocks) {
+			const idx = blockIndex++;
+			const includeEl = document.getElementById(`ods-include-${idx}`);
+			if (!includeEl?.checked) continue;
+
+			const skupinkaName = document.getElementById(`ods-name-${idx}`)?.value?.trim();
+			const ageGroup = document.getElementById(`ods-agegroup-${idx}`)?.value;
+			const location = document.getElementById(`ods-location-${idx}`)?.value?.trim();
+
+			if (!skupinkaName) continue;
+
+			blocks.push({
+				skupinkaName,
+				ageGroup: ageGroup || undefined,
+				location: location || undefined,
+				participants: block.rows.map((r) => ({
+					name: r.name,
+					email: r.email,
+					...(r.phone ? { phone: r.phone } : {}),
+				})),
+			});
+		}
+	}
+
+	await withLoading(triggerEl, async () => {
+		try {
+			const res = await fetch(`${API_URL}/admin/participants-import/commit`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ blocks }),
+			});
+
+			const data = await res.json();
+			const resultsEl = document.getElementById("ods-commit-results");
+
+			if (res.ok) {
+				const errors = (data.blockResults || []).filter((b) => !b.ok);
+				let summary = `✅ Importováno: ${data.processed} účastník(ů), nových: ${data.created}, přeskočeno: ${data.skipped}`;
+				if (errors.length > 0) {
+					summary += `<br><span style="color:#c62828;">⚠️ ${errors.length} blok(ů) s chybou: ${errors.map((b) => b.skupinkaName + ": " + b.error).join("; ")}</span>`;
+				}
+				if (resultsEl) resultsEl.innerHTML = `<div class="info-box" style="margin-top:12px;">${summary}</div>`;
+				showNotification(`Import dokončen: ${data.processed} účastník(ů)`, "success");
+				loadCourses();
+				loadCalendar();
+			} else {
+				showNotification(data.error || "Chyba při importu", "error");
+			}
+		} catch (error) {
+			showNotification("Chyba při importu", "error");
+			console.error(error);
+		}
+	});
+}
+
+function resetOdsImport() {
+	odsPreviewData = null;
+	document.getElementById("ods-step2").style.display = "none";
+	document.getElementById("ods-blocks-container").innerHTML = "";
+	document.getElementById("ods-commit-results").innerHTML = "";
+	document.getElementById("ods-file-input").value = "";
+}
+
 // ─── Add Mom to Course modal ──────────────────────────────────────────────────
 
 function showAddMomModal(courseId) {

@@ -24,6 +24,7 @@ import {
 } from "./src/database.js";
 import { createEmailService } from "./src/email-factory.js";
 import { ExcelParticipantLoader } from "./src/excel-loader.js";
+import { parseOdsWorkbook } from "./src/ods-loader.js";
 import { createLesson } from "./src/lesson.js";
 import { logger } from "./src/logger.js";
 import { createParticipant } from "./src/participant.js";
@@ -1204,6 +1205,115 @@ app.post(
 		}
 
 		res.json({ processed: results.filter((r) => r.ok).length, perRow: results });
+	},
+);
+
+// ODS two-step import — Step 1: parse only, no DB writes
+app.post(
+	"/api/admin/participants-import/preview",
+	requireAdmin,
+	upload.single("file"),
+	async (req, res) => {
+		if (!req.file) {
+			return res.status(400).json({ error: "No file uploaded" });
+		}
+		const buffer = fs.readFileSync(req.file.path);
+		const parsed = parseOdsWorkbook(buffer);
+		res.json(parsed);
+	},
+);
+
+// ODS two-step import — Step 2: commit mapped payload to DB
+app.post(
+	"/api/admin/participants-import/commit",
+	requireAdmin,
+	async (req, res) => {
+		const { blocks } = req.body as {
+			blocks: {
+				skupinkaName: string;
+				ageGroup?: string;
+				location?: string;
+				participants: { name: string; email: string; phone?: string }[];
+			}[];
+		};
+
+		if (!Array.isArray(blocks)) {
+			return res.status(400).json({ error: "blocks array is required" });
+		}
+
+		let totalProcessed = 0;
+		let totalCreated = 0;
+		let totalSkipped = 0;
+		const blockResults: { ok: boolean; skupinkaName: string; error?: string; processed?: number; created?: number; skipped?: number }[] = [];
+		const touchedCourseIds = new Set<string>();
+
+		for (const block of blocks) {
+			if (!block.ageGroup) {
+				blockResults.push({ ok: false, skupinkaName: block.skupinkaName, error: "ageGroup is required" });
+				continue;
+			}
+
+			try {
+				// Upsert course by name
+				const existing = await CourseDB.getByName(block.skupinkaName);
+				let courseId: string;
+
+				if (existing) {
+					await CourseDB.update(existing.id as string, {
+						ageGroup: block.ageGroup,
+						...(block.location ? { location: block.location } : {}),
+					});
+					courseId = existing.id as string;
+				} else {
+					const course = createCourse({
+						name: block.skupinkaName,
+						ageGroup: block.ageGroup,
+						...(block.location ? { location: block.location } : {}),
+					});
+					await CourseDB.insert(course);
+					courseId = course.id;
+				}
+
+				touchedCourseIds.add(courseId);
+
+				let blockCreated = 0;
+				let blockSkipped = 0;
+
+				for (const p of block.participants) {
+					if (!p.email) continue;
+					const existingP = await ParticipantDB.getByEmail(p.email);
+
+					if (!existingP) {
+						const newP = createParticipant({
+							name: p.name || p.email,
+							email: p.email,
+							phone: p.phone ?? "",
+							ageGroup: block.ageGroup,
+						});
+						await ParticipantDB.insert(newP);
+						await ParticipantDB.linkToCourse(newP.id, courseId);
+						blockCreated++;
+					} else {
+						await ParticipantDB.linkToCourse(existingP.id as string, courseId);
+						blockSkipped++;
+					}
+				}
+
+				totalProcessed += block.participants.length;
+				totalCreated += blockCreated;
+				totalSkipped += blockSkipped;
+				blockResults.push({ ok: true, skupinkaName: block.skupinkaName, processed: block.participants.length, created: blockCreated, skipped: blockSkipped });
+			} catch (error) {
+				blockResults.push({ ok: false, skupinkaName: block.skupinkaName, error: String(error) });
+			}
+		}
+
+		// Sync enrollments for all touched courses
+		for (const courseId of touchedCourseIds) {
+			await registrationManager.syncGroupEnrollments(courseId);
+		}
+
+		res.json({ processed: totalProcessed, created: totalCreated, skipped: totalSkipped, blockResults });
 	},
 );
 

@@ -186,55 +186,38 @@
             <div id="substitution-candidates-list" class="lessons-grid"></div>
         </div>
 
-        <!-- Excel Import Tab -->
+        <!-- Import Tab — two-step ODS importer -->
         <div class="tab-content" id="excel">
-            <h2>Import z Excel</h2>
+            <h2>Import z tabulky přihlášení</h2>
 
-            <div class="form-card" style="margin-bottom: 24px;">
-                <h3>👩 Import účastníků do skupinek</h3>
+            <!-- Step 1: upload -->
+            <div class="form-card" style="margin-bottom: 24px;" id="ods-step1">
+                <h3>📂 Krok 1 — Nahrát soubor</h3>
                 <div class="info-box">
-                    <p>Povinné sloupce:</p>
-                    <ul>
-                        <li><strong>name</strong> - Jméno dítěte</li>
-                        <li><strong>email</strong> - Email rodiče</li>
-                        <li><strong>skupinka</strong> - Název skupinky (přesně jak je v systému)</li>
-                    </ul>
-                    <p style="color: #666; font-size: 13px;">Věková skupina se převezme ze skupinky automaticky.</p>
+                    <p>Podporované formáty: <strong>.ods, .xlsx, .xls</strong></p>
+                    <p style="color: #666; font-size: 13px;">Systém automaticky rozpozná skupinky a místo ze struktury souboru. Ve druhém kroku zkontrolujete přiřazení věkových skupin.</p>
                 </div>
-                <form onsubmit="uploadExcel(event)">
+                <form onsubmit="uploadOdsForPreview(event)">
                     <div class="form-group">
-                        <label>Excel soubor:</label>
-                        <input type="file" name="file" accept=".xlsx,.xls" required>
+                        <label>Soubor přihlášení:</label>
+                        <input type="file" id="ods-file-input" accept=".ods,.xlsx,.xls" required>
                     </div>
-                    <button type="submit" class="btn btn-primary">Nahrát a přiřadit do skupinek</button>
+                    <button type="submit" class="btn btn-primary">Nahrát a zobrazit náhled</button>
                 </form>
-                <div id="excel-results"></div>
             </div>
 
-            <div class="form-card">
-                <h3>🏫 Import skupinek (vytvoření/aktualizace)</h3>
-                <div class="info-box">
-                    <p>Povinné sloupce:</p>
-                    <ul>
-                        <li><strong>name</strong> - Název skupinky</li>
-                        <li><strong>ageGroup</strong> - Věková skupina (např. 1-2 years)</li>
-                        <li><strong>color</strong> - Barva v hex formátu (např. #FF6B6B)</li>
-                    </ul>
-                    <p>Volitelné sloupce:</p>
-                    <ul>
-                        <li><strong>description</strong> - Popis skupinky</li>
-                        <li><strong>dayOfWeek, time, location, capacity, startDate, endDate</strong> - Pro automatické vytvoření lekcí</li>
-                    </ul>
-                    <p style="color: #666; font-size: 13px;">Existující skupinka se stejným názvem bude aktualizována.</p>
-                </div>
-                <form onsubmit="uploadCoursesExcel(event)">
-                    <div class="form-group">
-                        <label>Excel soubor:</label>
-                        <input type="file" name="file" accept=".xlsx,.xls" required>
+            <!-- Step 2: mapping UI (hidden until preview loaded) -->
+            <div id="ods-step2" style="display:none;">
+                <div class="form-card" style="margin-bottom: 16px;">
+                    <h3>✏️ Krok 2 — Zkontrolujte a odešlete</h3>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 16px;">Přiřaďte věkovou skupinu ke každému bloku. Skupinky budou vytvořeny nebo aktualizovány.</p>
+                    <div id="ods-blocks-container"></div>
+                    <div style="margin-top: 16px;">
+                        <button type="button" class="btn btn-primary" onclick="submitOdsImport(this)">Importovat přihlášení</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetOdsImport()" style="margin-left: 8px;">Zrušit</button>
                     </div>
-                    <button type="submit" class="btn btn-primary">Nahrát skupinky</button>
-                </form>
-                <div id="courses-excel-results"></div>
+                </div>
+                <div id="ods-commit-results"></div>
             </div>
         </div>
     </div>
