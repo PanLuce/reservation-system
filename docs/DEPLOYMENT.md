@@ -41,13 +41,8 @@ git push -u origin main
    - Install Command: `npm install`
 
 5. **Add Environment Variables**
-   Click "Environment Variables" and add:
-
-   ```
-   NODE_ENV = production
-   SESSION_SECRET = [generate random string]
-   ALLOWED_ORIGINS = https://centrumrubacek.cz,https://www.centrumrubacek.cz
-   ```
+   Click "Environment Variables" and add the required variables listed in the
+   [Required environment variables](#required-environment-variables) section below.
 
    To generate SESSION_SECRET:
    ```bash
@@ -134,6 +129,32 @@ You'll get a notification when deployment is complete.
 - **Vercel Dashboard**: See deployment logs, errors, analytics
 - **Email Notifications**: Get notified of failed deployments
 - **Logs**: Check server logs in Vercel dashboard
+
+## Required environment variables
+
+The following environment variables must be set on your hosting provider
+(Railway, Vercel, Render, etc.) for the app to work correctly.
+
+| Variable | Required | Description |
+|---|---|---|
+| `NODE_ENV` | yes | Set to `production` |
+| `SESSION_SECRET` | yes | Random string for signing session cookies (`openssl rand -base64 32`) |
+| `ALLOWED_ORIGINS` | yes | Comma-separated list of allowed CORS origins, e.g. `https://centrumrubacek.cz` |
+| `TURSO_DATABASE_URL` | yes | Turso database URL, e.g. `libsql://your-db.turso.io` |
+| `TURSO_AUTH_TOKEN` | yes | Turso auth token |
+| `ADMIN_EMAIL_SEED` | yes | Email for the seeded admin account, e.g. `admin@centrumrubacek.cz` |
+| `ADMIN_PASSWORD_SEED` | yes | Password for the seeded admin account |
+| `PARTICIPANT_EMAIL_SEED` | yes | Email for the seeded demo participant, e.g. `maminka@test.cz` |
+| `PARTICIPANT_PASSWORD_SEED` | yes | Password for the seeded demo participant |
+| `ENABLE_QUICK_LOGIN` | optional | Set to `true` to show one-click login buttons for test accounts on the login page. Keep `false` (or unset) for real production. |
+
+> **Note:** If `ADMIN_EMAIL_SEED`/`ADMIN_PASSWORD_SEED` or
+> `PARTICIPANT_EMAIL_SEED`/`PARTICIPANT_PASSWORD_SEED` are missing, the
+> app will log a warning on startup and skip the corresponding seed.
+> Without these env vars set, the corresponding test accounts will not
+> exist and login will fail.
+
+---
 
 ## Troubleshooting
 

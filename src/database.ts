@@ -275,6 +275,7 @@ export async function ensureAdminUser() {
 	const adminPassword = process.env.ADMIN_PASSWORD_SEED;
 
 	if (!adminEmail || !adminPassword) {
+		console.warn("[seed] ADMIN_EMAIL_SEED / ADMIN_PASSWORD_SEED not set — skipping admin seed");
 		return;
 	}
 
@@ -301,6 +302,7 @@ export async function ensureDemoParticipant() {
 	const participantPassword = process.env.PARTICIPANT_PASSWORD_SEED;
 
 	if (!participantEmail || !participantPassword) {
+		console.warn("[seed] PARTICIPANT_EMAIL_SEED / PARTICIPANT_PASSWORD_SEED not set — skipping demo participant seed");
 		return;
 	}
 
