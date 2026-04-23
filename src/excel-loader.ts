@@ -1,7 +1,6 @@
 import * as XLSX from "xlsx";
 import type { Participant } from "./participant.js";
 import { createParticipant } from "./participant.js";
-import type { RegistrationManager } from "./registration.js";
 import type { RegistrationManagerDB } from "./registration-db.js";
 
 export type SkupinkaRow = {
@@ -124,7 +123,7 @@ export class ExcelParticipantLoader {
 	async bulkLoadAndRegister(
 		filePath: string,
 		lessonId: string,
-		registrationManager: RegistrationManager | RegistrationManagerDB,
+		registrationManager: RegistrationManagerDB,
 	): Promise<number> {
 		const participants = this.parseParticipantsFromFile(filePath);
 		const registrations = await registrationManager.bulkRegisterParticipants(
