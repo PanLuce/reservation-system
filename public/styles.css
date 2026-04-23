@@ -506,10 +506,37 @@ header p {
 	flex-shrink: 0;
 }
 
+.calendar-icons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px;
+	margin-top: 2px;
+	line-height: 1;
+}
+
+.calendar-icon {
+	font-size: 14px;
+	line-height: 1;
+	cursor: default;
+}
+
 .calendar-dot-overflow {
 	font-size: 0.68rem;
 	color: var(--color-text-muted);
 	line-height: 10px;
+}
+
+.calendar-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	font-size: 12px;
+	color: var(--color-text-muted, #888);
+	padding: 6px 4px 2px;
+}
+
+.calendar-legend span {
+	white-space: nowrap;
 }
 
 /* ─── Day Modal ─────────────────────────────────────────────────────────────── */
@@ -620,6 +647,10 @@ header p {
 	.calendar-dot {
 		width: 7px;
 		height: 7px;
+	}
+
+	.calendar-icon {
+		font-size: 11px;
 	}
 
 	.calendar-month-label {

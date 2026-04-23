@@ -154,6 +154,7 @@ let calendarYear = new Date().getFullYear();
 let calendarMonth = new Date().getMonth(); // 0-indexed
 let calendarLessons = []; // cached from last fetch
 let calendarSubCandidateIds = new Set(); // lessonIds eligible for substitution
+let calendarMyRegisteredIds = new Set(); // lessonIds the current participant is confirmed/registered for
 let calendarCreditCount = 0; // active substitution credits for current participant
 
 const CZECH_MONTHS = [
@@ -172,15 +173,23 @@ async function loadCalendar() {
 				.then((r) => r.ok ? r.json() : [])
 				.catch(() => [])
 			: Promise.resolve([]);
+		const registrationsPromise = pId
+			? fetch(`${API_URL}/participants/${pId}/registrations`, { credentials: "include" })
+				.then((r) => r.ok ? r.json() : [])
+				.catch(() => [])
+			: Promise.resolve([]);
 		const creditPromise = pId
 			? fetch(`${API_URL}/participants/${pId}/credits`, { credentials: "include" })
 				.then((r) => r.ok ? r.json() : { count: 0 })
 				.catch(() => ({ count: 0 }))
 			: Promise.resolve({ count: 0 });
 
-		const [lessons, subCandidates, creditData] = await Promise.all([lessonsPromise, subPromise, creditPromise]);
+		const [lessons, subCandidates, registrations, creditData] = await Promise.all([lessonsPromise, subPromise, registrationsPromise, creditPromise]);
 		calendarLessons = lessons;
 		calendarSubCandidateIds = new Set(subCandidates.map((l) => l.id));
+		calendarMyRegisteredIds = new Set(
+			registrations.filter((r) => r.status !== "cancelled").map((r) => r.lessonId)
+		);
 		calendarCreditCount = creditData.count ?? 0;
 
 		renderMonthCalendar(calendarYear, calendarMonth);
@@ -200,6 +209,23 @@ function calendarNextMonth() {
 	calendarMonth++;
 	if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
 	renderMonthCalendar(calendarYear, calendarMonth);
+}
+
+function getLessonTileIcon(lesson, isParticipant) {
+	if (!isParticipant) {
+		return { icon: "●", label: lesson.title, color: lesson.courseColor };
+	}
+	if (calendarMyRegisteredIds.has(lesson.id)) {
+		return { icon: "❤️", label: `Moje lekce: ${lesson.title}` };
+	}
+	const isFull = lesson.enrolledCount >= lesson.capacity;
+	if (isFull) {
+		return { icon: "🚫", label: `Plná lekce: ${lesson.title}` };
+	}
+	if (calendarSubCandidateIds.has(lesson.id)) {
+		return { icon: "✨", label: `Možná náhrada: ${lesson.title}` };
+	}
+	return null;
 }
 
 function renderMonthCalendar(year, month) {
@@ -230,18 +256,21 @@ function renderMonthCalendar(year, month) {
 		const isToday = dateStr === todayStr;
 		const lessons = byDate[dateStr] || [];
 
-		const MAX_DOTS = 4;
-		const dots = lessons.slice(0, MAX_DOTS).map(
-			(l) => `<span class="calendar-dot" style="background:${l.courseColor || "#ccc"}" title="${l.title}"></span>`
-		).join("");
-		const overflow = lessons.length > MAX_DOTS
-			? `<span class="calendar-dot-overflow">+${lessons.length - MAX_DOTS}</span>`
+		const MAX_ICONS = 4;
+		const isParticipant = currentUser && currentUser.role !== "admin";
+		const icons = lessons.slice(0, MAX_ICONS).map((l) => {
+			const badge = getLessonTileIcon(l, isParticipant);
+			if (!badge) return "";
+			return `<span class="calendar-icon" title="${badge.label}">${badge.icon}</span>`;
+		}).filter(Boolean).join("");
+		const overflow = lessons.length > MAX_ICONS
+			? `<span class="calendar-dot-overflow">+${lessons.length - MAX_ICONS}</span>`
 			: "";
 
 		html += `
 			<div class="calendar-day${isToday ? " today" : ""}" onclick="openDayModal('${dateStr}')">
 				<div class="calendar-day-number">${day}</div>
-				<div class="calendar-dots">${dots}${overflow}</div>
+				<div class="calendar-icons">${icons}${overflow}</div>
 			</div>`;
 	}
 
