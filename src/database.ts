@@ -73,9 +73,7 @@ export async function initializeDatabase() {
 				email TEXT NOT NULL,
 				phone TEXT NOT NULL,
 				ageGroup TEXT NOT NULL,
-				courseId TEXT,
-				createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-				FOREIGN KEY (courseId) REFERENCES courses(id) ON DELETE SET NULL
+				createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 			)`,
 				args: [],
 			},
@@ -155,10 +153,6 @@ export async function initializeDatabase() {
 				args: [],
 			},
 			{
-				sql: "CREATE INDEX IF NOT EXISTS idx_participants_courseId ON participants(courseId)",
-				args: [],
-			},
-			{
 				sql: "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
 				args: [],
 			},
@@ -188,6 +182,7 @@ export async function initializeDatabase() {
 
 	await migrateAgeGroups();
 	await migrateLocationToCourses();
+	await migrateDropParticipantCourseId();
 
 	logger.info("Database initialized successfully");
 }
@@ -250,6 +245,14 @@ async function migrateLocationToCourses() {
 		await client.execute("ALTER TABLE lessons DROP COLUMN location");
 	} catch {
 		// Already removed or not supported — nothing to do
+	}
+}
+
+async function migrateDropParticipantCourseId() {
+	try {
+		await client.execute("ALTER TABLE participants DROP COLUMN courseId");
+	} catch {
+		// Column already dropped or not supported — nothing to do
 	}
 }
 
