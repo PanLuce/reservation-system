@@ -115,16 +115,7 @@
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Přihlásit se</button>
                 </form>
 
-                <div class="admin-note">
-                    <strong>🔑 Testovací administrátorský účet:</strong>
-                    Email: admin@centrumrubacek.cz<br>
-                    Heslo: admin123
-                </div>
-                <div class="admin-note" style="margin-top: 8px; background: #e8f5e9; border-color: #4CAF50;">
-                    <strong>👩 Testovací účet maminky:</strong>
-                    Email: maminka@test.cz<br>
-                    Heslo: test123
-                </div>
+                <div id="quick-login-buttons" style="display:none; margin-top: 16px;"></div>
             </div>
 
             <!-- Register Form -->
@@ -185,43 +176,54 @@
             document.getElementById('success-message').style.display = 'none';
         }
 
-        async function handleLogin(event) {
-            event.preventDefault();
+        async function loginWithCredentials(email, password) {
             hideMessages();
-
-            const formData = new FormData(event.target);
-            const data = {
-                email: formData.get('email'),
-                password: formData.get('password')
-            };
-
             try {
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify(data)
+                    body: JSON.stringify({ email, password })
                 });
-
                 const result = await response.json();
-
                 if (!response.ok) {
                     showError(result.error || 'Přihlášení selhalo');
                     return;
                 }
-
-                // Login successful
                 showSuccess('Přihlášení úspěšné! Přesměrování...');
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 1000);
-
+                setTimeout(() => { window.location.href = '/'; }, 1000);
             } catch (error) {
                 showError(`Chyba při přihlašování: ${error.message}`);
             }
         }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            await loginWithCredentials(formData.get('email'), formData.get('password'));
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('/api/test-accounts');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.accounts || data.accounts.length === 0) return;
+                const container = document.getElementById('quick-login-buttons');
+                data.accounts.forEach(account => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'btn btn-secondary';
+                    btn.style.cssText = 'width:100%; margin-bottom:8px;';
+                    btn.textContent = account.label;
+                    btn.addEventListener('click', () => loginWithCredentials(account.email, account.password));
+                    container.appendChild(btn);
+                });
+                container.style.display = 'block';
+            } catch (_) {
+                // Endpoint unavailable — no buttons shown
+            }
+        });
 
         async function handleRegister(event) {
             event.preventDefault();

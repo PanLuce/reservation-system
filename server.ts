@@ -300,6 +300,31 @@ async function requireParticipantScope(
 
 // API Routes
 
+// Test accounts — only available when ENABLE_QUICK_LOGIN=true
+app.get("/api/test-accounts", (req, res) => {
+	if (process.env.ENABLE_QUICK_LOGIN !== "true") {
+		return res.status(404).json({ error: "Not available" });
+	}
+	const accounts: { label: string; email: string; password: string; role: string }[] = [];
+	if (process.env.ADMIN_EMAIL_SEED && process.env.ADMIN_PASSWORD_SEED) {
+		accounts.push({
+			label: "Přihlásit jako admin",
+			email: process.env.ADMIN_EMAIL_SEED,
+			password: process.env.ADMIN_PASSWORD_SEED,
+			role: "admin",
+		});
+	}
+	if (process.env.PARTICIPANT_EMAIL_SEED && process.env.PARTICIPANT_PASSWORD_SEED) {
+		accounts.push({
+			label: "Přihlásit jako maminka",
+			email: process.env.PARTICIPANT_EMAIL_SEED,
+			password: process.env.PARTICIPANT_PASSWORD_SEED,
+			role: "participant",
+		});
+	}
+	return res.json({ accounts });
+});
+
 // Authentication
 app.post("/api/auth/login", async (req, res) => {
 	const { email, password } = req.body;
