@@ -21,6 +21,10 @@ import {
 	ParticipantDB,
 	RegistrationDB,
 	seedSampleData,
+	DEFAULT_ADMIN_EMAIL,
+	DEFAULT_ADMIN_PASSWORD,
+	DEFAULT_PARTICIPANT_EMAIL,
+	DEFAULT_PARTICIPANT_PASSWORD,
 } from "./src/database.js";
 import { createEmailService } from "./src/email-factory.js";
 import { ExcelParticipantLoader } from "./src/excel-loader.js";
@@ -300,28 +304,25 @@ async function requireParticipantScope(
 
 // API Routes
 
-// Test accounts — only available when ENABLE_QUICK_LOGIN=true
+// Test accounts — always enabled until we go live (gate with ENABLE_QUICK_LOGIN=false to hide)
 app.get("/api/test-accounts", (req, res) => {
-	if (process.env.ENABLE_QUICK_LOGIN !== "true") {
+	if (process.env.ENABLE_QUICK_LOGIN === "false") {
 		return res.status(404).json({ error: "Not available" });
 	}
-	const accounts: { label: string; email: string; password: string; role: string }[] = [];
-	if (process.env.ADMIN_EMAIL_SEED && process.env.ADMIN_PASSWORD_SEED) {
-		accounts.push({
+	const accounts: { label: string; email: string; password: string; role: string }[] = [
+		{
 			label: "Přihlásit jako admin",
-			email: process.env.ADMIN_EMAIL_SEED,
-			password: process.env.ADMIN_PASSWORD_SEED,
+			email: process.env.ADMIN_EMAIL_SEED ?? DEFAULT_ADMIN_EMAIL,
+			password: process.env.ADMIN_PASSWORD_SEED ?? DEFAULT_ADMIN_PASSWORD,
 			role: "admin",
-		});
-	}
-	if (process.env.PARTICIPANT_EMAIL_SEED && process.env.PARTICIPANT_PASSWORD_SEED) {
-		accounts.push({
+		},
+		{
 			label: "Přihlásit jako maminka",
-			email: process.env.PARTICIPANT_EMAIL_SEED,
-			password: process.env.PARTICIPANT_PASSWORD_SEED,
+			email: process.env.PARTICIPANT_EMAIL_SEED ?? DEFAULT_PARTICIPANT_EMAIL,
+			password: process.env.PARTICIPANT_PASSWORD_SEED ?? DEFAULT_PARTICIPANT_PASSWORD,
 			role: "participant",
-		});
-	}
+		},
+	];
 	return res.json({ accounts });
 });
 

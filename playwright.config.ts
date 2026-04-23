@@ -27,7 +27,6 @@ export default defineConfig({
 			ADMIN_PASSWORD_SEED: "admin123",
 			PARTICIPANT_EMAIL_SEED: "maminka@test.cz",
 			PARTICIPANT_PASSWORD_SEED: "test123",
-			ENABLE_QUICK_LOGIN: "true",
 		},
 	},
 });

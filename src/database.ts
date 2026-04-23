@@ -273,14 +273,16 @@ export async function resetDatabaseForTests() {
 	await ensureAdminUser();
 }
 
-export async function ensureAdminUser() {
-	const adminEmail = process.env.ADMIN_EMAIL_SEED;
-	const adminPassword = process.env.ADMIN_PASSWORD_SEED;
+// Default test credentials — used when the corresponding env vars are
+// not set. Safe for pre-launch; swap or gate once we go live.
+export const DEFAULT_ADMIN_EMAIL = "admin@centrumrubacek.cz";
+export const DEFAULT_ADMIN_PASSWORD = "admin123";
+export const DEFAULT_PARTICIPANT_EMAIL = "maminka@test.cz";
+export const DEFAULT_PARTICIPANT_PASSWORD = "test123";
 
-	if (!adminEmail || !adminPassword) {
-		console.warn("[seed] ADMIN_EMAIL_SEED / ADMIN_PASSWORD_SEED not set — skipping admin seed");
-		return;
-	}
+export async function ensureAdminUser() {
+	const adminEmail = process.env.ADMIN_EMAIL_SEED ?? DEFAULT_ADMIN_EMAIL;
+	const adminPassword = process.env.ADMIN_PASSWORD_SEED ?? DEFAULT_ADMIN_PASSWORD;
 
 	const existing = await client.execute({
 		sql: "SELECT COUNT(*) as count FROM users WHERE email = ?",
@@ -301,13 +303,8 @@ export async function ensureAdminUser() {
 }
 
 export async function ensureDemoParticipant() {
-	const participantEmail = process.env.PARTICIPANT_EMAIL_SEED;
-	const participantPassword = process.env.PARTICIPANT_PASSWORD_SEED;
-
-	if (!participantEmail || !participantPassword) {
-		console.warn("[seed] PARTICIPANT_EMAIL_SEED / PARTICIPANT_PASSWORD_SEED not set — skipping demo participant seed");
-		return;
-	}
+	const participantEmail = process.env.PARTICIPANT_EMAIL_SEED ?? DEFAULT_PARTICIPANT_EMAIL;
+	const participantPassword = process.env.PARTICIPANT_PASSWORD_SEED ?? DEFAULT_PARTICIPANT_PASSWORD;
 
 	const existing = await client.execute({
 		sql: "SELECT COUNT(*) as count FROM users WHERE email = ?",

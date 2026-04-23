@@ -6,9 +6,9 @@ import {
 
 const BASE = "http://localhost:3000";
 
-// The webServer runs with ENABLE_QUICK_LOGIN=true and both seed vars set
-// (see playwright.config.ts), so these tests cover the happy path.
-// The 404 path (flag unset) is exercised by the guard in server.ts.
+// Endpoint is always-on by default (hidden only when ENABLE_QUICK_LOGIN=false).
+// webServer in playwright.config.ts does NOT set ENABLE_QUICK_LOGIN=false,
+// so these tests run against the live default behaviour.
 
 test.describe.serial("GET /api/test-accounts", () => {
 	test.beforeEach(async () => {
@@ -20,7 +20,7 @@ test.describe.serial("GET /api/test-accounts", () => {
 		await resetDatabaseForTests();
 	});
 
-	test("returns both accounts when ENABLE_QUICK_LOGIN is true", async () => {
+	test("always returns both accounts by default", async () => {
 		const res = await fetch(`${BASE}/api/test-accounts`);
 		expect(res.status).toBe(200);
 		const data = await res.json() as { accounts: { label: string; email: string; password: string; role: string }[] };
