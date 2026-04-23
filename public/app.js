@@ -510,7 +510,9 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadCourses() {
 	try {
 		const res = await fetch(`${API_URL}/courses`, { credentials: "include" });
+		if (!res.ok) throw new Error(`Failed to load courses: ${res.status}`);
 		const courses = await res.json();
+		if (!Array.isArray(courses)) throw new Error("Invalid courses response");
 		const container = document.getElementById("courses-list");
 
 		if (courses.length === 0) {
