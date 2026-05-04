@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { LessonCalendarDB } from "../src/calendar-db.js";
+import { createCourse } from "../src/course.js";
 import {
 	CourseDB,
 	initializeDatabase,
@@ -10,7 +11,6 @@ import {
 } from "../src/database.js";
 import { createLesson } from "../src/lesson.js";
 import { createParticipant } from "../src/participant.js";
-import { createCourse } from "../src/course.js";
 import { RegistrationManagerDB } from "../src/registration-db.js";
 
 test.describe("Participant View - Get Own Registrations", () => {

@@ -127,12 +127,11 @@ test.describe("Interactive Elements - Function Names Fixed", () => {
 		const response = await request.get("http://localhost:3000/app.js");
 		const source = await response.text();
 
-		// Assert: Functions are defined with correct names (no underscores)
+		// Assert: core functions are defined with correct names (no underscores)
 		expect(source).toContain("async function handleLogout()");
 		expect(source).toContain("function showAddLessonForm()");
 		expect(source).toContain("async function addLesson(event)");
-		expect(source).toContain("async function deleteLesson(lessonId)");
-		expect(source).toContain("async function uploadExcel(event)");
+		expect(source).toContain("async function deleteLesson(lessonId");
 		expect(source).toContain("async function loadCourses()");
 		expect(source).toContain("async function populateLessonCourseSelect()");
 

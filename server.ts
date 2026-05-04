@@ -7,30 +7,33 @@ import express from "express";
 import session from "express-session";
 import helmet from "helmet";
 import multer from "multer";
+import {
+	AGE_GROUPS,
+	ageGroupToColor,
+	isValidAgeGroup,
+} from "./src/age-groups.js";
 import { AuthService } from "./src/auth.js";
 import { LessonCalendarDB } from "./src/calendar-db.js";
 import { createCourse } from "./src/course.js";
-import { AGE_GROUPS, ageGroupToColor, isValidAgeGroup } from "./src/age-groups.js";
 import { issueCredit } from "./src/credit.js";
 import {
 	CourseDB,
 	CreditDB,
 	client,
+	DEFAULT_ADMIN_EMAIL,
+	DEFAULT_ADMIN_PASSWORD,
+	DEFAULT_PARTICIPANT_EMAIL,
+	DEFAULT_PARTICIPANT_PASSWORD,
 	initializeDatabase,
 	LessonDB,
 	ParticipantDB,
 	RegistrationDB,
 	seedSampleData,
-	DEFAULT_ADMIN_EMAIL,
-	DEFAULT_ADMIN_PASSWORD,
-	DEFAULT_PARTICIPANT_EMAIL,
-	DEFAULT_PARTICIPANT_PASSWORD,
 } from "./src/database.js";
 import { createEmailService } from "./src/email-factory.js";
-import { ExcelParticipantLoader } from "./src/excel-loader.js";
-import { parseOdsWorkbook } from "./src/ods-loader.js";
 import { createLesson } from "./src/lesson.js";
 import { logger } from "./src/logger.js";
+import { parseOdsWorkbook } from "./src/ods-loader.js";
 import { createParticipant } from "./src/participant.js";
 import { RegistrationManagerDB } from "./src/registration-db.js";
 import { LibSQLSessionStore } from "./src/session-store.js";
@@ -209,7 +212,6 @@ const emailService = createEmailService();
 // Initialize data stores with database
 const calendar = new LessonCalendarDB();
 const registrationManager = new RegistrationManagerDB(emailService);
-const excelLoader = new ExcelParticipantLoader();
 const authService = new AuthService();
 
 // Track server start time for uptime
@@ -309,7 +311,12 @@ app.get("/api/test-accounts", (req, res) => {
 	if (process.env.ENABLE_QUICK_LOGIN === "false") {
 		return res.status(404).json({ error: "Not available" });
 	}
-	const accounts: { label: string; email: string; password: string; role: string }[] = [
+	const accounts: {
+		label: string;
+		email: string;
+		password: string;
+		role: string;
+	}[] = [
 		{
 			label: "Přihlásit jako admin",
 			email: process.env.ADMIN_EMAIL_SEED ?? DEFAULT_ADMIN_EMAIL,
@@ -319,7 +326,8 @@ app.get("/api/test-accounts", (req, res) => {
 		{
 			label: "Přihlásit jako maminka",
 			email: process.env.PARTICIPANT_EMAIL_SEED ?? DEFAULT_PARTICIPANT_EMAIL,
-			password: process.env.PARTICIPANT_PASSWORD_SEED ?? DEFAULT_PARTICIPANT_PASSWORD,
+			password:
+				process.env.PARTICIPANT_PASSWORD_SEED ?? DEFAULT_PARTICIPANT_PASSWORD,
 			role: "participant",
 		},
 	];
@@ -420,26 +428,44 @@ app.get("/api/lessons/:id", async (req, res) => {
 
 app.post("/api/lessons", requireAdmin, async (req, res) => {
 	const lessonData = req.body;
-	if (!lessonData.courseId) {
-		return res.status(400).json({ error: "courseId is required" });
+	const requiredFields = [
+		"title",
+		"date",
+		"dayOfWeek",
+		"time",
+		"ageGroup",
+		"capacity",
+		"courseId",
+	] as const;
+	for (const field of requiredFields) {
+		if (!lessonData[field] && lessonData[field] !== 0) {
+			return res.status(400).json({ error: `${field} is required` });
+		}
 	}
 	const courseExists = await CourseDB.getById(lessonData.courseId as string);
 	if (!courseExists) {
 		return res.status(400).json({ error: "Course not found" });
 	}
-	const lesson = createLesson({
-		title: lessonData.title,
-		date: lessonData.date,
-		dayOfWeek: lessonData.dayOfWeek,
-		time: lessonData.time,
-		ageGroup: lessonData.ageGroup,
-		capacity: Number(lessonData.capacity),
-		courseId: lessonData.courseId as string,
-	});
-	await calendar.addLesson(lesson);
-	// Auto-enroll all skupinka members onto this new lesson
-	await registrationManager.syncGroupEnrollments(lessonData.courseId as string);
-	res.status(201).json(lesson);
+	try {
+		const lesson = createLesson({
+			title: lessonData.title,
+			date: lessonData.date,
+			dayOfWeek: lessonData.dayOfWeek,
+			time: lessonData.time,
+			ageGroup: lessonData.ageGroup,
+			capacity: Number(lessonData.capacity),
+			courseId: lessonData.courseId as string,
+		});
+		await calendar.addLesson(lesson);
+		await registrationManager.syncGroupEnrollments(
+			lessonData.courseId as string,
+		);
+		res.status(201).json(lesson);
+	} catch (error) {
+		res.status(500).json({
+			error: error instanceof Error ? error.message : "Failed to create lesson",
+		});
+	}
 });
 
 // Age groups list (for populating dropdowns)
@@ -521,56 +547,54 @@ app.delete("/api/courses/:id", requireAdmin, async (req, res) => {
 	res.json({ message: "Course deleted" });
 });
 
-app.post(
-	"/api/courses/:id/participants",
-	requireAdmin,
-	async (req, res) => {
-		const courseId = req.params.id as string;
-		const { name, email, phone } = req.body as {
-			name?: string;
-			email?: string;
-			phone?: string;
-		};
+app.post("/api/courses/:id/participants", requireAdmin, async (req, res) => {
+	const courseId = req.params.id as string;
+	const { name, email, phone } = req.body as {
+		name?: string;
+		email?: string;
+		phone?: string;
+	};
 
-		if (!email || !name) {
-			return res.status(400).json({ error: "name and email are required" });
-		}
+	if (!email || !name) {
+		return res.status(400).json({ error: "name and email are required" });
+	}
 
-		const course = await CourseDB.getById(courseId);
-		if (!course) {
-			return res.status(404).json({ error: "Course not found" });
-		}
+	const course = await CourseDB.getById(courseId);
+	if (!course) {
+		return res.status(404).json({ error: "Course not found" });
+	}
 
-		// Upsert participant by email
-		let existingParticipant = await ParticipantDB.getByEmail(email) as Record<string, unknown> | undefined;
-		let created = false;
+	// Upsert participant by email
+	let existingParticipant = (await ParticipantDB.getByEmail(email)) as
+		| Record<string, unknown>
+		| undefined;
+	let created = false;
 
-		if (!existingParticipant) {
-			const newParticipant = createParticipant({
-				name,
-				email,
-				phone: phone ?? "",
-				ageGroup: course.ageGroup as string,
-			});
-			await ParticipantDB.insert(newParticipant);
-			existingParticipant = newParticipant as unknown as Record<string, unknown>;
-			created = true;
-		}
-
-		const participantId = existingParticipant.id as string;
-
-		// Idempotent link
-		await ParticipantDB.linkToCourse(participantId, courseId);
-
-		// Auto-enroll in all future lessons
-		await registrationManager.syncGroupEnrollments(courseId);
-
-		res.status(created ? 201 : 200).json({
-			participant: existingParticipant,
-			created,
+	if (!existingParticipant) {
+		const newParticipant = createParticipant({
+			name,
+			email,
+			phone: phone ?? "",
+			ageGroup: course.ageGroup as string,
 		});
-	},
-);
+		await ParticipantDB.insert(newParticipant);
+		existingParticipant = newParticipant as unknown as Record<string, unknown>;
+		created = true;
+	}
+
+	const participantId = existingParticipant.id as string;
+
+	// Idempotent link
+	await ParticipantDB.linkToCourse(participantId, courseId);
+
+	// Auto-enroll in all future lessons
+	await registrationManager.syncGroupEnrollments(courseId);
+
+	res.status(created ? 201 : 200).json({
+		participant: existingParticipant,
+		created,
+	});
+});
 
 app.post(
 	"/api/courses/:id/sync-enrollments",
@@ -602,13 +626,13 @@ app.post(
 			capacity,
 			dates,
 			startDate,
+			endDate,
 			weeksCount,
 		} = req.body;
 
 		try {
 			let lessons: Awaited<ReturnType<typeof calendar.bulkCreateLessons>>;
 			if (dates && Array.isArray(dates)) {
-				// Create lessons for specific dates
 				lessons = await calendar.bulkCreateLessons({
 					courseId,
 					title,
@@ -617,8 +641,17 @@ app.post(
 					capacity: Number(capacity),
 					dates,
 				});
+			} else if (startDate && endDate) {
+				lessons = await calendar.bulkCreateLessonsRange({
+					courseId,
+					title,
+					time,
+					dayOfWeek,
+					capacity: Number(capacity),
+					startDate,
+					endDate,
+				});
 			} else if (startDate && weeksCount) {
-				// Create recurring lessons
 				lessons = await calendar.bulkCreateLessonsRecurring({
 					courseId,
 					title,
@@ -630,7 +663,8 @@ app.post(
 				});
 			} else {
 				return res.status(400).json({
-					error: "Either dates array or (startDate + weeksCount) is required",
+					error:
+						"Either dates array, (startDate + endDate), or (startDate + weeksCount) is required",
 				});
 			}
 
@@ -703,15 +737,19 @@ app.post(
 	},
 );
 
-app.get("/api/courses/:courseId/participants", async (req, res) => {
-	const courseId = req.params.courseId as string;
-	if (!courseId) {
-		return res.status(400).json({ error: "Course ID is required" });
-	}
+app.get(
+	"/api/courses/:courseId/participants",
+	requireAdmin,
+	async (req, res) => {
+		const courseId = req.params.courseId as string;
+		if (!courseId) {
+			return res.status(400).json({ error: "Course ID is required" });
+		}
 
-	const participants = await ParticipantDB.getByCourse(courseId);
-	res.json(participants);
-});
+		const participants = await ParticipantDB.getByCourse(courseId);
+		res.json(participants);
+	},
+);
 
 app.put("/api/lessons/:id", requireAdmin, async (req, res) => {
 	const lessonId = req.params.id as string;
@@ -1086,155 +1124,7 @@ app.post("/api/substitutions", async (req, res) => {
 	res.status(201).json(registration);
 });
 
-// Excel Import — binds participants to skupinky (not lessons)
-app.post(
-	"/api/excel/import",
-	requireAdmin,
-	upload.single("file"),
-	async (req, res) => {
-		if (!req.file) {
-			return res.status(400).json({ error: "No file uploaded" });
-		}
-
-		const buffer = fs.readFileSync(req.file.path);
-		const rows = excelLoader.parseSkupinkaRowsFromBuffer(buffer);
-
-		const results: {
-			ok: boolean;
-			email: string;
-			skupinka: string;
-			error?: string;
-		}[] = [];
-
-		for (const row of rows) {
-			try {
-				const course = await CourseDB.getByName(row.skupinkaName);
-				if (!course) {
-					results.push({
-						ok: false,
-						email: row.email,
-						skupinka: row.skupinkaName,
-						error: `Skupinka "${row.skupinkaName}" not found`,
-					});
-					continue;
-				}
-
-				let participant = await ParticipantDB.getByEmail(row.email);
-				if (!participant) {
-					const newParticipant = createParticipant({
-						name: row.name,
-						email: row.email,
-						phone: "",
-						ageGroup: course.ageGroup as string,
-					});
-					await ParticipantDB.insert(newParticipant);
-					participant = await ParticipantDB.getByEmail(row.email);
-				}
-
-				await ParticipantDB.linkToCourse(
-					participant!.id as string,
-					course.id as string,
-				);
-
-				results.push({
-					ok: true,
-					email: row.email,
-					skupinka: row.skupinkaName,
-				});
-			} catch (error) {
-				results.push({
-					ok: false,
-					email: row.email,
-					skupinka: row.skupinkaName,
-					error: String(error),
-				});
-			}
-		}
-
-		res.json({ results });
-	},
-);
-
-// Courses Excel import — creates/updates skupinky, optionally seeds lesson schedule
-app.post(
-	"/api/admin/courses/import",
-	requireAdmin,
-	upload.single("file"),
-	async (req, res) => {
-		if (!req.file) {
-			return res.status(400).json({ error: "No file uploaded" });
-		}
-
-		const buffer = fs.readFileSync(req.file.path);
-		const { rows, errors } = excelLoader.parseCourseRowsFromBuffer(buffer);
-
-		const results: { ok: boolean; name: string; error?: string }[] = [...errors];
-
-		for (const row of rows) {
-			try {
-				const existing = await CourseDB.getByName(row.name);
-				let courseId: string;
-
-				if (existing) {
-					const updatePayload: { ageGroup: string; color: string; location?: string; description?: string } = {
-						ageGroup: row.ageGroup,
-						color: row.color,
-					};
-					if (row.location) updatePayload.location = row.location;
-					if (row.description) updatePayload.description = row.description;
-					await CourseDB.update(existing.id as string, updatePayload);
-					courseId = existing.id as string;
-				} else {
-					const course = createCourse({
-						name: row.name,
-						ageGroup: row.ageGroup,
-						color: row.color,
-						...(row.location ? { location: row.location } : {}),
-						...(row.description ? { description: row.description } : {}),
-					});
-					await CourseDB.insert(course);
-					courseId = course.id;
-				}
-
-				if (row.lessonTemplate) {
-					const { dayOfWeek, time, capacity, startDate, endDate } = row.lessonTemplate;
-					const calendarDB = new LessonCalendarDB();
-					const dates: string[] = [];
-					const current = new Date(startDate);
-					const end = new Date(endDate);
-					const targetDay = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].indexOf(dayOfWeek);
-
-					while (current <= end) {
-						if (current.getDay() === targetDay) {
-							dates.push(current.toISOString().slice(0, 10));
-						}
-						current.setDate(current.getDate() + 1);
-					}
-
-					if (dates.length > 0) {
-						await calendarDB.bulkCreateLessons({
-							courseId,
-							title: row.name,
-							time,
-							dayOfWeek,
-							capacity,
-							dates,
-						});
-						await registrationManager.syncGroupEnrollments(courseId);
-					}
-				}
-
-				results.push({ ok: true, name: row.name });
-			} catch (error) {
-				results.push({ ok: false, name: row.name, error: String(error) });
-			}
-		}
-
-		res.json({ processed: results.filter((r) => r.ok).length, perRow: results });
-	},
-);
-
-// ODS two-step import — Step 1: parse only, no DB writes
+// Import — Step 1: parse file, return flat candidate list (no DB writes)
 app.post(
 	"/api/admin/participants-import/preview",
 	requireAdmin,
@@ -1245,101 +1135,81 @@ app.post(
 		}
 		const buffer = fs.readFileSync(req.file.path);
 		const parsed = parseOdsWorkbook(buffer);
-		res.json(parsed);
+
+		// Flatten all blocks across all sheets into a single candidates list
+		const candidates: { kidName: string; parentEmail: string }[] = [];
+		for (const sheet of parsed.sheets) {
+			for (const block of sheet.blocks) {
+				for (const row of block.rows) {
+					if (row.email) {
+						candidates.push({
+							kidName: row.name || row.email,
+							parentEmail: row.email,
+						});
+					}
+				}
+			}
+		}
+
+		res.json({ candidates });
 	},
 );
 
-// ODS two-step import — Step 2: commit mapped payload to DB
+// Import — Step 2: assign selected candidates to an existing skupinka
 app.post(
 	"/api/admin/participants-import/commit",
 	requireAdmin,
 	async (req, res) => {
-		const { blocks } = req.body as {
-			blocks: {
-				skupinkaName: string;
-				ageGroup?: string;
-				location?: string;
-				participants: { name: string; email: string; phone?: string }[];
-			}[];
+		const { courseId, candidates } = req.body as {
+			courseId?: string;
+			candidates?: { kidName: string; parentEmail: string }[];
 		};
 
-		if (!Array.isArray(blocks)) {
-			return res.status(400).json({ error: "blocks array is required" });
+		if (!courseId) {
+			return res.status(400).json({ error: "courseId is required" });
+		}
+		if (!Array.isArray(candidates) || candidates.length === 0) {
+			return res
+				.status(400)
+				.json({ error: "candidates must be a non-empty array" });
 		}
 
-		let totalProcessed = 0;
-		let totalCreated = 0;
-		let totalSkipped = 0;
-		const blockResults: { ok: boolean; skupinkaName: string; error?: string; processed?: number; created?: number; skipped?: number }[] = [];
-		const touchedCourseIds = new Set<string>();
+		const course = await CourseDB.getById(courseId);
+		if (!course) {
+			return res.status(400).json({ error: "Course not found" });
+		}
 
-		for (const block of blocks) {
-			if (!block.ageGroup) {
-				blockResults.push({ ok: false, skupinkaName: block.skupinkaName, error: "ageGroup is required" });
-				continue;
-			}
+		const ageGroup = course.ageGroup as string;
+		let created = 0;
+		let skipped = 0;
 
-			try {
-				// Upsert course by name
-				const existing = await CourseDB.getByName(block.skupinkaName);
-				let courseId: string;
+		for (const c of candidates) {
+			if (!c.parentEmail) continue;
+			const kidName = c.kidName || c.parentEmail;
+			const existing = await ParticipantDB.getByEmailAndName(
+				c.parentEmail,
+				kidName,
+			);
 
-				if (existing) {
-					await CourseDB.update(existing.id as string, {
-						ageGroup: block.ageGroup,
-						...(block.location ? { location: block.location } : {}),
-					});
-					courseId = existing.id as string;
-				} else {
-					const course = createCourse({
-						name: block.skupinkaName,
-						ageGroup: block.ageGroup,
-						...(block.location ? { location: block.location } : {}),
-					});
-					await CourseDB.insert(course);
-					courseId = course.id;
-				}
-
-				touchedCourseIds.add(courseId);
-
-				let blockCreated = 0;
-				let blockSkipped = 0;
-
-				for (const p of block.participants) {
-					if (!p.email) continue;
-					const existingP = await ParticipantDB.getByEmail(p.email);
-
-					if (!existingP) {
-						const newP = createParticipant({
-							name: p.name || p.email,
-							email: p.email,
-							phone: p.phone ?? "",
-							ageGroup: block.ageGroup,
-						});
-						await ParticipantDB.insert(newP);
-						await ParticipantDB.linkToCourse(newP.id, courseId);
-						blockCreated++;
-					} else {
-						await ParticipantDB.linkToCourse(existingP.id as string, courseId);
-						blockSkipped++;
-					}
-				}
-
-				totalProcessed += block.participants.length;
-				totalCreated += blockCreated;
-				totalSkipped += blockSkipped;
-				blockResults.push({ ok: true, skupinkaName: block.skupinkaName, processed: block.participants.length, created: blockCreated, skipped: blockSkipped });
-			} catch (error) {
-				blockResults.push({ ok: false, skupinkaName: block.skupinkaName, error: String(error) });
+			if (!existing) {
+				const newP = createParticipant({
+					name: kidName,
+					email: c.parentEmail,
+					phone: "",
+					ageGroup,
+				});
+				await ParticipantDB.insert(newP);
+				await ParticipantDB.linkToCourse(newP.id, courseId);
+				created++;
+			} else {
+				await ParticipantDB.linkToCourse(existing.id as string, courseId);
+				skipped++;
 			}
 		}
 
-		// Sync enrollments for all touched courses
-		for (const courseId of touchedCourseIds) {
-			await registrationManager.syncGroupEnrollments(courseId);
-		}
+		await registrationManager.syncGroupEnrollments(courseId);
 
-		res.json({ processed: totalProcessed, created: totalCreated, skipped: totalSkipped, blockResults });
+		res.json({ processed: candidates.length, created, skipped });
 	},
 );
 

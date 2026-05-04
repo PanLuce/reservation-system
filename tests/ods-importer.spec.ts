@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
-import * as XLSX from "xlsx";
 import bcrypt from "bcrypt";
+import * as XLSX from "xlsx";
 import {
 	CourseDB,
-	ParticipantDB,
-	UserDB,
 	initializeDatabase,
+	ParticipantDB,
 	resetDatabaseForTests,
+	UserDB,
 } from "../src/database.js";
 import { parseOdsWorkbook } from "../src/ods-loader.js";
 
@@ -45,7 +45,13 @@ function makeTestOdsBuffer(): Buffer {
 	const ws2Data = [
 		["Cvičení pro nejmenší – DK Poklad", "", "", "", ""],
 		["jméno", "rodič", "tel", "email", "datum narození"],
-		["Sofie Kratochvíl", "Martin Kratochvíl", "777000004", "martin@test.cz", "2023-08-01"],
+		[
+			"Sofie Kratochvíl",
+			"Martin Kratochvíl",
+			"777000004",
+			"martin@test.cz",
+			"2023-08-01",
+		],
 	];
 	const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
 	XLSX.utils.book_append_sheet(wb, ws2, "Přihlášení DK Poklad duben26");
@@ -116,7 +122,9 @@ test.describe("parseOdsWorkbook — unit", () => {
 			["Test", "t@t.cz"],
 		]);
 		XLSX.utils.book_append_sheet(wb, ws, "Neznámý list");
-		const buf = Buffer.from(XLSX.write(wb, { type: "buffer", bookType: "xlsx" }));
+		const buf = Buffer.from(
+			XLSX.write(wb, { type: "buffer", bookType: "xlsx" }),
+		);
 		const result = parseOdsWorkbook(buf);
 		expect(result.sheets[0]?.detectedLocation).toBeNull();
 	});
@@ -125,7 +133,9 @@ test.describe("parseOdsWorkbook — unit", () => {
 		const wb = XLSX.utils.book_new();
 		const ws = XLSX.utils.aoa_to_sheet([]);
 		XLSX.utils.book_append_sheet(wb, ws, "Empty");
-		const buf = Buffer.from(XLSX.write(wb, { type: "buffer", bookType: "xlsx" }));
+		const buf = Buffer.from(
+			XLSX.write(wb, { type: "buffer", bookType: "xlsx" }),
+		);
 		const result = parseOdsWorkbook(buf);
 		expect(result.sheets[0]?.blocks).toHaveLength(0);
 	});
@@ -133,187 +143,114 @@ test.describe("parseOdsWorkbook — unit", () => {
 
 // ─── HTTP endpoint tests ──────────────────────────────────────────────────────
 
-test.describe.serial("ODS import endpoints", () => {
-	let adminCookie: string;
-	let participantCookie: string;
+test.describe
+	.serial("ODS import endpoints", () => {
+		let adminCookie: string;
+		let participantCookie: string;
 
-	test.beforeEach(async () => {
-		process.env.ADMIN_EMAIL_SEED = "admin@centrumrubacek.cz";
-		process.env.ADMIN_PASSWORD_SEED = "admin123";
-		await initializeDatabase();
-		await resetDatabaseForTests();
+		test.beforeEach(async () => {
+			process.env.ADMIN_EMAIL_SEED = "admin@centrumrubacek.cz";
+			process.env.ADMIN_PASSWORD_SEED = "admin123";
+			await initializeDatabase();
+			await resetDatabaseForTests();
 
-		await UserDB.insert({
-			id: "ods_participant",
-			email: "participant@ods.cz",
-			passwordHash: await bcrypt.hash("pass", 10),
-			name: "P",
-			role: "participant",
-		});
-
-		adminCookie = await loginAs("admin@centrumrubacek.cz", "admin123");
-		participantCookie = await loginAs("participant@ods.cz", "pass");
-	});
-
-	// --- preview ---
-
-	test("POST /api/admin/participants-import/preview returns parsed workbook without touching DB", async () => {
-		const buf = makeTestOdsBuffer();
-		const form = new FormData();
-		form.append("file", new Blob([buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), "test.xlsx");
-
-		const res = await fetch(`${BASE}/api/admin/participants-import/preview`, {
-			method: "POST",
-			headers: { Cookie: adminCookie },
-			body: form,
-		});
-
-		expect(res.status).toBe(200);
-		const data = await res.json() as { sheets: unknown[] };
-		expect(data.sheets).toHaveLength(2);
-
-		// DB untouched
-		const courses = await CourseDB.getAll();
-		expect(courses).toHaveLength(0);
-	});
-
-	test("preview blocked for participants — 403", async () => {
-		const buf = makeTestOdsBuffer();
-		const form = new FormData();
-		form.append("file", new Blob([buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer]), "test.xlsx");
-
-		const res = await fetch(`${BASE}/api/admin/participants-import/preview`, {
-			method: "POST",
-			headers: { Cookie: participantCookie },
-			body: form,
-		});
-		expect(res.status).toBe(403);
-	});
-
-	test("preview with no file — 400", async () => {
-		const res = await fetch(`${BASE}/api/admin/participants-import/preview`, {
-			method: "POST",
-			headers: { Cookie: adminCookie },
-			body: new FormData(),
-		});
-		expect(res.status).toBe(400);
-	});
-
-	// --- commit ---
-
-	test("POST /api/admin/participants-import/commit creates courses and participants", async () => {
-		const payload = {
-			blocks: [
-				{
-					skupinkaName: "Hýbeme se – Vietnamská",
-					ageGroup: "1 - 2 roky",
-					location: "Vietnamská",
-					participants: [
-						{ name: "Dítě A", email: "mama_a@test.cz" },
-						{ name: "Dítě B", email: "mama_b@test.cz" },
-					],
-				},
-				{
-					skupinkaName: "Pohyb – DK Poklad",
-					ageGroup: "2 - 3 roky",
-					location: "DK Poklad",
-					participants: [
-						{ name: "Dítě C", email: "mama_c@test.cz" },
-					],
-				},
-			],
-		};
-
-		const res = await fetch(`${BASE}/api/admin/participants-import/commit`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json", Cookie: adminCookie },
-			body: JSON.stringify(payload),
-		});
-
-		expect(res.status).toBe(200);
-		const data = await res.json() as { processed: number; created: number };
-		expect(data.processed).toBe(3);
-		expect(data.created).toBe(3);
-
-		// Courses created
-		const courses = await CourseDB.getAll();
-		expect(courses).toHaveLength(2);
-
-		// Participants created and linked
-		const pA = await ParticipantDB.getByEmail("mama_a@test.cz");
-		expect(pA).toBeDefined();
-		const coursesForA = await ParticipantDB.getCoursesForParticipant(pA!.id as string);
-		expect(coursesForA).toHaveLength(1);
-	});
-
-	test("commit is idempotent — running twice produces no duplicates", async () => {
-		const payload = {
-			blocks: [
-				{
-					skupinkaName: "Idem skupinka",
-					ageGroup: "1 - 2 roky",
-					location: "Studio",
-					participants: [{ name: "Dítě X", email: "mama_x@test.cz" }],
-				},
-			],
-		};
-
-		const run = () =>
-			fetch(`${BASE}/api/admin/participants-import/commit`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json", Cookie: adminCookie },
-				body: JSON.stringify(payload),
+			await UserDB.insert({
+				id: "ods_participant",
+				email: "participant@ods.cz",
+				passwordHash: await bcrypt.hash("pass", 10),
+				name: "P",
+				role: "participant",
 			});
 
-		await run();
-		const res2 = await run();
-		expect(res2.status).toBe(200);
-		const data = await res2.json() as { skipped: number };
-		expect(data.skipped).toBeGreaterThan(0);
-
-		const allParticipants = await ParticipantDB.getAll();
-		const matching = allParticipants.filter((p) => (p as Record<string, unknown>).email === "mama_x@test.cz");
-		expect(matching).toHaveLength(1);
-	});
-
-	test("commit blocked for participants — 403", async () => {
-		const res = await fetch(`${BASE}/api/admin/participants-import/commit`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json", Cookie: participantCookie },
-			body: JSON.stringify({ blocks: [] }),
-		});
-		expect(res.status).toBe(403);
-	});
-
-	test("commit with missing ageGroup in block returns 400 for that block, others proceed", async () => {
-		const payload = {
-			blocks: [
-				{
-					skupinkaName: "Dobrá skupinka",
-					ageGroup: "1 - 2 roky",
-					location: "Studio",
-					participants: [{ name: "Dítě OK", email: "ok@test.cz" }],
-				},
-				{
-					skupinkaName: "Špatná skupinka",
-					// ageGroup missing
-					location: "Studio",
-					participants: [{ name: "Dítě Bad", email: "bad@test.cz" }],
-				},
-			],
-		};
-
-		const res = await fetch(`${BASE}/api/admin/participants-import/commit`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json", Cookie: adminCookie },
-			body: JSON.stringify(payload),
+			adminCookie = await loginAs("admin@centrumrubacek.cz", "admin123");
+			participantCookie = await loginAs("participant@ods.cz", "pass");
 		});
 
-		expect(res.status).toBe(200);
-		const data = await res.json() as { blockResults: { ok: boolean; skupinkaName: string }[] };
-		const good = data.blockResults.find((b) => b.skupinkaName === "Dobrá skupinka");
-		const bad = data.blockResults.find((b) => b.skupinkaName === "Špatná skupinka");
-		expect(good?.ok).toBe(true);
-		expect(bad?.ok).toBe(false);
+		// --- preview ---
+
+		test("POST /api/admin/participants-import/preview returns flat candidates without touching DB", async () => {
+			const buf = makeTestOdsBuffer();
+			const form = new FormData();
+			form.append(
+				"file",
+				new Blob(
+					[
+						buf.buffer.slice(
+							buf.byteOffset,
+							buf.byteOffset + buf.byteLength,
+						) as ArrayBuffer,
+					],
+					{
+						type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+					},
+				),
+				"test.xlsx",
+			);
+
+			const res = await fetch(`${BASE}/api/admin/participants-import/preview`, {
+				method: "POST",
+				headers: { Cookie: adminCookie },
+				body: form,
+			});
+
+			expect(res.status).toBe(200);
+			const data = (await res.json()) as {
+				candidates: { kidName: string; parentEmail: string }[];
+			};
+			expect(Array.isArray(data.candidates)).toBe(true);
+			// test workbook has 4 participants total (2 + 1 + 1)
+			expect(data.candidates).toHaveLength(4);
+			expect(data.candidates[0]).toHaveProperty("kidName");
+			expect(data.candidates[0]).toHaveProperty("parentEmail");
+
+			// DB untouched
+			const courses = await CourseDB.getAll();
+			expect(courses).toHaveLength(0);
+		});
+
+		test("preview blocked for participants — 403", async () => {
+			const buf = makeTestOdsBuffer();
+			const form = new FormData();
+			form.append(
+				"file",
+				new Blob([
+					buf.buffer.slice(
+						buf.byteOffset,
+						buf.byteOffset + buf.byteLength,
+					) as ArrayBuffer,
+				]),
+				"test.xlsx",
+			);
+
+			const res = await fetch(`${BASE}/api/admin/participants-import/preview`, {
+				method: "POST",
+				headers: { Cookie: participantCookie },
+				body: form,
+			});
+			expect(res.status).toBe(403);
+		});
+
+		test("preview with no file — 400", async () => {
+			const res = await fetch(`${BASE}/api/admin/participants-import/preview`, {
+				method: "POST",
+				headers: { Cookie: adminCookie },
+				body: new FormData(),
+			});
+			expect(res.status).toBe(400);
+		});
+
+		test("commit blocked for participants — 403", async () => {
+			const res = await fetch(`${BASE}/api/admin/participants-import/commit`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Cookie: participantCookie,
+				},
+				body: JSON.stringify({
+					courseId: "x",
+					candidates: [{ kidName: "X", parentEmail: "x@x.cz" }],
+				}),
+			});
+			expect(res.status).toBe(403);
+		});
 	});
-});

@@ -1,7 +1,12 @@
 import { expect, test } from "@playwright/test";
 import { LessonCalendarDB } from "../src/calendar-db.js";
-import { CourseDB, LessonDB, initializeDatabase, resetDatabaseForTests } from "../src/database.js";
 import { createCourse } from "../src/course.js";
+import {
+	CourseDB,
+	initializeDatabase,
+	LessonDB,
+	resetDatabaseForTests,
+} from "../src/database.js";
 import { createLesson } from "../src/lesson.js";
 
 test.describe("Course location — Stage 4b", () => {
@@ -40,13 +45,35 @@ test.describe("Course location — Stage 4b", () => {
 
 	test("two courses with different locations produce lessons with correct locations", async () => {
 		// Arrange
-		const courseA = createCourse({ name: "Skupina Vietnamská", ageGroup: "1 - 2 roky", location: "CVČ Vietnamská" });
-		const courseB = createCourse({ name: "Skupina Jeremiáše", ageGroup: "2 - 3 roky", location: "O.Jeremiáše" });
+		const courseA = createCourse({
+			name: "Skupina Vietnamská",
+			ageGroup: "1 - 2 roky",
+			location: "CVČ Vietnamská",
+		});
+		const courseB = createCourse({
+			name: "Skupina Jeremiáše",
+			ageGroup: "2 - 3 roky",
+			location: "O.Jeremiáše",
+		});
 		await CourseDB.insert(courseA);
 		await CourseDB.insert(courseB);
 
-		const lessonA = createLesson({ title: "Lekce A", date: "2024-05-06", dayOfWeek: "Monday", time: "10:00", ageGroup: "1 - 2 roky", capacity: 8 });
-		const lessonB = createLesson({ title: "Lekce B", date: "2024-05-07", dayOfWeek: "Tuesday", time: "11:00", ageGroup: "2 - 3 roky", capacity: 8 });
+		const lessonA = createLesson({
+			title: "Lekce A",
+			date: "2024-05-06",
+			dayOfWeek: "Monday",
+			time: "10:00",
+			ageGroup: "1 - 2 roky",
+			capacity: 8,
+		});
+		const lessonB = createLesson({
+			title: "Lekce B",
+			date: "2024-05-07",
+			dayOfWeek: "Tuesday",
+			time: "11:00",
+			ageGroup: "2 - 3 roky",
+			capacity: 8,
+		});
 		await LessonDB.insertWithCourse(lessonA, courseA.id);
 		await LessonDB.insertWithCourse(lessonB, courseB.id);
 
@@ -54,8 +81,12 @@ test.describe("Course location — Stage 4b", () => {
 		const all = await LessonDB.getAll();
 
 		// Assert
-		const a = all.find((l) => (l as Record<string, unknown>).title === "Lekce A") as Record<string, unknown>;
-		const b = all.find((l) => (l as Record<string, unknown>).title === "Lekce B") as Record<string, unknown>;
+		const a = all.find(
+			(l) => (l as Record<string, unknown>).title === "Lekce A",
+		) as Record<string, unknown>;
+		const b = all.find(
+			(l) => (l as Record<string, unknown>).title === "Lekce B",
+		) as Record<string, unknown>;
 		expect(a?.location).toBe("CVČ Vietnamská");
 		expect(b?.location).toBe("O.Jeremiáše");
 	});
@@ -81,7 +112,11 @@ test.describe("Course location — Stage 4b", () => {
 
 	test("bulk-created lessons inherit course location", async () => {
 		// Arrange
-		const course = createCourse({ name: "DK Poklad skupinka", ageGroup: "lezoucí děti", location: "DK Poklad" });
+		const course = createCourse({
+			name: "DK Poklad skupinka",
+			ageGroup: "lezoucí děti",
+			location: "DK Poklad",
+		});
 		await CourseDB.insert(course);
 
 		const calendar = new LessonCalendarDB();
@@ -100,7 +135,9 @@ test.describe("Course location — Stage 4b", () => {
 		const lessons = await calendar.getLessonsByCourse(course.id);
 		expect(lessons).toHaveLength(2);
 		for (const lesson of lessons) {
-			expect((lesson as unknown as Record<string, unknown>).location).toBe("DK Poklad");
+			expect((lesson as unknown as Record<string, unknown>).location).toBe(
+				"DK Poklad",
+			);
 		}
 	});
 });

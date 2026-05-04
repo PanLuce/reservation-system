@@ -1,12 +1,12 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomUUID } from "node:crypto";
 import { type Client, createClient, type InValue } from "@libsql/client";
 import bcrypt from "bcrypt";
+import { AGE_GROUP_MIGRATION, ageGroupToColor } from "./age-groups.js";
 import { logger } from "./logger.js";
 import { toDateString } from "./types.js";
-import { AGE_GROUP_MIGRATION, ageGroupToColor } from "./age-groups.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -282,7 +282,8 @@ export const DEFAULT_PARTICIPANT_PASSWORD = "test123";
 
 export async function ensureAdminUser() {
 	const adminEmail = process.env.ADMIN_EMAIL_SEED ?? DEFAULT_ADMIN_EMAIL;
-	const adminPassword = process.env.ADMIN_PASSWORD_SEED ?? DEFAULT_ADMIN_PASSWORD;
+	const adminPassword =
+		process.env.ADMIN_PASSWORD_SEED ?? DEFAULT_ADMIN_PASSWORD;
 
 	const existing = await client.execute({
 		sql: "SELECT COUNT(*) as count FROM users WHERE email = ?",
@@ -303,8 +304,10 @@ export async function ensureAdminUser() {
 }
 
 export async function ensureDemoParticipant() {
-	const participantEmail = process.env.PARTICIPANT_EMAIL_SEED ?? DEFAULT_PARTICIPANT_EMAIL;
-	const participantPassword = process.env.PARTICIPANT_PASSWORD_SEED ?? DEFAULT_PARTICIPANT_PASSWORD;
+	const participantEmail =
+		process.env.PARTICIPANT_EMAIL_SEED ?? DEFAULT_PARTICIPANT_EMAIL;
+	const participantPassword =
+		process.env.PARTICIPANT_PASSWORD_SEED ?? DEFAULT_PARTICIPANT_PASSWORD;
 
 	const existing = await client.execute({
 		sql: "SELECT COUNT(*) as count FROM users WHERE email = ?",
@@ -325,7 +328,13 @@ export async function ensureDemoParticipant() {
 
 	await client.execute({
 		sql: "INSERT OR IGNORE INTO participants (id, name, email, phone, ageGroup) VALUES (?, ?, ?, ?, ?)",
-		args: [participantId, "Maminka Testovací", participantEmail, "", "1 - 2 roky"],
+		args: [
+			participantId,
+			"Maminka Testovací",
+			participantEmail,
+			"",
+			"1 - 2 roky",
+		],
 	});
 
 	await client.execute({
@@ -334,7 +343,15 @@ export async function ensureDemoParticipant() {
 	});
 
 	const today = new Date();
-	const dayNames: string[] = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+	const dayNames: string[] = [
+		"Sunday",
+		"Monday",
+		"Tuesday",
+		"Wednesday",
+		"Thursday",
+		"Friday",
+		"Saturday",
+	];
 	for (let i = 0; i < 3; i++) {
 		const lessonDate = new Date(today);
 		lessonDate.setDate(today.getDate() + 7 * (i + 1));
@@ -342,7 +359,17 @@ export async function ensureDemoParticipant() {
 		const dayOfWeek: string = dayNames[lessonDate.getDay()] ?? "Monday";
 		await client.execute({
 			sql: "INSERT OR IGNORE INTO lessons (id, title, date, dayOfWeek, time, ageGroup, capacity, enrolledCount, courseId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-			args: [lessonId, `Demo lekce ${i + 1}`, toDateString(lessonDate), dayOfWeek, "10:00", "1 - 2 roky", 10, 1, courseId],
+			args: [
+				lessonId,
+				`Demo lekce ${i + 1}`,
+				toDateString(lessonDate),
+				dayOfWeek,
+				"10:00",
+				"1 - 2 roky",
+				10,
+				1,
+				courseId,
+			],
 		});
 		await client.execute({
 			sql: "INSERT OR IGNORE INTO registrations (id, lessonId, participantId, status) VALUES (?, ?, ?, ?)",
@@ -354,13 +381,25 @@ export async function ensureDemoParticipant() {
 	expiresAt.setMonth(expiresAt.getMonth() + 3);
 	await client.execute({
 		sql: "INSERT OR IGNORE INTO substitution_credits (id, participantId, earnedFromRegistrationId, expiresAt) VALUES (?, ?, ?, ?)",
-		args: [randomUUID(), participantId, "demo_reg_seed_1", expiresAt.toISOString()],
+		args: [
+			randomUUID(),
+			participantId,
+			"demo_reg_seed_1",
+			expiresAt.toISOString(),
+		],
 	});
 
 	const passwordHash = await bcrypt.hash(participantPassword, 10);
 	await client.execute({
 		sql: "INSERT OR IGNORE INTO users (id, email, passwordHash, name, role, participantId) VALUES (?, ?, ?, ?, ?, ?)",
-		args: [userId, participantEmail, passwordHash, "Maminka Testovací", "participant", participantId],
+		args: [
+			userId,
+			participantEmail,
+			passwordHash,
+			"Maminka Testovací",
+			"participant",
+			participantId,
+		],
 	});
 
 	logger.info("Demo participant ensured", { email: participantEmail });
@@ -389,9 +428,36 @@ export async function seedSampleData() {
 		const wednesdayDate = toDateString(nextWednesday);
 
 		const sampleLessons: InValue[][] = [
-			["lesson_1", "Cvičení pro maminky s dětmi - Pondělí dopoledne", mondayDate, "Monday", "10:00", "6-9 měsíců (do lezení)", 10, 3],
-			["lesson_2", "Cvičení pro maminky s dětmi - Úterý odpoledne", tuesdayDate, "Tuesday", "14:00", "1 - 2 roky", 12, 8],
-			["lesson_3", "Cvičení pro maminky s dětmi - Středa dopoledne", wednesdayDate, "Wednesday", "10:00", "2 - 3 roky", 15, 12],
+			[
+				"lesson_1",
+				"Cvičení pro maminky s dětmi - Pondělí dopoledne",
+				mondayDate,
+				"Monday",
+				"10:00",
+				"6-9 měsíců (do lezení)",
+				10,
+				3,
+			],
+			[
+				"lesson_2",
+				"Cvičení pro maminky s dětmi - Úterý odpoledne",
+				tuesdayDate,
+				"Tuesday",
+				"14:00",
+				"1 - 2 roky",
+				12,
+				8,
+			],
+			[
+				"lesson_3",
+				"Cvičení pro maminky s dětmi - Středa dopoledne",
+				wednesdayDate,
+				"Wednesday",
+				"10:00",
+				"2 - 3 roky",
+				15,
+				12,
+			],
 		];
 
 		for (const lesson of sampleLessons) {
@@ -707,6 +773,14 @@ export const ParticipantDB = {
 		const result = await client.execute({
 			sql: "SELECT * FROM participants WHERE email = ?",
 			args: [email],
+		});
+		return result.rows[0];
+	},
+
+	async getByEmailAndName(email: string, name: string) {
+		const result = await client.execute({
+			sql: "SELECT * FROM participants WHERE email = ? AND name = ?",
+			args: [email, name],
 		});
 		return result.rows[0];
 	},

@@ -39,20 +39,35 @@ function detectLocation(sheetName: string): string | null {
 }
 
 function isHeaderRow(row: unknown[]): boolean {
-	const lower = row.map((c) => String(c ?? "").toLowerCase().trim());
+	const lower = row.map((c) =>
+		String(c ?? "")
+			.toLowerCase()
+			.trim(),
+	);
 	return HEADER_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
 function isBlankRow(row: unknown[]): boolean {
-	return row.every((c) => c === null || c === undefined || String(c).trim() === "");
+	return row.every(
+		(c) => c === null || c === undefined || String(c).trim() === "",
+	);
 }
 
 function findEmailIndex(headerRow: unknown[]): number {
-	return headerRow.findIndex((c) => String(c ?? "").toLowerCase().trim() === "email");
+	return headerRow.findIndex(
+		(c) =>
+			String(c ?? "")
+				.toLowerCase()
+				.trim() === "email",
+	);
 }
 
 function findNameIndex(headerRow: unknown[]): number {
-	const lower = headerRow.map((c) => String(c ?? "").toLowerCase().trim());
+	const lower = headerRow.map((c) =>
+		String(c ?? "")
+			.toLowerCase()
+			.trim(),
+	);
 	// "jméno" or "name" — prefer "jméno"
 	const jmeno = lower.findIndex((c) => c === "jméno" || c === "jmeno");
 	if (jmeno >= 0) return jmeno;
@@ -60,13 +75,25 @@ function findNameIndex(headerRow: unknown[]): number {
 }
 
 function findPhoneIndex(headerRow: unknown[]): number {
-	const lower = headerRow.map((c) => String(c ?? "").toLowerCase().trim());
-	return lower.findIndex((c) => c === "tel" || c === "telefon" || c === "phone");
+	const lower = headerRow.map((c) =>
+		String(c ?? "")
+			.toLowerCase()
+			.trim(),
+	);
+	return lower.findIndex(
+		(c) => c === "tel" || c === "telefon" || c === "phone",
+	);
 }
 
 function findParentIndex(headerRow: unknown[]): number {
-	const lower = headerRow.map((c) => String(c ?? "").toLowerCase().trim());
-	return lower.findIndex((c) => c === "rodič" || c === "rodic" || c === "parent");
+	const lower = headerRow.map((c) =>
+		String(c ?? "")
+			.toLowerCase()
+			.trim(),
+	);
+	return lower.findIndex(
+		(c) => c === "rodič" || c === "rodic" || c === "parent",
+	);
 }
 
 function parseSheetBlocks(rows: unknown[][]): ParsedBlock[] {
@@ -91,7 +118,10 @@ function parseSheetBlocks(rows: unknown[][]): ParsedBlock[] {
 		} else {
 			// Title row
 			const titleRow = candidateRow;
-			const title = titleRow.filter((c) => c !== null && c !== undefined && String(c).trim() !== "").join(" – ").trim();
+			const title = titleRow
+				.filter((c) => c !== null && c !== undefined && String(c).trim() !== "")
+				.join(" – ")
+				.trim();
 			i++;
 
 			// Skip blank rows between title and header
@@ -131,13 +161,19 @@ function extractBlock(
 	const warnings: string[] = [];
 	let i = startIndex;
 
-	while (i < allRows.length && !isBlankRow(allRows[i] ?? []) && !isHeaderRow(allRows[i] ?? [])) {
+	while (
+		i < allRows.length &&
+		!isBlankRow(allRows[i] ?? []) &&
+		!isHeaderRow(allRows[i] ?? [])
+	) {
 		const row = allRows[i] ?? [];
 
 		const email = emailIdx >= 0 ? String(row[emailIdx] ?? "").trim() : "";
 		const name = nameIdx >= 0 ? String(row[nameIdx] ?? "").trim() : "";
-		const phone = phoneIdx >= 0 ? String(row[phoneIdx] ?? "").trim() : undefined;
-		const parentName = parentIdx >= 0 ? String(row[parentIdx] ?? "").trim() : undefined;
+		const phone =
+			phoneIdx >= 0 ? String(row[phoneIdx] ?? "").trim() : undefined;
+		const parentName =
+			parentIdx >= 0 ? String(row[parentIdx] ?? "").trim() : undefined;
 
 		if (!email) {
 			warnings.push(`Row ${i + 1}: missing email — skipped`);

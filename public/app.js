@@ -88,7 +88,9 @@ let ageGroups = [];
 
 async function loadAgeGroups() {
 	try {
-		const res = await fetch(`${API_URL}/age-groups`, { credentials: "include" });
+		const res = await fetch(`${API_URL}/age-groups`, {
+			credentials: "include",
+		});
 		ageGroups = await res.json();
 		populateAgeGroupSelect(document.getElementById("course-age-group"));
 		populateAgeGroupSelect(document.getElementById("lesson-age-group"));
@@ -102,7 +104,9 @@ function populateAgeGroupSelect(selectEl) {
 	const current = selectEl.value;
 	selectEl.innerHTML =
 		'<option value="">-- Věková skupina --</option>' +
-		ageGroups.map((g) => `<option value="${g.name}">${g.name}</option>`).join("");
+		ageGroups
+			.map((g) => `<option value="${g.name}">${g.name}</option>`)
+			.join("");
 	if (current) selectEl.value = current;
 }
 
@@ -158,37 +162,63 @@ let calendarMyRegisteredIds = new Set(); // lessonIds the current participant is
 let calendarCreditCount = 0; // active substitution credits for current participant
 
 const CZECH_MONTHS = [
-	"Leden","Únor","Březen","Duben","Květen","Červen",
-	"Červenec","Srpen","Září","Říjen","Listopad","Prosinec",
+	"Leden",
+	"Únor",
+	"Březen",
+	"Duben",
+	"Květen",
+	"Červen",
+	"Červenec",
+	"Srpen",
+	"Září",
+	"Říjen",
+	"Listopad",
+	"Prosinec",
 ];
-const CZECH_DAYS_SHORT = ["Po","Út","St","Čt","Pá","So","Ne"];
+const CZECH_DAYS_SHORT = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 
 async function loadCalendar() {
 	try {
-		const lessonsPromise = fetch(`${API_URL}/lessons`, { credentials: "include" }).then((r) => r.json());
+		const lessonsPromise = fetch(`${API_URL}/lessons`, {
+			credentials: "include",
+		}).then((r) => r.json());
 
 		const pId = currentUser?.participantId;
 		const subPromise = pId
-			? fetch(`${API_URL}/participants/${pId}/substitution-candidates`, { credentials: "include" })
-				.then((r) => r.ok ? r.json() : [])
-				.catch(() => [])
+			? fetch(`${API_URL}/participants/${pId}/substitution-candidates`, {
+					credentials: "include",
+				})
+					.then((r) => (r.ok ? r.json() : []))
+					.catch(() => [])
 			: Promise.resolve([]);
 		const registrationsPromise = pId
-			? fetch(`${API_URL}/participants/${pId}/registrations`, { credentials: "include" })
-				.then((r) => r.ok ? r.json() : [])
-				.catch(() => [])
+			? fetch(`${API_URL}/participants/${pId}/registrations`, {
+					credentials: "include",
+				})
+					.then((r) => (r.ok ? r.json() : []))
+					.catch(() => [])
 			: Promise.resolve([]);
 		const creditPromise = pId
-			? fetch(`${API_URL}/participants/${pId}/credits`, { credentials: "include" })
-				.then((r) => r.ok ? r.json() : { count: 0 })
-				.catch(() => ({ count: 0 }))
+			? fetch(`${API_URL}/participants/${pId}/credits`, {
+					credentials: "include",
+				})
+					.then((r) => (r.ok ? r.json() : { count: 0 }))
+					.catch(() => ({ count: 0 }))
 			: Promise.resolve({ count: 0 });
 
-		const [lessons, subCandidates, registrations, creditData] = await Promise.all([lessonsPromise, subPromise, registrationsPromise, creditPromise]);
+		const [lessons, subCandidates, registrations, creditData] =
+			await Promise.all([
+				lessonsPromise,
+				subPromise,
+				registrationsPromise,
+				creditPromise,
+			]);
 		calendarLessons = lessons;
 		calendarSubCandidateIds = new Set(subCandidates.map((l) => l.id));
 		calendarMyRegisteredIds = new Set(
-			registrations.filter((r) => r.status !== "cancelled").map((r) => r.lessonId)
+			registrations
+				.filter((r) => r.status !== "cancelled")
+				.map((r) => r.lessonId),
 		);
 		calendarCreditCount = creditData.count ?? 0;
 
@@ -201,13 +231,19 @@ async function loadCalendar() {
 
 function calendarPrevMonth() {
 	calendarMonth--;
-	if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+	if (calendarMonth < 0) {
+		calendarMonth = 11;
+		calendarYear--;
+	}
 	renderMonthCalendar(calendarYear, calendarMonth);
 }
 
 function calendarNextMonth() {
 	calendarMonth++;
-	if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+	if (calendarMonth > 11) {
+		calendarMonth = 0;
+		calendarYear++;
+	}
 	renderMonthCalendar(calendarYear, calendarMonth);
 }
 
@@ -244,7 +280,7 @@ function renderMonthCalendar(year, month) {
 	const todayStr = new Date().toISOString().slice(0, 10);
 
 	let html = CZECH_DAYS_SHORT.map(
-		(d) => `<div class="calendar-day-header">${d}</div>`
+		(d) => `<div class="calendar-day-header">${d}</div>`,
 	).join("");
 
 	for (let i = 0; i < startOffset; i++) {
@@ -252,20 +288,25 @@ function renderMonthCalendar(year, month) {
 	}
 
 	for (let day = 1; day <= daysInMonth; day++) {
-		const dateStr = `${year}-${String(month + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+		const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 		const isToday = dateStr === todayStr;
 		const lessons = byDate[dateStr] || [];
 
 		const MAX_ICONS = 4;
 		const isParticipant = currentUser && currentUser.role !== "admin";
-		const icons = lessons.slice(0, MAX_ICONS).map((l) => {
-			const badge = getLessonTileIcon(l, isParticipant);
-			if (!badge) return "";
-			return `<span class="calendar-icon" title="${badge.label}">${badge.icon}</span>`;
-		}).filter(Boolean).join("");
-		const overflow = lessons.length > MAX_ICONS
-			? `<span class="calendar-dot-overflow">+${lessons.length - MAX_ICONS}</span>`
-			: "";
+		const icons = lessons
+			.slice(0, MAX_ICONS)
+			.map((l) => {
+				const badge = getLessonTileIcon(l, isParticipant);
+				if (!badge) return "";
+				return `<span class="calendar-icon" title="${badge.label}">${badge.icon}</span>`;
+			})
+			.filter(Boolean)
+			.join("");
+		const overflow =
+			lessons.length > MAX_ICONS
+				? `<span class="calendar-dot-overflow">+${lessons.length - MAX_ICONS}</span>`
+				: "";
 
 		html += `
 			<div class="calendar-day${isToday ? " today" : ""}" onclick="openDayModal('${dateStr}')">
@@ -288,7 +329,10 @@ function openDayModal(dateStr) {
 	const [year, month, day] = dateStr.split("-");
 	document.getElementById("day-modal-title").textContent =
 		`${parseInt(day, 10)}. ${parseInt(month, 10)}. ${year}`;
-	document.getElementById("day-modal-body").innerHTML = renderDayLessons(lessons, dateStr);
+	document.getElementById("day-modal-body").innerHTML = renderDayLessons(
+		lessons,
+		dateStr,
+	);
 	document.getElementById("day-modal").style.display = "flex";
 }
 
@@ -300,30 +344,31 @@ function renderDayLessons(lessons, dateStr) {
 	const todayStr = new Date().toISOString().slice(0, 10);
 	const canCancel = dateStr > todayStr;
 
-	return lessons.map((l) => {
-		const fillPercent = Math.min(100, (l.enrolledCount / l.capacity) * 100);
-		const isFull = l.enrolledCount >= l.capacity;
-		const colorDot = l.courseColor
-			? `<span class="calendar-dot" style="background:${l.courseColor};width:12px;height:12px;"></span>`
-			: "";
+	return lessons
+		.map((l) => {
+			const fillPercent = Math.min(100, (l.enrolledCount / l.capacity) * 100);
+			const isFull = l.enrolledCount >= l.capacity;
+			const colorDot = l.courseColor
+				? `<span class="calendar-dot" style="background:${l.courseColor};width:12px;height:12px;"></span>`
+				: "";
 
-		let actions;
-		if (isAdmin) {
-			actions = `<button class="btn btn-danger" onclick="deleteLesson('${l.id}', this)">Smazat</button>`;
-		} else if (calendarSubCandidateIds.has(l.id)) {
-			const noCredit = calendarCreditCount <= 0;
-			actions = `<button class="btn btn-primary" onclick="selfRegister('${l.id}', this)"
+			let actions;
+			if (isAdmin) {
+				actions = `<button class="btn btn-danger" onclick="deleteLesson('${l.id}', this)">Smazat</button>`;
+			} else if (calendarSubCandidateIds.has(l.id)) {
+				const noCredit = calendarCreditCount <= 0;
+				actions = `<button class="btn btn-primary" onclick="selfRegister('${l.id}', this)"
 				${noCredit ? `disabled title="Potřebujete náhradu (aktuálně 0 kreditů)"` : ""}>
 				Přihlásit jako náhrada
 			</button>`;
-		} else {
-			actions = `<button class="btn btn-danger" onclick="selfCancel('${l.id}', this)"
+			} else {
+				actions = `<button class="btn btn-danger" onclick="selfCancel('${l.id}', this)"
 				${canCancel ? "" : "disabled title='Nelze odhlásit po půlnoci před lekcí'"}>
 				Odhlásit
 			</button>`;
-		}
+			}
 
-		return `
+			return `
 			<div class="day-lesson-row">
 				<div class="day-lesson-title">
 					${colorDot}
@@ -333,7 +378,7 @@ function renderDayLessons(lessons, dateStr) {
 				<div class="day-lesson-meta">
 					<span>🕐 ${l.time}</span>
 					<span>📍 ${l.location}</span>
-					<span>👶 ${(l.ageGroup)}</span>
+					<span>👶 ${l.ageGroup}</span>
 					<span>👥 ${l.enrolledCount}/${l.capacity}</span>
 				</div>
 				<div class="capacity-bar" style="margin:8px 0;">
@@ -343,7 +388,8 @@ function renderDayLessons(lessons, dateStr) {
 				</div>
 				<div class="day-lesson-actions">${actions}</div>
 			</div>`;
-	}).join("");
+		})
+		.join("");
 }
 
 function closeDayModal(event) {
@@ -368,7 +414,6 @@ function translateDay(day) {
 	return days[day] || day;
 }
 
-
 // Show/hide add lesson form
 async function showAddLessonForm() {
 	await populateLessonCourseSelect();
@@ -384,8 +429,7 @@ async function populateLessonCourseSelect() {
 			'<option value="">-- Vyberte skupinku --</option>' +
 			courses
 				.map(
-					(c) =>
-						`<option value="${c.id}">[${(c.ageGroup)}] ${c.name}</option>`,
+					(c) => `<option value="${c.id}">[${c.ageGroup}] ${c.name}</option>`,
 				)
 				.join("");
 	} catch (error) {
@@ -398,38 +442,45 @@ function hideAddLessonForm() {
 	document.querySelector("#add-lesson-form form").reset();
 }
 
-// Add lesson
+// Add lesson (creates recurring lessons from startDate to endDate)
 async function addLesson(event) {
 	event.preventDefault();
 	const form = event.target;
 	const formData = new FormData(form);
 
-	const lessonData = {
+	const courseId = formData.get("courseId");
+	const payload = {
 		title: formData.get("title"),
 		dayOfWeek: formData.get("dayOfWeek"),
 		time: formData.get("time"),
-		ageGroup: formData.get("ageGroup"),
 		capacity: parseInt(formData.get("capacity"), 10),
-		courseId: formData.get("courseId"),
+		startDate: formData.get("startDate"),
+		endDate: formData.get("endDate"),
 	};
 
 	await withLoading(event.submitter, async () => {
 		try {
-			const response = await fetch(`${API_URL}/lessons`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(lessonData),
-			});
+			const response = await fetch(
+				`${API_URL}/courses/${courseId}/bulk-lessons`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include",
+					body: JSON.stringify(payload),
+				},
+			);
 
 			if (response.ok) {
-				showNotification("Lekce byla úspěšně přidána!");
+				const data = await response.json();
+				showNotification(`Vytvořeno ${data.lessons.length} lekcí`);
 				hideAddLessonForm();
 				loadCalendar();
 			} else {
-				showNotification("Chyba při přidávání lekce", "error");
+				const err = await response.json().catch(() => ({}));
+				showNotification(err.error || "Chyba při přidávání lekcí", "error");
 			}
 		} catch (error) {
-			showNotification("Chyba při přidávání lekce", "error");
+			showNotification("Chyba při přidávání lekcí", "error");
 			console.error(error);
 		}
 	});
@@ -461,73 +512,6 @@ async function deleteLesson(lessonId, triggerEl) {
 	});
 }
 
-// Upload Excel
-async function uploadExcel(event) {
-	event.preventDefault();
-	const form = event.target;
-	const formData = new FormData(form);
-
-	await withLoading(event.submitter, async () => {
-		try {
-			const response = await fetch(`${API_URL}/excel/import`, {
-				method: "POST",
-				body: formData,
-			});
-
-			const result = await response.json();
-
-			if (response.ok) {
-				showNotification(result.message);
-				form.reset();
-				loadCalendar();
-			} else {
-				showNotification(result.error || "Chyba při nahrávání souboru", "error");
-			}
-		} catch (error) {
-			showNotification("Chyba při nahrávání souboru", "error");
-			console.error(error);
-		}
-	});
-}
-
-async function uploadCoursesExcel(event) {
-	event.preventDefault();
-	const form = event.target;
-	const formData = new FormData(form);
-
-	await withLoading(event.submitter, async () => {
-		try {
-			const response = await fetch(`${API_URL}/admin/courses/import`, {
-				method: "POST",
-				credentials: "include",
-				body: formData,
-			});
-
-			const result = await response.json();
-			const resultsEl = document.getElementById("courses-excel-results");
-
-			if (response.ok) {
-				const errors = (result.perRow || []).filter((r) => !r.ok);
-				if (errors.length > 0) {
-					const errList = errors.map((r) => `${r.name}: ${r.error}`).join("<br>");
-					if (resultsEl) resultsEl.innerHTML = `<div class="error-list" style="margin-top:12px;color:#c62828;">${errList}</div>`;
-					showNotification(`Nahrání dokončeno s ${errors.length} chybami`, "error");
-				} else {
-					if (resultsEl) resultsEl.innerHTML = "";
-					showNotification(`Skupinky nahrány: ${result.processed}`);
-				}
-				form.reset();
-				loadCourses();
-			} else {
-				showNotification(result.error || "Chyba při nahrávání souboru", "error");
-			}
-		} catch (error) {
-			showNotification("Chyba při nahrávání souboru", "error");
-			console.error(error);
-		}
-	});
-}
-
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
 	loadCalendar();
@@ -551,6 +535,9 @@ async function loadCourses() {
 		}
 
 		container.innerHTML = courses.map(renderCourseCard).join("");
+		for (const course of courses) {
+			loadCourseMembers(course.id);
+		}
 	} catch (error) {
 		showNotification("Chyba při načítání skupinek", "error");
 		console.error(error);
@@ -567,9 +554,12 @@ function renderCourseCard(course) {
 			</div>
 			<div class="lesson-info">
 				<div class="lesson-info-item">
-					<strong>👶 Věk:</strong> ${(course.ageGroup)}
+					<strong>👶 Věk:</strong> ${course.ageGroup}
 				</div>
 				${course.location ? `<div class="lesson-info-item"><strong>📍</strong> ${course.location}</div>` : ""}
+			</div>
+			<div class="course-members" id="course-members-${course.id}">
+				<span style="color:#aaa;font-size:13px;">Načítám maminky…</span>
 			</div>
 			${
 				isAdmin
@@ -582,6 +572,39 @@ function renderCourseCard(course) {
 					: ""
 			}
 		</div>`;
+}
+
+async function loadCourseMembers(courseId) {
+	try {
+		const res = await fetch(`${API_URL}/courses/${courseId}/participants`, {
+			credentials: "include",
+		});
+		if (!res.ok) return;
+		const members = await res.json();
+		const container = document.getElementById(`course-members-${courseId}`);
+		if (!container) return;
+		if (members.length === 0) {
+			container.innerHTML =
+				'<span style="color:#aaa;font-size:13px;">Žádné maminky</span>';
+			return;
+		}
+		const summary = `<span style="font-size:13px;cursor:pointer;color:#555;" onclick="toggleMembersList('${courseId}')">👩 ${members.length} mamink${members.length === 1 ? "a" : members.length < 5 ? "y" : ""} ▾</span>`;
+		const listItems = members
+			.map(
+				(m) =>
+					`<li style="font-size:12px;color:#444;">${m.name} <span style="color:#999;">${m.email}</span></li>`,
+			)
+			.join("");
+		container.innerHTML = `${summary}<ul id="course-members-list-${courseId}" style="display:none;margin:4px 0 0 0;padding-left:16px;list-style:disc;">${listItems}</ul>`;
+	} catch {
+		// silently ignore — members list is non-critical
+	}
+}
+
+function toggleMembersList(courseId) {
+	const list = document.getElementById(`course-members-list-${courseId}`);
+	if (list)
+		list.style.display = list.style.display === "none" ? "block" : "none";
 }
 
 function showAddCourseForm() {
@@ -852,7 +875,7 @@ async function loadSubstitutionCandidates(participantId) {
 
 // ─── ODS two-step importer ────────────────────────────────────────────────────
 
-let odsPreviewData = null;
+let odsCandidates = [];
 
 async function uploadOdsForPreview(event) {
 	event.preventDefault();
@@ -875,10 +898,13 @@ async function uploadOdsForPreview(event) {
 				return;
 			}
 
-			odsPreviewData = await res.json();
-			renderOdsPreview(odsPreviewData);
+			const data = await res.json();
+			odsCandidates = data.candidates || [];
+			await renderOdsPreview();
 			document.getElementById("ods-step2").style.display = "block";
-			document.getElementById("ods-step2").scrollIntoView({ behavior: "smooth" });
+			document
+				.getElementById("ods-step2")
+				.scrollIntoView({ behavior: "smooth" });
 		} catch (error) {
 			showNotification("Chyba při nahrávání souboru", "error");
 			console.error(error);
@@ -886,88 +912,93 @@ async function uploadOdsForPreview(event) {
 	});
 }
 
-function renderOdsPreview(preview) {
+async function renderOdsPreview() {
 	const container = document.getElementById("ods-blocks-container");
-	let html = "";
-	let blockIndex = 0;
 
-	for (const sheet of preview.sheets) {
-		if (sheet.blocks.length === 0) continue;
-		html += `<div style="margin-bottom: 12px; color: #888; font-size: 13px; border-top: 1px solid #eee; padding-top: 12px;">
-			📋 List: <strong>${sheet.sheetName}</strong>
-			${sheet.detectedLocation ? `· místo: <em>${sheet.detectedLocation}</em>` : ""}
-		</div>`;
+	// Load existing skupinky for the dropdown
+	let courses = [];
+	try {
+		const res = await fetch(`${API_URL}/courses`, { credentials: "include" });
+		courses = await res.json();
+	} catch {}
 
-		for (const block of sheet.blocks) {
-			const idx = blockIndex++;
-			const detectedLoc = sheet.detectedLocation || "";
-			const suggestedName = block.title.split("–")[0]?.trim() || block.title;
+	const courseOptions = courses
+		.map((c) => `<option value="${c.id}">[${c.ageGroup}] ${c.name}</option>`)
+		.join("");
 
-			html += `
-			<div class="form-card" style="margin-bottom: 12px; background: #fafafa;" id="ods-block-${idx}">
-				<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-					<strong style="font-size: 14px;">${block.title || "(bez názvu)"}</strong>
-					<label style="font-size: 13px; color: #666;">
-						<input type="checkbox" id="ods-include-${idx}" checked> Importovat
-					</label>
-				</div>
-				<div class="form-row" style="gap: 8px; margin-bottom: 8px;">
-					<div class="form-group" style="flex:2; margin:0;">
-						<label style="font-size: 12px;">Název skupinky:</label>
-						<input type="text" id="ods-name-${idx}" value="${suggestedName}" style="font-size: 13px;">
-					</div>
-					<div class="form-group" style="flex:2; margin:0;">
-						<label style="font-size: 12px;">Věková skupina:</label>
-						<select id="ods-agegroup-${idx}" style="font-size: 13px;">
-							<option value="">-- Vyberte --</option>
-							${ageGroups.map((g) => `<option value="${g.name}">${g.name}</option>`).join("")}
-						</select>
-					</div>
-					<div class="form-group" style="flex:2; margin:0;">
-						<label style="font-size: 12px;">Místo:</label>
-						<input type="text" id="ods-location-${idx}" value="${detectedLoc}" style="font-size: 13px;">
-					</div>
-				</div>
-				<div style="font-size: 12px; color: #666;">${block.rows.length} účastník(ů)
-					${block.warnings.length > 0 ? `· <span style="color:#c62828;">${block.warnings.length} varování</span>` : ""}
-				</div>
-				${block.warnings.length > 0 ? `<ul style="font-size:11px;color:#c62828;margin-top:4px;">${block.warnings.map((w) => `<li>${w}</li>`).join("")}</ul>` : ""}
-			</div>`;
-		}
+	if (odsCandidates.length === 0) {
+		container.innerHTML = "<p>Žádní kandidáti nenalezeni.</p>";
+		return;
 	}
 
-	container.innerHTML = html || "<p>Žádné bloky nenalezeny.</p>";
+	const rows = odsCandidates
+		.map(
+			(c, i) => `
+		<tr>
+			<td style="padding:6px 4px;"><input type="checkbox" id="ods-candidate-${i}" checked></td>
+			<td style="padding:6px 4px;"><input type="text" id="ods-kidname-${i}" value="${c.kidName}" style="font-size:13px;width:100%;border:1px solid #ddd;border-radius:4px;padding:2px 6px;"></td>
+			<td style="padding:6px 4px;"><input type="email" id="ods-email-${i}" value="${c.parentEmail}" style="font-size:13px;width:100%;border:1px solid #ddd;border-radius:4px;padding:2px 6px;"></td>
+		</tr>`,
+		)
+		.join("");
+
+	container.innerHTML = `
+		<div class="form-group" style="margin-bottom:12px;">
+			<label style="font-weight:bold;">Přiřadit do skupinky:</label>
+			<select id="ods-target-course" style="font-size:13px;margin-top:4px;" required>
+				<option value="">-- Vyberte skupinku --</option>
+				${courseOptions}
+			</select>
+		</div>
+		<div style="margin-bottom:8px;font-size:13px;color:#555;">
+			<label><input type="checkbox" id="ods-select-all" checked onchange="toggleAllCandidates(this.checked)"> Vybrat vše</label>
+		</div>
+		<div style="overflow-x:auto;">
+			<table style="width:100%;border-collapse:collapse;font-size:13px;">
+				<thead>
+					<tr style="background:#f5f5f5;">
+						<th style="padding:6px 4px;text-align:left;width:32px;"></th>
+						<th style="padding:6px 4px;text-align:left;">Jméno dítěte</th>
+						<th style="padding:6px 4px;text-align:left;">Email rodiče</th>
+					</tr>
+				</thead>
+				<tbody>${rows}</tbody>
+			</table>
+		</div>`;
+}
+
+function toggleAllCandidates(checked) {
+	odsCandidates.forEach((_, i) => {
+		const el = document.getElementById(`ods-candidate-${i}`);
+		if (el) el.checked = checked;
+	});
 }
 
 async function submitOdsImport(triggerEl) {
-	if (!odsPreviewData) return;
+	const courseId = document.getElementById("ods-target-course")?.value;
+	if (!courseId) {
+		showNotification("Vyberte skupinku", "error");
+		return;
+	}
 
-	const blocks = [];
-	let blockIndex = 0;
+	const candidates = odsCandidates
+		.map((_, i) => {
+			const checked = document.getElementById(`ods-candidate-${i}`)?.checked;
+			if (!checked) return null;
+			const kidName = document
+				.getElementById(`ods-kidname-${i}`)
+				?.value?.trim();
+			const parentEmail = document
+				.getElementById(`ods-email-${i}`)
+				?.value?.trim();
+			if (!parentEmail) return null;
+			return { kidName: kidName || parentEmail, parentEmail };
+		})
+		.filter(Boolean);
 
-	for (const sheet of odsPreviewData.sheets) {
-		for (const block of sheet.blocks) {
-			const idx = blockIndex++;
-			const includeEl = document.getElementById(`ods-include-${idx}`);
-			if (!includeEl?.checked) continue;
-
-			const skupinkaName = document.getElementById(`ods-name-${idx}`)?.value?.trim();
-			const ageGroup = document.getElementById(`ods-agegroup-${idx}`)?.value;
-			const location = document.getElementById(`ods-location-${idx}`)?.value?.trim();
-
-			if (!skupinkaName) continue;
-
-			blocks.push({
-				skupinkaName,
-				ageGroup: ageGroup || undefined,
-				location: location || undefined,
-				participants: block.rows.map((r) => ({
-					name: r.name,
-					email: r.email,
-					...(r.phone ? { phone: r.phone } : {}),
-				})),
-			});
-		}
+	if (candidates.length === 0) {
+		showNotification("Vyberte alespoň jednoho kandidáta", "error");
+		return;
 	}
 
 	await withLoading(triggerEl, async () => {
@@ -976,20 +1007,20 @@ async function submitOdsImport(triggerEl) {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				credentials: "include",
-				body: JSON.stringify({ blocks }),
+				body: JSON.stringify({ courseId, candidates }),
 			});
 
 			const data = await res.json();
 			const resultsEl = document.getElementById("ods-commit-results");
 
 			if (res.ok) {
-				const errors = (data.blockResults || []).filter((b) => !b.ok);
-				let summary = `✅ Importováno: ${data.processed} účastník(ů), nových: ${data.created}, přeskočeno: ${data.skipped}`;
-				if (errors.length > 0) {
-					summary += `<br><span style="color:#c62828;">⚠️ ${errors.length} blok(ů) s chybou: ${errors.map((b) => b.skupinkaName + ": " + b.error).join("; ")}</span>`;
-				}
-				if (resultsEl) resultsEl.innerHTML = `<div class="info-box" style="margin-top:12px;">${summary}</div>`;
-				showNotification(`Import dokončen: ${data.processed} účastník(ů)`, "success");
+				const summary = `✅ Importováno: ${data.processed}, nových: ${data.created}, přeskočeno: ${data.skipped}`;
+				if (resultsEl)
+					resultsEl.innerHTML = `<div class="info-box" style="margin-top:12px;">${summary}</div>`;
+				showNotification(
+					`Import dokončen: ${data.processed} účastník(ů)`,
+					"success",
+				);
 				loadCourses();
 				loadCalendar();
 			} else {
@@ -1003,7 +1034,7 @@ async function submitOdsImport(triggerEl) {
 }
 
 function resetOdsImport() {
-	odsPreviewData = null;
+	odsCandidates = [];
 	document.getElementById("ods-step2").style.display = "none";
 	document.getElementById("ods-blocks-container").innerHTML = "";
 	document.getElementById("ods-commit-results").innerHTML = "";
@@ -1049,7 +1080,9 @@ async function submitAddMom(event) {
 			if (res.ok) {
 				const data = await res.json();
 				showNotification(
-					data.created ? "Maminka přidána a přihlášena na lekce" : "Maminka již existuje — přihlášena na lekce",
+					data.created
+						? "Maminka přidána a přihlášena na lekce"
+						: "Maminka již existuje — přihlášena na lekce",
 					"success",
 				);
 				closeAddMomModalDirect();
@@ -1072,12 +1105,15 @@ async function selfRegister(lessonId, triggerEl) {
 
 	await withLoading(triggerEl, async () => {
 		try {
-			const res = await fetch(`${API_URL}/participants/${pId}/register-lesson`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				credentials: "include",
-				body: JSON.stringify({ lessonId }),
-			});
+			const res = await fetch(
+				`${API_URL}/participants/${pId}/register-lesson`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include",
+					body: JSON.stringify({ lessonId }),
+				},
+			);
 			if (res.ok) {
 				showNotification("Přihlášení proběhlo úspěšně");
 				closeDayModalDirect();

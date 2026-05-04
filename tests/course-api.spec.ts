@@ -286,9 +286,12 @@ test.describe
 			await CourseDB.insert(c1);
 			await CourseDB.insert(c2);
 
-			const res = await fetch(`${BASE}/api/courses/age-group/6-9 měsíců (do lezení)`, {
-				headers: { Cookie: adminCookie },
-			});
+			const res = await fetch(
+				`${BASE}/api/courses/age-group/6-9 měsíců (do lezení)`,
+				{
+					headers: { Cookie: adminCookie },
+				},
+			);
 			expect(res.status).toBe(200);
 			const data = await res.json();
 			expect(data).toHaveLength(1);

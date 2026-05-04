@@ -41,15 +41,21 @@
                         <label>Název lekce:</label>
                         <input type="text" name="title" required>
                     </div>
+                    <div class="form-group">
+                        <label>Skupinka:</label>
+                        <select name="courseId" id="lesson-course" required></select>
+                        <small style="color: #888; font-size: 12px;">Místo a věková skupina se přebírají ze skupinky.</small>
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Den:</label>
+                            <label>Den v týdnu:</label>
                             <select name="dayOfWeek" required>
                                 <option value="Monday">Pondělí</option>
                                 <option value="Tuesday">Úterý</option>
                                 <option value="Wednesday">Středa</option>
                                 <option value="Thursday">Čtvrtek</option>
                                 <option value="Friday">Pátek</option>
+                                <option value="Saturday">Sobota</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -57,22 +63,19 @@
                             <input type="time" name="time" required>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>Skupinka:</label>
-                        <select name="courseId" id="lesson-course" required></select>
-                        <small style="color: #888; font-size: 12px;">Místo se přebírá ze skupinky.</small>
-                    </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Věková skupina:</label>
-                            <select name="ageGroup" id="lesson-age-group" required>
-                                <!-- populated by loadAgeGroups() on boot -->
-                            </select>
+                            <label>Datum od:</label>
+                            <input type="date" name="startDate" required>
                         </div>
                         <div class="form-group">
-                            <label>Kapacita:</label>
-                            <input type="number" name="capacity" min="1" required>
+                            <label>Datum do:</label>
+                            <input type="date" name="endDate" required>
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Kapacita:</label>
+                        <input type="number" name="capacity" min="1" required>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Uložit</button>
@@ -203,7 +206,7 @@
                 <h3>📂 Krok 1 — Nahrát soubor</h3>
                 <div class="info-box">
                     <p>Podporované formáty: <strong>.ods, .xlsx, .xls</strong></p>
-                    <p style="color: #666; font-size: 13px;">Systém automaticky rozpozná skupinky a místo ze struktury souboru. Ve druhém kroku zkontrolujete přiřazení věkových skupin.</p>
+                    <p style="color: #666; font-size: 13px;">Systém načte jméno dítěte a email rodiče. Ve druhém kroku vyberete koho přidat a do které skupinky.</p>
                 </div>
                 <form onsubmit="uploadOdsForPreview(event)">
                     <div class="form-group">
@@ -214,14 +217,14 @@
                 </form>
             </div>
 
-            <!-- Step 2: mapping UI (hidden until preview loaded) -->
+            <!-- Step 2: candidate selection + skupinka dropdown (hidden until preview loaded) -->
             <div id="ods-step2" style="display:none;">
                 <div class="form-card" style="margin-bottom: 16px;">
-                    <h3>✏️ Krok 2 — Zkontrolujte a odešlete</h3>
-                    <p style="color: #666; font-size: 13px; margin-bottom: 16px;">Přiřaďte věkovou skupinu ke každému bloku. Skupinky budou vytvořeny nebo aktualizovány.</p>
+                    <h3>✏️ Krok 2 — Vyberte kandidáty a skupinku</h3>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 16px;">Zaškrtněte kdo má být přidán, upravte jméno/email pokud je potřeba, a vyberte skupinku ze seznamu.</p>
                     <div id="ods-blocks-container"></div>
                     <div style="margin-top: 16px;">
-                        <button type="button" class="btn btn-primary" onclick="submitOdsImport(this)">Importovat přihlášení</button>
+                        <button type="button" class="btn btn-primary" onclick="submitOdsImport(this)">Importovat označené</button>
                         <button type="button" class="btn btn-secondary" onclick="resetOdsImport()" style="margin-left: 8px;">Zrušit</button>
                     </div>
                 </div>

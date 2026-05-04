@@ -106,6 +106,62 @@ export class LessonCalendarDB {
 		});
 	}
 
+	async bulkCreateLessonsRange(config: {
+		courseId: string;
+		title: string;
+		time: string;
+		dayOfWeek: string;
+		capacity: number;
+		startDate: string;
+		endDate: string;
+	}): Promise<Lesson[]> {
+		const start = new Date(config.startDate);
+		const end = new Date(config.endDate);
+		if (end < start) {
+			throw new Error("endDate must be on or after startDate");
+		}
+
+		const dayNames = [
+			"Sunday",
+			"Monday",
+			"Tuesday",
+			"Wednesday",
+			"Thursday",
+			"Friday",
+			"Saturday",
+		];
+		const targetDay = dayNames.indexOf(config.dayOfWeek);
+		if (targetDay === -1) {
+			throw new Error(`Invalid dayOfWeek: ${config.dayOfWeek}`);
+		}
+
+		const dates: string[] = [];
+		const current = new Date(start);
+		// Advance to the first occurrence of the target weekday on or after startDate
+		while (current.getUTCDay() !== targetDay) {
+			current.setUTCDate(current.getUTCDate() + 1);
+		}
+		while (current <= end) {
+			dates.push(toDateString(current));
+			current.setUTCDate(current.getUTCDate() + 7);
+		}
+
+		if (dates.length > 52) {
+			throw new Error(
+				`Too many lessons: range produces ${dates.length} lessons (max 52)`,
+			);
+		}
+
+		return this.bulkCreateLessons({
+			courseId: config.courseId,
+			title: config.title,
+			time: config.time,
+			dayOfWeek: config.dayOfWeek,
+			capacity: config.capacity,
+			dates,
+		});
+	}
+
 	async getLessonsByCourse(courseId: string): Promise<Lesson[]> {
 		return (await LessonDB.getByCourse(courseId)) as unknown as Lesson[];
 	}

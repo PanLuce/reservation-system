@@ -74,14 +74,14 @@ test.describe("createCourse with derived color", () => {
 	});
 
 	test("throws when ageGroup is invalid", () => {
-		expect(() =>
-			createCourse({ name: "Test", ageGroup: "1-2 years" }),
-		).toThrow(/Invalid age group/);
+		expect(() => createCourse({ name: "Test", ageGroup: "1-2 years" })).toThrow(
+			/Invalid age group/,
+		);
 	});
 
 	test("throws when ageGroup is empty", () => {
-		expect(() =>
-			createCourse({ name: "Test", ageGroup: "" }),
-		).toThrow(/required/);
+		expect(() => createCourse({ name: "Test", ageGroup: "" })).toThrow(
+			/required/,
+		);
 	});
 });
