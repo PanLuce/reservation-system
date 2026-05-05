@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import bcrypt from "bcrypt";
 import * as XLSX from "xlsx";
 import { createCourse } from "../src/course.js";
 import {
@@ -7,7 +6,6 @@ import {
 	initializeDatabase,
 	ParticipantDB,
 	resetDatabaseForTests,
-	UserDB,
 } from "../src/database.js";
 
 const BASE = "http://localhost:3000";
@@ -62,7 +60,7 @@ test.describe
 			adminCookie = await loginAsAdmin();
 		});
 
-		test("returns flat candidates list with kidName and parentEmail", async () => {
+		test("returns sheets with candidates per sheet", async () => {
 			const buf = makeXlsxBuffer([
 				{ kidName: "Tomáš Novák", parentEmail: "jana@test.cz" },
 				{ kidName: "Eva Svoboda", parentEmail: "petr@test.cz" },
@@ -78,15 +76,19 @@ test.describe
 
 			expect(res.status).toBe(200);
 			const data = (await res.json()) as {
-				candidates: { kidName: string; parentEmail: string }[];
+				sheets: {
+					sheetName: string;
+					detectedLocation: string | null;
+					candidates: { kidName: string; parentEmail: string }[];
+				}[];
 			};
-			expect(Array.isArray(data.candidates)).toBe(true);
-			expect(data.candidates).toHaveLength(2);
-			expect(data.candidates[0]).toHaveProperty("kidName");
-			expect(data.candidates[0]).toHaveProperty("parentEmail");
-			expect(data.candidates.map((c) => c.parentEmail)).toContain(
-				"jana@test.cz",
-			);
+			expect(Array.isArray(data.sheets)).toBe(true);
+			expect(data.sheets).toHaveLength(1);
+			const candidates = data.sheets[0]?.candidates ?? [];
+			expect(candidates).toHaveLength(2);
+			expect(candidates[0]).toHaveProperty("kidName");
+			expect(candidates[0]).toHaveProperty("parentEmail");
+			expect(candidates.map((c) => c.parentEmail)).toContain("jana@test.cz");
 		});
 
 		test("does not write to DB", async () => {

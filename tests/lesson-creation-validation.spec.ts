@@ -1,11 +1,9 @@
 import { expect, test } from "@playwright/test";
-import bcrypt from "bcrypt";
 import { createCourse } from "../src/course.js";
 import {
 	CourseDB,
 	initializeDatabase,
 	resetDatabaseForTests,
-	UserDB,
 } from "../src/database.js";
 
 const BASE = "http://localhost:3000";

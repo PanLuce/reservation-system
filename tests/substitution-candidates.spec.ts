@@ -27,7 +27,7 @@ test.describe
 	.serial("Substitution candidates", () => {
 		let pId: string;
 		let cookie: string;
-		let sameColorCourseId: string;
+		let _sameColorCourseId: string;
 		let diffColorCourseId: string;
 
 		test.beforeEach(async () => {
@@ -55,7 +55,7 @@ test.describe
 			await CourseDB.insert(courseA);
 			await CourseDB.insert(courseB);
 			await CourseDB.insert(courseC);
-			sameColorCourseId = courseB.id;
+			_sameColorCourseId = courseB.id;
 			diffColorCourseId = courseC.id;
 
 			const p = createParticipant({

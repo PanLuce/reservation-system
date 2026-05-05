@@ -307,7 +307,7 @@ async function requireParticipantScope(
 // API Routes
 
 // Test accounts — always enabled until we go live (gate with ENABLE_QUICK_LOGIN=false to hide)
-app.get("/api/test-accounts", (req, res) => {
+app.get("/api/test-accounts", (_req, res) => {
 	if (process.env.ENABLE_QUICK_LOGIN === "false") {
 		return res.status(404).json({ error: "Not available" });
 	}
@@ -1136,22 +1136,17 @@ app.post(
 		const buffer = fs.readFileSync(req.file.path);
 		const parsed = parseOdsWorkbook(buffer);
 
-		// Flatten all blocks across all sheets into a single candidates list
-		const candidates: { kidName: string; parentEmail: string }[] = [];
-		for (const sheet of parsed.sheets) {
-			for (const block of sheet.blocks) {
-				for (const row of block.rows) {
-					if (row.email) {
-						candidates.push({
-							kidName: row.name || row.email,
-							parentEmail: row.email,
-						});
-					}
-				}
-			}
-		}
+		const sheets = parsed.sheets.map((s) => ({
+			sheetName: s.sheetName,
+			detectedLocation: s.detectedLocation,
+			candidates: s.blocks.flatMap((b) =>
+				b.rows
+					.filter((r) => r.email)
+					.map((r) => ({ kidName: r.name || r.email, parentEmail: r.email })),
+			),
+		}));
 
-		res.json({ candidates });
+		res.json({ sheets });
 	},
 );
 

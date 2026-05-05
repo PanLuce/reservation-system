@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
 import * as XLSX from "xlsx";
+import { createCourse } from "../src/course.js";
 import {
 	CourseDB,
 	initializeDatabase,
 	resetDatabaseForTests,
 } from "../src/database.js";
-import { createCourse } from "../src/course.js";
 
 const BASE = "http://localhost:3000";
 
@@ -23,7 +23,13 @@ function makeMinimalXlsxBuffer(): Buffer {
 	const ws = XLSX.utils.aoa_to_sheet([
 		["Skupinka test – CVČ Vietnamská", "", "", "", ""],
 		["jméno", "rodič", "tel", "email", "datum narození"],
-		["Anička Nováková", "Jana Nováková", "777000001", "jana.nova@test.cz", "2023-01-15"],
+		[
+			"Anička Nováková",
+			"Jana Nováková",
+			"777000001",
+			"jana.nova@test.cz",
+			"2023-01-15",
+		],
 	]);
 	XLSX.utils.book_append_sheet(wb, ws, "Test sheet");
 	return Buffer.from(XLSX.write(wb, { type: "buffer", bookType: "xlsx" }));
@@ -58,13 +64,16 @@ test.describe("REQ-3: Import summary modal", () => {
 		const xlsxBuffer = makeMinimalXlsxBuffer();
 		await page.locator("#ods-file-input").setInputFiles({
 			name: "test-import.xlsx",
-			mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+			mimeType:
+				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 			buffer: xlsxBuffer,
 		});
 		await page.click('#ods-step1 button[type="submit"]');
 
 		// Step 2: sheet picker appears (even for single-sheet files)
-		await expect(page.locator("#ods-step-sheet")).toBeVisible({ timeout: 8000 });
+		await expect(page.locator("#ods-step-sheet")).toBeVisible({
+			timeout: 8000,
+		});
 		await page.click('[data-sheet-index="0"]');
 
 		// Wait for step 3 (candidates) to appear

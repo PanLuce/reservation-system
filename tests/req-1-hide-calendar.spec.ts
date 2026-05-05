@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { createCourse } from "../src/course.js";
 import {
 	CourseDB,
 	initializeDatabase,
 	resetDatabaseForTests,
 } from "../src/database.js";
-import { createCourse } from "../src/course.js";
 
 const BASE = "http://localhost:3000";
 

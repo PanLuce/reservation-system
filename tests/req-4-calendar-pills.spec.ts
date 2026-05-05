@@ -26,18 +26,27 @@ async function navigateToMonth(
 	targetYear: number,
 	targetMonth: number, // 1-indexed
 ) {
-	const label = async () =>
-		page.locator("#calendar-month-label").textContent();
+	const label = async () => page.locator("#calendar-month-label").textContent();
 	const CZECH_MONTHS = [
-		"Leden", "Únor", "Březen", "Duben", "Květen", "Červen",
-		"Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec",
+		"Leden",
+		"Únor",
+		"Březen",
+		"Duben",
+		"Květen",
+		"Červen",
+		"Červenec",
+		"Srpen",
+		"Září",
+		"Říjen",
+		"Listopad",
+		"Prosinec",
 	];
 	const target = `${CZECH_MONTHS[targetMonth - 1]} ${targetYear}`;
 	for (let i = 0; i < 24; i++) {
 		const current = await label();
 		if (current === target) return;
 		const today = new Date();
-		const currentMonth = today.getMonth() + 1 + i; // rough forward check
+		const _currentMonth = today.getMonth() + 1 + i; // rough forward check
 		if (
 			today.getFullYear() < targetYear ||
 			(today.getFullYear() === targetYear && today.getMonth() + 1 < targetMonth)
@@ -129,12 +138,30 @@ test.describe("REQ-4: Calendar colored pills for admin view", () => {
 			timeout: 5000,
 		});
 
-		const styles = await page.locator(".calendar-pill").evaluateAll((els) =>
-			els.map((el) => (el as HTMLElement).style.background || (el as HTMLElement).style.backgroundColor),
-		);
+		const styles = await page
+			.locator(".calendar-pill")
+			.evaluateAll((els) =>
+				els.map(
+					(el) =>
+						(el as HTMLElement).style.background ||
+						(el as HTMLElement).style.backgroundColor,
+				),
+			);
 
-		expect(styles.some((s) => s.toLowerCase().includes(YELLOW.toLowerCase()) || s.includes("255, 224, 178"))).toBe(true);
-		expect(styles.some((s) => s.toLowerCase().includes(GREEN.toLowerCase()) || s.includes("200, 230, 201"))).toBe(true);
+		expect(
+			styles.some(
+				(s) =>
+					s.toLowerCase().includes(YELLOW.toLowerCase()) ||
+					s.includes("255, 224, 178"),
+			),
+		).toBe(true);
+		expect(
+			styles.some(
+				(s) =>
+					s.toLowerCase().includes(GREEN.toLowerCase()) ||
+					s.includes("200, 230, 201"),
+			),
+		).toBe(true);
 	});
 
 	test("pills have a tooltip title with course name and time", async ({
@@ -147,9 +174,9 @@ test.describe("REQ-4: Calendar colored pills for admin view", () => {
 			timeout: 5000,
 		});
 
-		const titles = await page.locator(".calendar-pill").evaluateAll((els) =>
-			els.map((el) => el.getAttribute("title") ?? ""),
-		);
+		const titles = await page
+			.locator(".calendar-pill")
+			.evaluateAll((els) => els.map((el) => el.getAttribute("title") ?? ""));
 
 		expect(titles.some((t) => t.includes("Skupinka žlutá"))).toBe(true);
 		expect(titles.some((t) => t.includes("10:00"))).toBe(true);

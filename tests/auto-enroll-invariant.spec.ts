@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import bcrypt from "bcrypt";
 import { createCourse } from "../src/course.js";
 import {
 	CourseDB,
@@ -8,7 +7,6 @@ import {
 	ParticipantDB,
 	RegistrationDB,
 	resetDatabaseForTests,
-	UserDB,
 } from "../src/database.js";
 import { createParticipant } from "../src/participant.js";
 

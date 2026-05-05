@@ -93,7 +93,7 @@
                     <button type="button" class="btn btn-secondary calendar-nav-btn" onclick="calendarNextMonth()">›</button>
                 </div>
                 <div class="calendar-legend admin-only">
-                    <span>Skupinky v tento den</span>
+                    <span>Lekce</span>
                 </div>
                 <div class="calendar-legend participant-only hidden">
                     <span>❤️ Moje lekce</span>
@@ -209,7 +209,7 @@
                 <h3>📂 Krok 1 — Nahrát soubor</h3>
                 <div class="info-box">
                     <p>Podporované formáty: <strong>.ods, .xlsx, .xls</strong></p>
-                    <p style="color: #666; font-size: 13px;">Systém načte jméno dítěte a email rodiče. Ve druhém kroku vyberete koho přidat a do které skupinky.</p>
+                    <p style="color: #666; font-size: 13px;">Systém načte jméno dítěte a email rodiče. Ve druhém kroku vyberete list, ve třetím koho přidat a do které skupinky.</p>
                 </div>
                 <form onsubmit="uploadOdsForPreview(event)">
                     <div class="form-group">
@@ -220,10 +220,18 @@
                 </form>
             </div>
 
-            <!-- Step 2: candidate selection + skupinka dropdown (hidden until preview loaded) -->
+            <!-- Step 2: sheet picker (hidden until file uploaded) -->
+            <div class="form-card" style="margin-bottom: 24px; display:none;" id="ods-step-sheet">
+                <h3>📋 Krok 2 — Vyberte list</h3>
+                <p style="color: #666; font-size: 13px; margin-bottom: 16px;">Soubor obsahuje více listů. Vyberte, ze kterého chcete importovat.</p>
+                <div id="ods-sheet-list"></div>
+                <button type="button" class="btn btn-secondary" onclick="resetOdsImport()" style="margin-top: 12px;">Zrušit</button>
+            </div>
+
+            <!-- Step 3: candidate selection + skupinka dropdown (hidden until sheet chosen) -->
             <div id="ods-step2" style="display:none;">
                 <div class="form-card" style="margin-bottom: 16px;">
-                    <h3>✏️ Krok 2 — Vyberte kandidáty a skupinku</h3>
+                    <h3>✏️ Krok 3 — Vyberte kandidáty a skupinku</h3>
                     <p style="color: #666; font-size: 13px; margin-bottom: 16px;">Zaškrtněte kdo má být přidán, upravte jméno/email pokud je potřeba, a vyberte skupinku ze seznamu.</p>
                     <div id="ods-blocks-container"></div>
                     <div style="margin-top: 16px;">

@@ -399,7 +399,7 @@ header p {
 
 /* Role-based visibility: JS toggles hidden class */
 .hidden {
-	display: none !important;
+	display: none;
 }
 
 /* ─── Calendar ─────────────────────────────────────────────────────────────── */
@@ -678,7 +678,13 @@ header p {
 	right: 0;
 	height: 3px;
 	z-index: 9999;
-	background: linear-gradient(90deg, transparent 0%, #e87461 40%, #e87461 60%, transparent 100%);
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		#e87461 40%,
+		#e87461 60%,
+		transparent 100%
+	);
 	background-size: 200% 100%;
 	animation: progress-slide 1.2s linear infinite;
 }
@@ -688,8 +694,12 @@ header p {
 }
 
 @keyframes progress-slide {
-	0% { background-position: 100% 0; }
-	100% { background-position: -100% 0; }
+	0% {
+		background-position: 100% 0;
+	}
+	100% {
+		background-position: -100% 0;
+	}
 }
 
 body.is-busy {

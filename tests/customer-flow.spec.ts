@@ -3,7 +3,6 @@ import { createCourse } from "../src/course.js";
 import { countActiveCredits } from "../src/credit.js";
 import {
 	CourseDB,
-	CreditDB,
 	initializeDatabase,
 	LessonDB,
 	ParticipantDB,

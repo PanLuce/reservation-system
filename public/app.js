@@ -99,7 +99,7 @@ async function withLoading(triggerEl, asyncFn) {
 	if (!triggerEl) return asyncFn();
 	const originalText = triggerEl.innerHTML;
 	triggerEl.disabled = true;
-	triggerEl.innerHTML = originalText + '<span class="spinner"></span>';
+	triggerEl.innerHTML = `${originalText}<span class="spinner"></span>`;
 	try {
 		return await asyncFn();
 	} finally {
@@ -792,7 +792,7 @@ function clearCourseErrors() {
 // ─── Moje rezervace (Participant self-service) ────────────────────────────────
 
 async function loadMyReservations() {
-	if (!currentUser || !currentUser.participantId) return;
+	if (!currentUser?.participantId) return;
 	const pId = currentUser.participantId;
 
 	await Promise.all([
@@ -871,7 +871,7 @@ async function loadMyLessons(participantId) {
 }
 
 async function selfCancel(registrationId, triggerEl) {
-	if (!currentUser || !currentUser.participantId) return;
+	if (!currentUser?.participantId) return;
 	if (!confirm("Odhlásit se z této lekce?")) return;
 
 	const pId = currentUser.participantId;
@@ -939,9 +939,10 @@ async function loadSubstitutionCandidates(participantId) {
 	}
 }
 
-// ─── ODS two-step importer ────────────────────────────────────────────────────
+// ─── ODS three-step importer ─────────────────────────────────────────────────
 
-let odsCandidates = [];
+let odsParsed = { sheets: [] };
+let odsSelectedSheetIndex = null;
 
 async function uploadOdsForPreview(event) {
 	event.preventDefault();
@@ -965,11 +966,13 @@ async function uploadOdsForPreview(event) {
 			}
 
 			const data = await res.json();
-			odsCandidates = data.candidates || [];
-			await renderOdsPreview();
-			document.getElementById("ods-step2").style.display = "block";
+			odsParsed = { sheets: data.sheets || [] };
+			odsSelectedSheetIndex = null;
+			renderOdsSheetPicker();
+			document.getElementById("ods-step-sheet").style.display = "block";
+			document.getElementById("ods-step2").style.display = "none";
 			document
-				.getElementById("ods-step2")
+				.getElementById("ods-step-sheet")
 				.scrollIntoView({ behavior: "smooth" });
 		} catch (error) {
 			showNotification("Chyba při nahrávání souboru", "error");
@@ -978,8 +981,35 @@ async function uploadOdsForPreview(event) {
 	});
 }
 
+function renderOdsSheetPicker() {
+	const list = document.getElementById("ods-sheet-list");
+	list.innerHTML = odsParsed.sheets
+		.map((s, i) => {
+			const location = s.detectedLocation ? ` — ${s.detectedLocation}` : "";
+			const count = s.candidates.length;
+			return `<button type="button" class="btn btn-secondary" data-sheet-index="${i}"
+				style="display:block;margin-bottom:8px;text-align:left;width:100%;"
+				onclick="selectOdsSheet(${i})">
+				${s.sheetName}${location}
+				<span style="font-size:12px;color:#888;margin-left:8px;">(${count} kandidát${count === 1 ? "" : "i/ů"})</span>
+			</button>`;
+		})
+		.join("");
+}
+
+function selectOdsSheet(index) {
+	odsSelectedSheetIndex = index;
+	renderOdsPreview();
+	document.getElementById("ods-step2").style.display = "block";
+	document.getElementById("ods-step2").scrollIntoView({ behavior: "smooth" });
+}
+
 async function renderOdsPreview() {
 	const container = document.getElementById("ods-blocks-container");
+	const candidates =
+		odsSelectedSheetIndex !== null
+			? odsParsed.sheets[odsSelectedSheetIndex]?.candidates || []
+			: [];
 
 	// Load existing skupinky for the dropdown
 	let courses = [];
@@ -992,12 +1022,12 @@ async function renderOdsPreview() {
 		.map((c) => `<option value="${c.id}">[${c.ageGroup}] ${c.name}</option>`)
 		.join("");
 
-	if (odsCandidates.length === 0) {
+	if (candidates.length === 0) {
 		container.innerHTML = "<p>Žádní kandidáti nenalezeni.</p>";
 		return;
 	}
 
-	const rows = odsCandidates
+	const rows = candidates
 		.map(
 			(c, i) => `
 		<tr>
@@ -1034,7 +1064,11 @@ async function renderOdsPreview() {
 }
 
 function toggleAllCandidates(checked) {
-	odsCandidates.forEach((_, i) => {
+	const sheet =
+		odsSelectedSheetIndex !== null
+			? odsParsed.sheets[odsSelectedSheetIndex]?.candidates || []
+			: [];
+	sheet.forEach((_, i) => {
 		const el = document.getElementById(`ods-candidate-${i}`);
 		if (el) el.checked = checked;
 	});
@@ -1047,7 +1081,12 @@ async function submitOdsImport(triggerEl) {
 		return;
 	}
 
-	const candidates = odsCandidates
+	const sheetCandidates =
+		odsSelectedSheetIndex !== null
+			? odsParsed.sheets[odsSelectedSheetIndex]?.candidates || []
+			: [];
+
+	const candidates = sheetCandidates
 		.map((_, i) => {
 			const checked = document.getElementById(`ods-candidate-${i}`)?.checked;
 			if (!checked) return null;
@@ -1101,7 +1140,10 @@ async function submitOdsImport(triggerEl) {
 }
 
 function resetOdsImport() {
-	odsCandidates = [];
+	odsParsed = { sheets: [] };
+	odsSelectedSheetIndex = null;
+	document.getElementById("ods-step-sheet").style.display = "none";
+	document.getElementById("ods-sheet-list").innerHTML = "";
 	document.getElementById("ods-step2").style.display = "none";
 	document.getElementById("ods-blocks-container").innerHTML = "";
 	document.getElementById("ods-commit-results").innerHTML = "";
@@ -1167,7 +1209,7 @@ async function submitAddMom(event) {
 }
 
 async function selfRegister(lessonId, triggerEl) {
-	if (!currentUser || !currentUser.participantId) return;
+	if (!currentUser?.participantId) return;
 	const pId = currentUser.participantId;
 
 	await withLoading(triggerEl, async () => {

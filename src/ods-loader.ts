@@ -71,7 +71,7 @@ function findNameIndex(headerRow: unknown[]): number {
 	// "jméno" or "name" — prefer "jméno"
 	const jmeno = lower.findIndex((c) => c === "jméno" || c === "jmeno");
 	if (jmeno >= 0) return jmeno;
-	return lower.findIndex((c) => c === "name");
+	return lower.indexOf("name");
 }
 
 function findPhoneIndex(headerRow: unknown[]): number {

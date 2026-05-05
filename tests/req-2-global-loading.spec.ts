@@ -1,8 +1,5 @@
 import { expect, test } from "@playwright/test";
-import {
-	initializeDatabase,
-	resetDatabaseForTests,
-} from "../src/database.js";
+import { initializeDatabase, resetDatabaseForTests } from "../src/database.js";
 
 const BASE = "http://localhost:3000";
 
@@ -50,13 +47,21 @@ test.describe("REQ-2: Global loading feedback", () => {
 							resolve(true);
 						}
 					});
-					observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
-					setTimeout(() => { observer.disconnect(); resolve(false); }, 800);
+					observer.observe(document.body, {
+						attributes: true,
+						attributeFilter: ["class"],
+					});
+					setTimeout(() => {
+						observer.disconnect();
+						resolve(false);
+					}, 800);
 				}),
 		);
 
 		// Trigger a calendar reload (calls fetch internally)
-		await page.evaluate(() => (window as unknown as Record<string, () => void>).loadCalendar());
+		await page.evaluate(() =>
+			(window as unknown as { loadCalendar: () => void }).loadCalendar(),
+		);
 
 		expect(await busyObserved).toBe(true);
 	});

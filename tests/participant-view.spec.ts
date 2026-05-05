@@ -97,7 +97,7 @@ test.describe("Participant View - Get Own Registrations", () => {
 
 	test("should include lesson details with participant registrations", async () => {
 		// Arrange
-		const calendar = new LessonCalendarDB();
+		const _calendar = new LessonCalendarDB();
 		const registrationManager = new RegistrationManagerDB();
 
 		const course = createCourse({

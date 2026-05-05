@@ -4,7 +4,6 @@ import * as XLSX from "xlsx";
 import {
 	CourseDB,
 	initializeDatabase,
-	ParticipantDB,
 	resetDatabaseForTests,
 	UserDB,
 } from "../src/database.js";
@@ -195,13 +194,19 @@ test.describe
 
 			expect(res.status).toBe(200);
 			const data = (await res.json()) as {
-				candidates: { kidName: string; parentEmail: string }[];
+				sheets: {
+					sheetName: string;
+					detectedLocation: string | null;
+					candidates: { kidName: string; parentEmail: string }[];
+				}[];
 			};
-			expect(Array.isArray(data.candidates)).toBe(true);
-			// test workbook has 4 participants total (2 + 1 + 1)
-			expect(data.candidates).toHaveLength(4);
-			expect(data.candidates[0]).toHaveProperty("kidName");
-			expect(data.candidates[0]).toHaveProperty("parentEmail");
+			expect(Array.isArray(data.sheets)).toBe(true);
+			// test workbook has 2 sheets: sheet1 (3 candidates), sheet2 (1 candidate)
+			expect(data.sheets).toHaveLength(2);
+			expect(data.sheets[0]?.candidates).toHaveLength(3);
+			expect(data.sheets[1]?.candidates).toHaveLength(1);
+			expect(data.sheets[0]?.candidates[0]).toHaveProperty("kidName");
+			expect(data.sheets[0]?.candidates[0]).toHaveProperty("parentEmail");
 
 			// DB untouched
 			const courses = await CourseDB.getAll();

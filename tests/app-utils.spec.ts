@@ -9,7 +9,7 @@ async function withLoading(
 	if (!triggerEl) return asyncFn();
 	const originalText = triggerEl.innerHTML;
 	triggerEl.disabled = true;
-	triggerEl.innerHTML = originalText + '<span class="spinner"></span>';
+	triggerEl.innerHTML = `${originalText}<span class="spinner"></span>`;
 	try {
 		return await asyncFn();
 	} finally {
