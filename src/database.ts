@@ -842,6 +842,34 @@ export const ParticipantDB = {
 		});
 		return result.rows;
 	},
+
+	async countRemainingLessonsInCourse(
+		participantId: string,
+		courseId: string,
+	): Promise<number> {
+		const today = new Date().toISOString().slice(0, 10);
+		const result = await client.execute({
+			sql: `SELECT COUNT(*) as cnt
+				FROM registrations r
+				INNER JOIN lessons l ON r.lessonId = l.id
+				WHERE r.participantId = ?
+				  AND l.courseId = ?
+				  AND l.date >= ?
+				  AND r.status != 'cancelled'`,
+			args: [participantId, courseId, today],
+		});
+		return Number(result.rows[0]?.cnt ?? 0);
+	},
+
+	async unlinkFromCourse(
+		participantId: string,
+		courseId: string,
+	): Promise<void> {
+		await client.execute({
+			sql: "DELETE FROM course_participants WHERE participantId = ? AND courseId = ?",
+			args: [participantId, courseId],
+		});
+	},
 };
 
 // Database operations for Registrations

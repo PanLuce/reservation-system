@@ -45,10 +45,10 @@ async function loadCurrentUser() {
 
 		// Update UI with user info
 		document.getElementById("user-name").textContent = currentUser.name;
-		document.getElementById("user-role").textContent =
+		const roleEl = document.getElementById("user-role");
+		roleEl.textContent =
 			currentUser.role === "admin" ? "👑 Admin" : "👤 Účastník";
-		document.getElementById("user-role").style.background =
-			currentUser.role === "admin" ? "#fff3cd" : "#e8f5e9";
+		roleEl.className = `role-badge role-badge--${currentUser.role === "admin" ? "admin" : "participant"}`;
 
 		if (currentUser.role !== "admin") {
 			hideAdminFeatures();
@@ -162,6 +162,8 @@ document.querySelectorAll(".tab").forEach((tab) => {
 			loadCourses();
 		} else if (targetTab === "my-reservations") {
 			loadMyReservations();
+		} else if (targetTab === "participants") {
+			loadParticipants();
 		}
 	});
 });
@@ -431,6 +433,12 @@ function renderDayLessons(lessons, dateStr) {
 			</button>`;
 			}
 
+			const participantsBlock = isAdmin
+				? `<div id="day-lesson-members-${l.id}" style="margin:6px 0 2px;">
+					<span style="font-size:13px;cursor:pointer;color:#555;" onclick="toggleDayLessonMembers('${l.id}')">👩 Načíst účastníky ▾</span>
+				</div>`
+				: "";
+
 			return `
 			<div class="day-lesson-row">
 				<div class="day-lesson-title">
@@ -449,6 +457,7 @@ function renderDayLessons(lessons, dateStr) {
 						<div class="capacity-bar-fill ${isFull ? "full" : ""}" style="width:${fillPercent}%"></div>
 					</div>
 				</div>
+				${participantsBlock}
 				<div class="day-lesson-actions">${actions}</div>
 			</div>`;
 		})
@@ -592,6 +601,7 @@ async function loadCourses() {
 		if (!res.ok) throw new Error(`Failed to load courses: ${res.status}`);
 		const courses = await res.json();
 		if (!Array.isArray(courses)) throw new Error("Invalid courses response");
+		allCoursesCache = courses;
 		const container = document.getElementById("courses-list");
 
 		if (courses.length === 0) {
@@ -640,6 +650,9 @@ function renderCourseCard(course) {
 		</div>`;
 }
 
+// Cache of all courses (populated in loadCourses; used for transfer dropdowns)
+let allCoursesCache = [];
+
 async function loadCourseMembers(courseId) {
 	try {
 		const res = await fetch(`${API_URL}/courses/${courseId}/participants`, {
@@ -654,23 +667,152 @@ async function loadCourseMembers(courseId) {
 				'<span style="color:#aaa;font-size:13px;">Žádné maminky</span>';
 			return;
 		}
-		const summary = `<span style="font-size:13px;cursor:pointer;color:#555;" onclick="toggleMembersList('${courseId}')">👩 ${members.length} mamink${members.length === 1 ? "a" : members.length < 5 ? "y" : ""} ▾</span>`;
-		const listItems = members
-			.map(
-				(m) =>
-					`<li style="font-size:12px;color:#444;">${m.name} <span style="color:#999;">${m.email}</span></li>`,
-			)
-			.join("");
+		const count = members.length;
+		const suffix = count === 1 ? "a" : count < 5 ? "y" : "";
+		const summary = `<span style="font-size:13px;cursor:pointer;color:#555;" onclick="toggleMembersList('${courseId}')">👩 ${count} mamink${suffix} ▾</span>`;
+		const listItems = members.map((m) => renderMemberRow(m, courseId)).join("");
 		container.innerHTML = `${summary}<ul id="course-members-list-${courseId}" style="display:none;margin:4px 0 0 0;padding-left:16px;list-style:disc;">${listItems}</ul>`;
 	} catch {
 		// silently ignore — members list is non-critical
 	}
 }
 
+function renderMemberRow(m, currentCourseId) {
+	const remaining =
+		m.remainingLessons !== undefined
+			? ` · <span style="color:#888;">zbývá ${m.remainingLessons} lekcí</span>`
+			: "";
+	const otherCourses = allCoursesCache.filter((c) => c.id !== currentCourseId);
+	const transferOptions = otherCourses
+		.map((c) => `<option value="${c.id}">${c.name}</option>`)
+		.join("");
+	const transferDropdown =
+		otherCourses.length > 0
+			? `<select class="transfer-select" style="font-size:11px;margin-left:8px;padding:2px 4px;" onchange="initiateTransfer('${m.id}', '${currentCourseId}', this)">
+				<option value="">Přesunout do…</option>
+				${transferOptions}
+			</select>`
+			: "";
+	return `<li style="font-size:12px;color:#444;margin-bottom:4px;">
+		<span style="cursor:pointer;text-decoration:underline;color:#534445;" onclick="openParticipantDetail('${m.id}')">${m.name}</span>
+		<span style="color:#999;">${m.email}</span>${remaining}
+		${transferDropdown}
+	</li>`;
+}
+
 function toggleMembersList(courseId) {
 	const list = document.getElementById(`course-members-list-${courseId}`);
 	if (list)
 		list.style.display = list.style.display === "none" ? "block" : "none";
+}
+
+async function initiateTransfer(participantId, fromCourseId, selectEl) {
+	const toCourseId = selectEl.value;
+	if (!toCourseId) return;
+	selectEl.value = "";
+
+	try {
+		const res = await fetch(
+			`${API_URL}/admin/participants/${participantId}/transfer-course`,
+			{
+				method: "POST",
+				credentials: "include",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ fromCourseId, toCourseId }),
+			},
+		);
+		if (!res.ok) {
+			showNotification("Chyba při přesunu", "error");
+			return;
+		}
+		const data = await res.json();
+
+		if (!data.conflict) {
+			await executeTransfer(
+				participantId,
+				fromCourseId,
+				toCourseId,
+				data.futureInNew,
+			);
+			return;
+		}
+
+		showTransferMismatchModal(
+			participantId,
+			fromCourseId,
+			toCourseId,
+			data.remainingInOld,
+			data.futureInNew,
+		);
+	} catch {
+		showNotification("Chyba při přesunu", "error");
+	}
+}
+
+function showTransferMismatchModal(
+	participantId,
+	fromCourseId,
+	toCourseId,
+	remainingInOld,
+	futureInNew,
+) {
+	const body = `
+		<p style="margin-bottom:16px;">Maminka má <strong>${remainingInOld}</strong> zbývajících lekcí v aktuální skupince,
+		ale nová skupinka má <strong>${futureInNew}</strong> budoucích lekcí.</p>
+		<p style="margin-bottom:20px;color:#666;font-size:13px;">Na kolik lekcí nové skupinky ji chcete zaregistrovat?</p>
+		<div style="display:flex;gap:8px;flex-wrap:wrap;">
+			<button class="btn btn-primary" onclick="confirmTransfer('${participantId}','${fromCourseId}','${toCourseId}',${remainingInOld})">
+				Registrovat na prvních ${remainingInOld}
+			</button>
+			<button class="btn btn-secondary" onclick="confirmTransfer('${participantId}','${fromCourseId}','${toCourseId}',${futureInNew})">
+				Registrovat na všech ${futureInNew}
+			</button>
+			<button class="btn btn-danger" onclick="hideInfoModal()">Zrušit</button>
+		</div>`;
+	document.getElementById("info-modal-title").textContent =
+		"Nesoulad počtu lekcí";
+	document.getElementById("info-modal-body").innerHTML = body;
+	document.getElementById("info-modal").style.display = "flex";
+}
+
+async function confirmTransfer(
+	participantId,
+	fromCourseId,
+	toCourseId,
+	registerCount,
+) {
+	hideInfoModal();
+	await executeTransfer(participantId, fromCourseId, toCourseId, registerCount);
+}
+
+async function executeTransfer(
+	participantId,
+	fromCourseId,
+	toCourseId,
+	registerCount,
+) {
+	try {
+		const res = await fetch(
+			`${API_URL}/admin/participants/${participantId}/transfer-course`,
+			{
+				method: "POST",
+				credentials: "include",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ fromCourseId, toCourseId, registerCount }),
+			},
+		);
+		if (!res.ok) {
+			showNotification("Přesun se nezdařil", "error");
+			return;
+		}
+		showNotification("Maminka byla přesunuta");
+		loadCourses();
+		if (document.getElementById("participants-list")) {
+			loadParticipants();
+		}
+	} catch {
+		showNotification("Přesun se nezdařil", "error");
+	}
 }
 
 function showAddCourseForm() {
@@ -1237,4 +1379,162 @@ async function selfRegister(lessonId, triggerEl) {
 			console.error(error);
 		}
 	});
+}
+
+// ─── Day-lesson participant list ──────────────────────────────────────────────
+
+async function toggleDayLessonMembers(lessonId) {
+	const container = document.getElementById(`day-lesson-members-${lessonId}`);
+	if (!container) return;
+
+	const existingList = container.querySelector("ul");
+	if (existingList) {
+		existingList.style.display =
+			existingList.style.display === "none" ? "block" : "none";
+		return;
+	}
+
+	container.querySelector("span").textContent = "Načítám…";
+
+	try {
+		const res = await fetch(`${API_URL}/lessons/${lessonId}/participants`, {
+			credentials: "include",
+		});
+		if (!res.ok) {
+			container.querySelector("span").textContent = "Nepodařilo se načíst";
+			return;
+		}
+		const members = await res.json();
+
+		if (members.length === 0) {
+			container.innerHTML =
+				'<span style="font-size:13px;color:#aaa;">Žádní účastníci</span>';
+			return;
+		}
+
+		const count = members.length;
+		const summary = `<span style="font-size:13px;cursor:pointer;color:#555;" onclick="toggleDayLessonMembers('${lessonId}')">👩 ${count} účastník${count === 1 ? "" : "ů"} ▾</span>`;
+		const listHtml = members
+			.map(
+				(m) => `<li style="font-size:12px;color:#444;margin-bottom:2px;">
+					<span style="cursor:pointer;text-decoration:underline;color:#534445;" onclick="openParticipantDetail('${m.id}')">${m.name}</span>
+					<span style="color:#999;">${m.email}</span>
+					${m.remainingLessons !== undefined ? ` · <span style="color:#888;">zbývá ${m.remainingLessons} lekcí</span>` : ""}
+				</li>`,
+			)
+			.join("");
+		container.innerHTML = `${summary}<ul style="margin:4px 0 0 0;padding-left:16px;list-style:disc;">${listHtml}</ul>`;
+	} catch {
+		container.querySelector("span").textContent = "Chyba při načítání";
+	}
+}
+
+// ─── Maminky tab ─────────────────────────────────────────────────────────────
+
+async function loadParticipants() {
+	const container = document.getElementById("participants-list");
+	if (!container) return;
+	container.innerHTML =
+		'<p style="color:#aaa;text-align:center;padding:20px;">Načítám…</p>';
+
+	try {
+		const res = await fetch(`${API_URL}/admin/participants`, {
+			credentials: "include",
+		});
+		if (!res.ok) throw new Error("Failed to load participants");
+		const participants = await res.json();
+
+		if (participants.length === 0) {
+			container.innerHTML =
+				'<p style="text-align:center;color:#999;padding:40px;">Žádní účastníci.</p>';
+			return;
+		}
+
+		const rows = participants
+			.map((p) => {
+				const courseList =
+					p.courses
+						.map(
+							(c) =>
+								`${c.name} <span style="color:#888;">(zbývá ${c.remainingLessons} lekcí)</span>`,
+						)
+						.join(", ") || "—";
+				return `<tr style="border-bottom:1px solid #f0ebe3;cursor:pointer;" onclick="openParticipantDetail('${p.id}')">
+					<td style="padding:10px 8px;font-weight:500;">${p.name}</td>
+					<td style="padding:10px 8px;color:#666;">${p.email}</td>
+					<td style="padding:10px 8px;color:#666;">${p.ageGroup}</td>
+					<td style="padding:10px 8px;font-size:13px;">${courseList}</td>
+				</tr>`;
+			})
+			.join("");
+
+		container.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+			<thead>
+				<tr style="background:#faf7f4;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:#666;">
+					<th style="padding:8px;text-align:left;">Jméno</th>
+					<th style="padding:8px;text-align:left;">Email</th>
+					<th style="padding:8px;text-align:left;">Věk. skupina</th>
+					<th style="padding:8px;text-align:left;">Skupinky</th>
+				</tr>
+			</thead>
+			<tbody>${rows}</tbody>
+		</table>`;
+	} catch (error) {
+		container.innerHTML =
+			'<p style="color:#dc3545;text-align:center;padding:20px;">Chyba při načítání.</p>';
+		console.error(error);
+	}
+}
+
+async function openParticipantDetail(participantId) {
+	document.getElementById("participant-modal-title").textContent =
+		"Detail maminky";
+	document.getElementById("participant-modal-body").innerHTML =
+		'<p style="color:#aaa;">Načítám…</p>';
+	document.getElementById("participant-modal").style.display = "flex";
+
+	try {
+		const res = await fetch(`${API_URL}/admin/participants`, {
+			credentials: "include",
+		});
+		if (!res.ok) throw new Error("Failed");
+		const all = await res.json();
+		const p = all.find((x) => x.id === participantId);
+		if (!p) {
+			document.getElementById("participant-modal-body").innerHTML =
+				"<p>Účastník nenalezen.</p>";
+			return;
+		}
+
+		const courseRows = p.courses
+			.map(
+				(c) =>
+					`<li style="margin-bottom:4px;">${c.name} <span style="color:#888;">(věk: ${c.ageGroup})</span> — zbývá <strong>${c.remainingLessons}</strong> lekcí</li>`,
+			)
+			.join("");
+
+		document.getElementById("participant-modal-body").innerHTML = `
+			<div style="margin-bottom:12px;">
+				<strong>${p.name}</strong><br>
+				<span style="color:#666;">${p.email}</span>
+				${p.phone ? `<br><span style="color:#888;font-size:13px;">${p.phone}</span>` : ""}
+			</div>
+			<div style="margin-bottom:8px;font-size:13px;color:#666;">Věková skupina: ${p.ageGroup}</div>
+			${courseRows.length > 0 ? `<h4 style="margin:12px 0 8px;font-weight:600;">Skupinky</h4><ul style="padding-left:16px;">${courseRows}</ul>` : "<p style='color:#aaa;'>Žádné skupinky.</p>"}
+		`;
+		document.getElementById("participant-modal-title").textContent = p.name;
+	} catch {
+		document.getElementById("participant-modal-body").innerHTML =
+			"<p style='color:#dc3545;'>Chyba při načítání.</p>";
+	}
+}
+
+function closeParticipantModal() {
+	document.getElementById("participant-modal").style.display = "none";
+}
+
+function closeParticipantModalOnBackdrop(event) {
+	if (event.target === event.currentTarget) {
+		closeParticipantModal();
+	}
 }

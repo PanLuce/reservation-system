@@ -818,6 +818,63 @@ export class RegistrationManagerDB {
 		return { enrolled, skipped };
 	}
 
+	async cancelFutureRegistrationsInCourse(
+		participantId: string,
+		courseId: string,
+	): Promise<void> {
+		const today = new Date().toISOString().slice(0, 10);
+		const regs = (await RegistrationDB.getByParticipantId(
+			participantId,
+		)) as Array<Record<string, unknown>>;
+		for (const reg of regs) {
+			if (reg.status === "cancelled") continue;
+			const lesson = (await LessonDB.getById(reg.lessonId as string)) as
+				| Record<string, unknown>
+				| undefined;
+			if (!lesson) continue;
+			if (lesson.courseId !== courseId) continue;
+			if ((lesson.date as string) < today) continue;
+			await this.cancelRegistration(reg.id as string);
+		}
+	}
+
+	async registerFirstNFutureLessons(
+		courseId: string,
+		participantId: string,
+		n: number,
+	): Promise<{ enrolled: number }> {
+		const today = new Date().toISOString().slice(0, 10);
+		const participant = (await ParticipantDB.getById(participantId)) as
+			| Record<string, unknown>
+			| undefined;
+		if (!participant) return { enrolled: 0 };
+
+		const lessons = await LessonDB.getByCourse(courseId);
+		const futureLessons = (lessons as Array<Record<string, unknown>>)
+			.filter((l) => (l.date as string) >= today)
+			.sort((a, b) => ((a.date as string) < (b.date as string) ? -1 : 1))
+			.slice(0, n);
+
+		let enrolled = 0;
+		for (const lesson of futureLessons) {
+			const lessonId = lesson.id as string;
+			const existing = await RegistrationDB.getByParticipantAndLesson(
+				participantId,
+				lessonId,
+			);
+			if (existing) continue;
+			await this.registerParticipant(lessonId, {
+				id: participantId,
+				name: participant.name as string,
+				email: participant.email as string,
+				phone: (participant.phone as string) ?? "",
+				ageGroup: participant.ageGroup as string,
+			});
+			enrolled++;
+		}
+		return { enrolled };
+	}
+
 	private generateId(): string {
 		return `registration_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 	}

@@ -747,7 +747,138 @@ app.get(
 		}
 
 		const participants = await ParticipantDB.getByCourse(courseId);
-		res.json(participants);
+		const withCounts = await Promise.all(
+			participants.map(async (p) => ({
+				...p,
+				remainingLessons: await ParticipantDB.countRemainingLessonsInCourse(
+					p.id as string,
+					courseId,
+				),
+			})),
+		);
+		res.json(withCounts);
+	},
+);
+
+app.get(
+	"/api/lessons/:lessonId/participants",
+	requireAdmin,
+	async (req, res) => {
+		const lessonId = req.params.lessonId as string;
+		if (!lessonId) {
+			return res.status(400).json({ error: "Lesson ID is required" });
+		}
+		const lesson = (await calendar.getLessonById(lessonId)) as
+			| Record<string, unknown>
+			| undefined;
+		if (!lesson) {
+			return res.status(404).json({ error: "Lesson not found" });
+		}
+		const courseId = lesson.courseId as string | undefined;
+
+		const result = await client.execute({
+			sql: `SELECT p.id, p.name, p.email, p.phone, p.ageGroup
+				FROM participants p
+				INNER JOIN registrations r ON p.id = r.participantId
+				WHERE r.lessonId = ? AND r.status != 'cancelled'`,
+			args: [lessonId],
+		});
+
+		const withCounts = await Promise.all(
+			result.rows.map(async (p) => ({
+				...p,
+				remainingLessons: courseId
+					? await ParticipantDB.countRemainingLessonsInCourse(
+							p.id as string,
+							courseId,
+						)
+					: 0,
+			})),
+		);
+		res.json(withCounts);
+	},
+);
+
+app.get("/api/admin/participants", requireAdmin, async (_req, res) => {
+	const allParticipants = await ParticipantDB.getAll();
+	const enriched = await Promise.all(
+		allParticipants.map(async (p) => {
+			const courses = await ParticipantDB.getCoursesForParticipant(
+				p.id as string,
+			);
+			const coursesWithCounts = await Promise.all(
+				courses.map(async (c) => ({
+					id: c.id,
+					name: c.name,
+					ageGroup: c.ageGroup,
+					remainingLessons: await ParticipantDB.countRemainingLessonsInCourse(
+						p.id as string,
+						c.id as string,
+					),
+				})),
+			);
+			return {
+				id: p.id,
+				name: p.name,
+				email: p.email,
+				phone: p.phone,
+				ageGroup: p.ageGroup,
+				courses: coursesWithCounts,
+			};
+		}),
+	);
+	res.json(enriched);
+});
+
+app.post(
+	"/api/admin/participants/:participantId/transfer-course",
+	requireAdmin,
+	async (req, res) => {
+		const participantId = req.params.participantId as string;
+		const { fromCourseId, toCourseId, registerCount } = req.body as {
+			fromCourseId: string;
+			toCourseId: string;
+			registerCount?: number;
+		};
+
+		if (!participantId || !fromCourseId || !toCourseId) {
+			return res.status(400).json({
+				error: "participantId, fromCourseId and toCourseId are required",
+			});
+		}
+
+		const today = new Date().toISOString().slice(0, 10);
+
+		const remainingInOld = await ParticipantDB.countRemainingLessonsInCourse(
+			participantId,
+			fromCourseId,
+		);
+
+		const betaLessonsRaw = await LessonDB.getByCourse(toCourseId);
+		const futureInNew = (
+			betaLessonsRaw as Array<Record<string, unknown>>
+		).filter((l) => (l.date as string) >= today).length;
+
+		if (registerCount === undefined) {
+			// Phase 1 — report counts only
+			const conflict = remainingInOld !== futureInNew;
+			return res.json({ remainingInOld, futureInNew, conflict });
+		}
+
+		// Phase 2 — perform transfer
+		await registrationManager.cancelFutureRegistrationsInCourse(
+			participantId,
+			fromCourseId,
+		);
+		await ParticipantDB.unlinkFromCourse(participantId, fromCourseId);
+		await ParticipantDB.linkToCourse(participantId, toCourseId);
+		const { enrolled } = await registrationManager.registerFirstNFutureLessons(
+			toCourseId,
+			participantId,
+			registerCount,
+		);
+
+		res.json({ success: true, enrolled });
 	},
 );
 

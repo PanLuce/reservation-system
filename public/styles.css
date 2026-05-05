@@ -469,10 +469,11 @@ header p {
 	cursor: default;
 }
 
-.calendar-day.today .calendar-day-number {
-	background: var(--color-cta);
-	color: white;
-	border-radius: 50%;
+.calendar-day-number {
+	font-size: 0.82rem;
+	font-weight: 600;
+	color: var(--color-text-muted);
+	margin-bottom: 4px;
 	width: 24px;
 	height: 24px;
 	display: flex;
@@ -480,11 +481,10 @@ header p {
 	justify-content: center;
 }
 
-.calendar-day-number {
-	font-size: 0.82rem;
-	font-weight: 600;
-	color: var(--color-text-muted);
-	margin-bottom: 4px;
+.calendar-day.today .calendar-day-number {
+	background: var(--color-cta);
+	color: white;
+	border-radius: 50%;
 	width: 24px;
 	height: 24px;
 	display: flex;
@@ -667,6 +667,26 @@ header p {
 		font-size: 1.1rem;
 		min-width: 140px;
 	}
+}
+
+/* ─── Role badge ─────────────────────────────────────────────────────────── */
+
+.role-badge {
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	font-weight: 600;
+	margin-right: 10px;
+}
+
+.role-badge--admin {
+	background: #7b4f2e;
+	color: #fff;
+}
+
+.role-badge--participant {
+	background: #2e6b4f;
+	color: #fff;
 }
 
 /* ─── Global loading indicator ───────────────────────────────────────────── */

@@ -12,11 +12,11 @@
         <header>
             <div>
                 <h1>🎯 Centrum Rubáček</h1>
-                <p>Rezervační Systém pro Lekce</p>
+                <p>Rubáčkův Rezervační systém</p>
             </div>
             <div class="user-info" style="text-align: right;">
                 <span id="user-name" style="margin-right: 10px; font-weight: bold;"></span>
-                <span id="user-role" style="margin-right: 10px; padding: 4px 8px; background: #e8f5e9; border-radius: 4px; font-size: 12px;"></span>
+                <span id="user-role" class="role-badge"></span>
                 <button type="button" class="btn btn-secondary" onclick="handleLogout()" style="font-size: 14px;">Odhlásit se</button>
             </div>
         </header>
@@ -24,7 +24,8 @@
         <nav class="tabs">
             <button type="button" class="tab active" data-tab="lessons">📅 Lekce</button>
             <button type="button" class="tab admin-only" data-tab="courses">🎯 Skupinky</button>
-            <button type="button" class="tab admin-only" data-tab="excel">📊 Import Excel</button>
+            <button type="button" class="tab admin-only" data-tab="excel">📊 Import maminek ze souboru</button>
+            <button type="button" class="tab admin-only" data-tab="participants">📋 Maminky</button>
             <button type="button" class="tab participant-only hidden" data-tab="my-reservations">📋 Moje rezervace</button>
         </nav>
 
@@ -202,7 +203,7 @@
 
         <!-- Import Tab — two-step ODS importer -->
         <div class="tab-content" id="excel">
-            <h2>Import z tabulky přihlášení</h2>
+            <h2>Import ze souboru</h2>
 
             <!-- Step 1: upload -->
             <div class="form-card" style="margin-bottom: 24px;" id="ods-step1">
@@ -241,6 +242,24 @@
                 </div>
                 <div id="ods-commit-results"></div>
             </div>
+        </div>
+        <!-- Maminky Tab (admin-only) -->
+        <div class="tab-content" id="participants">
+            <div class="section-header">
+                <h2>Maminky (Účastníci)</h2>
+            </div>
+            <div id="participants-list" class="form-card"></div>
+        </div>
+    </div>
+
+    <!-- Participant Detail Modal -->
+    <div id="participant-modal" class="day-modal-overlay" onclick="closeParticipantModalOnBackdrop(event)" style="display:none;">
+        <div class="day-modal">
+            <div class="day-modal-header">
+                <h3 id="participant-modal-title">Detail maminky</h3>
+                <button type="button" class="day-modal-close" onclick="closeParticipantModal()">✕</button>
+            </div>
+            <div id="participant-modal-body" class="day-modal-body"></div>
         </div>
     </div>
 
