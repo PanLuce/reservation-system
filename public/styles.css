@@ -520,6 +520,16 @@ header p {
 	cursor: default;
 }
 
+.calendar-pill {
+	display: inline-block;
+	width: 20px;
+	height: 10px;
+	border-radius: 4px;
+	margin: 1px 1px;
+	cursor: default;
+	vertical-align: middle;
+}
+
 .calendar-dot-overflow {
 	font-size: 0.68rem;
 	color: var(--color-text-muted);
@@ -657,6 +667,37 @@ header p {
 		font-size: 1.1rem;
 		min-width: 140px;
 	}
+}
+
+/* ─── Global loading indicator ───────────────────────────────────────────── */
+
+.global-progress {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 3px;
+	z-index: 9999;
+	background: linear-gradient(90deg, transparent 0%, #e87461 40%, #e87461 60%, transparent 100%);
+	background-size: 200% 100%;
+	animation: progress-slide 1.2s linear infinite;
+}
+
+.global-progress[hidden] {
+	display: none;
+}
+
+@keyframes progress-slide {
+	0% { background-position: 100% 0; }
+	100% { background-position: -100% 0; }
+}
+
+body.is-busy {
+	cursor: progress;
+}
+
+body.is-busy *:not(input):not(textarea):not(select) {
+	cursor: progress;
 }
 
 /* ─── Spinner ─────────────────────────────────────────────────────────────── */

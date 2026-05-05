@@ -1,3 +1,28 @@
+// ─── Global loading feedback ─────────────────────────────────────────────────
+
+let inFlight = 0;
+let globalProgressBar = null;
+
+function updateBusy() {
+	const busy = inFlight > 0;
+	document.body.classList.toggle("is-busy", busy);
+	if (globalProgressBar) globalProgressBar.hidden = !busy;
+}
+
+(function wrapFetch() {
+	if (window.fetch.__wrapped) return;
+	const _fetch = window.fetch;
+	window.fetch = function (...args) {
+		inFlight++;
+		updateBusy();
+		return _fetch.apply(this, args).finally(() => {
+			inFlight--;
+			updateBusy();
+		});
+	};
+	window.fetch.__wrapped = true;
+})();
+
 const API_URL = `${window.location.origin}/api`;
 
 // Current user state
@@ -141,6 +166,24 @@ document.querySelectorAll(".tab").forEach((tab) => {
 	});
 });
 
+// ─── Info Modal ───────────────────────────────────────────────────────────────
+
+function showInfoModal(title, htmlBody) {
+	document.getElementById("info-modal-title").textContent = title;
+	document.getElementById("info-modal-body").innerHTML = htmlBody;
+	document.getElementById("info-modal").style.display = "flex";
+}
+
+function hideInfoModal() {
+	document.getElementById("info-modal").style.display = "none";
+}
+
+function closeInfoModalOnBackdrop(event) {
+	if (event.target === event.currentTarget) {
+		hideInfoModal();
+	}
+}
+
 // Show notification
 function showNotification(message, type = "success") {
 	const notification = document.getElementById("notification");
@@ -247,9 +290,26 @@ function calendarNextMonth() {
 	renderMonthCalendar(calendarYear, calendarMonth);
 }
 
+function escapeHtml(str) {
+	return String(str ?? "")
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;");
+}
+
+function lessonPillTooltip(lesson) {
+	const name = lesson.courseName || lesson.title;
+	const time = lesson.time || "";
+	const capacity = `${lesson.enrolledCount ?? 0}/${lesson.capacity ?? "?"}`;
+	return `${name} • ${time} • ${capacity} obsazeno`;
+}
+
 function getLessonTileIcon(lesson, isParticipant) {
 	if (!isParticipant) {
-		return { icon: "●", label: lesson.title, color: lesson.courseColor };
+		const color = lesson.courseColor || "#B3E5FC";
+		const tooltip = escapeHtml(lessonPillTooltip(lesson));
+		return { pill: true, color, tooltip };
 	}
 	if (calendarMyRegisteredIds.has(lesson.id)) {
 		return { icon: "❤️", label: `Moje lekce: ${lesson.title}` };
@@ -299,6 +359,9 @@ function renderMonthCalendar(year, month) {
 			.map((l) => {
 				const badge = getLessonTileIcon(l, isParticipant);
 				if (!badge) return "";
+				if (badge.pill) {
+					return `<span class="calendar-pill" style="background:${badge.color};" title="${badge.tooltip}"></span>`;
+				}
 				return `<span class="calendar-icon" title="${badge.label}">${badge.icon}</span>`;
 			})
 			.filter(Boolean)
@@ -418,6 +481,7 @@ function translateDay(day) {
 async function showAddLessonForm() {
 	await populateLessonCourseSelect();
 	document.getElementById("add-lesson-form").style.display = "block";
+	document.getElementById("lessons-calendar-block").style.display = "none";
 }
 
 async function populateLessonCourseSelect() {
@@ -440,6 +504,7 @@ async function populateLessonCourseSelect() {
 function hideAddLessonForm() {
 	document.getElementById("add-lesson-form").style.display = "none";
 	document.querySelector("#add-lesson-form form").reset();
+	document.getElementById("lessons-calendar-block").style.display = "";
 }
 
 // Add lesson (creates recurring lessons from startDate to endDate)
@@ -514,6 +579,7 @@ async function deleteLesson(lessonId, triggerEl) {
 
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
+	globalProgressBar = document.getElementById("global-progress");
 	loadCalendar();
 	loadAgeGroups();
 });
@@ -1017,6 +1083,7 @@ async function submitOdsImport(triggerEl) {
 				const summary = `✅ Importováno: ${data.processed}, nových: ${data.created}, přeskočeno: ${data.skipped}`;
 				if (resultsEl)
 					resultsEl.innerHTML = `<div class="info-box" style="margin-top:12px;">${summary}</div>`;
+				showInfoModal("Import dokončen", `<p>${summary}</p>`);
 				showNotification(
 					`Import dokončen: ${data.processed} účastník(ů)`,
 					"success",

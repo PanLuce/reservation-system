@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div id="global-progress" class="global-progress" hidden></div>
     <div class="container">
         <header>
             <div>
@@ -85,20 +86,22 @@
             </div>
 
             <!-- Month Calendar -->
-            <div class="calendar-nav">
-                <button type="button" class="btn btn-secondary calendar-nav-btn" onclick="calendarPrevMonth()">‹</button>
-                <span id="calendar-month-label" class="calendar-month-label"></span>
-                <button type="button" class="btn btn-secondary calendar-nav-btn" onclick="calendarNextMonth()">›</button>
+            <div id="lessons-calendar-block">
+                <div class="calendar-nav">
+                    <button type="button" class="btn btn-secondary calendar-nav-btn" onclick="calendarPrevMonth()">‹</button>
+                    <span id="calendar-month-label" class="calendar-month-label"></span>
+                    <button type="button" class="btn btn-secondary calendar-nav-btn" onclick="calendarNextMonth()">›</button>
+                </div>
+                <div class="calendar-legend admin-only">
+                    <span>Skupinky v tento den</span>
+                </div>
+                <div class="calendar-legend participant-only hidden">
+                    <span>❤️ Moje lekce</span>
+                    <span>✨ Volná náhrada</span>
+                    <span>🚫 Plno</span>
+                </div>
+                <div class="calendar-grid" id="calendar-grid"></div>
             </div>
-            <div class="calendar-legend admin-only">
-                <span>● Lekce v tento den</span>
-            </div>
-            <div class="calendar-legend participant-only hidden">
-                <span>❤️ Moje lekce</span>
-                <span>✨ Volná náhrada</span>
-                <span>🚫 Plno</span>
-            </div>
-            <div class="calendar-grid" id="calendar-grid"></div>
         </div>
 
         <!-- Add Mom Modal -->
@@ -229,6 +232,20 @@
                     </div>
                 </div>
                 <div id="ods-commit-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal (reusable single-action modal) -->
+    <div id="info-modal" class="day-modal-overlay" onclick="closeInfoModalOnBackdrop(event)" style="display:none;">
+        <div class="day-modal">
+            <div class="day-modal-header">
+                <h3 id="info-modal-title"></h3>
+                <button type="button" class="day-modal-close" id="info-modal-close" onclick="hideInfoModal()">✕</button>
+            </div>
+            <div id="info-modal-body" class="day-modal-body"></div>
+            <div style="padding: 0 20px 20px; text-align: right;">
+                <button type="button" class="btn btn-primary" onclick="hideInfoModal()">OK</button>
             </div>
         </div>
     </div>
