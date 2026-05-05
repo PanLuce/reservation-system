@@ -100,7 +100,10 @@
 			"mcp__plugin_playwright_playwright__browser_close",
 			"mcp__plugin_playwright_playwright__browser_evaluate",
 			"Bash(ADMIN_EMAIL_SEED=admin@centrumrubacek.cz ADMIN_PASSWORD_SEED=admin123 PARTICIPANT_EMAIL_SEED=maminka@test.cz PARTICIPANT_PASSWORD_SEED=test123 ENABLE_QUICK_LOGIN=true npm start *)",
-			"mcp__plugin_playwright_playwright__browser_file_upload"
+			"mcp__plugin_playwright_playwright__browser_file_upload",
+			"Bash(./node_modules/.bin/biome --version)",
+			"Bash(./node_modules/.bin/biome explain *)",
+			"Bash(./node_modules/.bin/biome migrate *)"
 		]
 	},
 	"sandbox": {

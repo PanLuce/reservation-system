@@ -1,2 +1,2 @@
-1. Legend "Skupinky v tento den" is not precise. Call it Lekce, which is actually an occurence of a skupinka.
-2. When importing from spreadsheet there should be an one more step to choose which worksheet to use for import as a step 1
+1. It seems that somehow there is 2-spaces linter picked up (example in file settings.local.json) but I have my set up to 4 spaces tab. Can you check and fix it?
+2. In participants view (Maminky) there needs to be dropdown with list of skupinky to re-assign the participant to

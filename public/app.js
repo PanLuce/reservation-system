@@ -653,6 +653,19 @@ function renderCourseCard(course) {
 // Cache of all courses (populated in loadCourses; used for transfer dropdowns)
 let allCoursesCache = [];
 
+async function ensureCoursesCache() {
+	if (allCoursesCache.length > 0) return;
+	try {
+		const res = await fetch(`${API_URL}/courses`, { credentials: "include" });
+		if (res.ok) {
+			const courses = await res.json();
+			if (Array.isArray(courses)) allCoursesCache = courses;
+		}
+	} catch {
+		// Cache stays empty; dropdowns will have no options
+	}
+}
+
 async function loadCourseMembers(courseId) {
 	try {
 		const res = await fetch(`${API_URL}/courses/${courseId}/participants`, {
@@ -677,26 +690,24 @@ async function loadCourseMembers(courseId) {
 	}
 }
 
+function renderTransferDropdown(participantId, fromCourseId) {
+	const others = allCoursesCache.filter((c) => c.id !== fromCourseId);
+	if (others.length === 0) return "";
+	const opts = others
+		.map((c) => `<option value="${c.id}">${c.name}</option>`)
+		.join("");
+	return `<select class="transfer-select" style="font-size:11px;margin-left:8px;padding:2px 4px;" onclick="event.stopPropagation()" onchange="initiateTransfer('${participantId}', '${fromCourseId}', this)"><option value="">Přesunout do…</option>${opts}</select>`;
+}
+
 function renderMemberRow(m, currentCourseId) {
 	const remaining =
 		m.remainingLessons !== undefined
 			? ` · <span style="color:#888;">zbývá ${m.remainingLessons} lekcí</span>`
 			: "";
-	const otherCourses = allCoursesCache.filter((c) => c.id !== currentCourseId);
-	const transferOptions = otherCourses
-		.map((c) => `<option value="${c.id}">${c.name}</option>`)
-		.join("");
-	const transferDropdown =
-		otherCourses.length > 0
-			? `<select class="transfer-select" style="font-size:11px;margin-left:8px;padding:2px 4px;" onchange="initiateTransfer('${m.id}', '${currentCourseId}', this)">
-				<option value="">Přesunout do…</option>
-				${transferOptions}
-			</select>`
-			: "";
 	return `<li style="font-size:12px;color:#444;margin-bottom:4px;">
 		<span style="cursor:pointer;text-decoration:underline;color:#534445;" onclick="openParticipantDetail('${m.id}')">${m.name}</span>
 		<span style="color:#999;">${m.email}</span>${remaining}
-		${transferDropdown}
+		${renderTransferDropdown(m.id, currentCourseId)}
 	</li>`;
 }
 
@@ -1437,6 +1448,8 @@ async function loadParticipants() {
 	container.innerHTML =
 		'<p style="color:#aaa;text-align:center;padding:20px;">Načítám…</p>';
 
+	await ensureCoursesCache();
+
 	try {
 		const res = await fetch(`${API_URL}/admin/participants`, {
 			credentials: "include",
@@ -1452,18 +1465,20 @@ async function loadParticipants() {
 
 		const rows = participants
 			.map((p) => {
-				const courseList =
-					p.courses
-						.map(
-							(c) =>
-								`${c.name} <span style="color:#888;">(zbývá ${c.remainingLessons} lekcí)</span>`,
-						)
-						.join(", ") || "—";
+				const courseItems =
+					p.courses.length > 0
+						? p.courses
+								.map(
+									(c) =>
+										`<li style="margin-bottom:2px;">${c.name} <span style="color:#888;">(zbývá ${c.remainingLessons} lekcí)</span>${renderTransferDropdown(p.id, c.id)}</li>`,
+								)
+								.join("")
+						: '<li style="color:#aaa;">—</li>';
 				return `<tr style="border-bottom:1px solid #f0ebe3;cursor:pointer;" onclick="openParticipantDetail('${p.id}')">
 					<td style="padding:10px 8px;font-weight:500;">${p.name}</td>
 					<td style="padding:10px 8px;color:#666;">${p.email}</td>
 					<td style="padding:10px 8px;color:#666;">${p.ageGroup}</td>
-					<td style="padding:10px 8px;font-size:13px;">${courseList}</td>
+					<td style="padding:10px 8px;font-size:13px;"><ul style="list-style:none;padding:0;margin:0;">${courseItems}</ul></td>
 				</tr>`;
 			})
 			.join("");
