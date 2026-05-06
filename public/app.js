@@ -1502,7 +1502,7 @@ async function loadParticipants() {
 						? p.courses
 								.map(
 									(c) =>
-										`<li style="margin-bottom:2px;">${c.name} <span style="color:#888;">(zbývá ${c.remainingLessons} lekcí)</span>${renderTransferDropdown(p.id, c.id)}</li>`,
+										`<li style="margin-bottom:2px;">${renderTransferDropdown(p.id, c.id)} <span style="color:#888;">zbývá ${c.remainingLessons} lekcí</span></li>`,
 								)
 								.join("")
 						: '<li style="color:#aaa;">—</li>';
