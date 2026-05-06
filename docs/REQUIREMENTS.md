@@ -1,2 +1,3 @@
-1. It seems that somehow there is 2-spaces linter picked up (example in file settings.local.json) but I have my set up to 4 spaces tab. Can you check and fix it?
-2. In participants view (Maminky) there needs to be dropdown with list of skupinky to re-assign the participant to
+1. each participant there is an dropdown for changing the Skupinka. Align the style and design of the dropdown to match our web page style. I imagine it being dropdown element only indicating the selelcted skupinka by having it selected.
+2. Additional info, such as how many lessons left in Maminky section, is outside of it.
+3. Whenever I select different skupinka, to switch it, I get confirmation dialog (same style as our web page again)

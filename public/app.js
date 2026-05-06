@@ -691,12 +691,16 @@ async function loadCourseMembers(courseId) {
 }
 
 function renderTransferDropdown(participantId, fromCourseId) {
+	const current = allCoursesCache.find((c) => c.id === fromCourseId);
 	const others = allCoursesCache.filter((c) => c.id !== fromCourseId);
-	if (others.length === 0) return "";
-	const opts = others
+	if (!current && others.length === 0) return "";
+	const currentOpt = current
+		? `<option value="${current.id}" selected>${current.name}</option>`
+		: "";
+	const otherOpts = others
 		.map((c) => `<option value="${c.id}">${c.name}</option>`)
 		.join("");
-	return `<select class="transfer-select" style="font-size:11px;margin-left:8px;padding:2px 4px;" onclick="event.stopPropagation()" onchange="initiateTransfer('${participantId}', '${fromCourseId}', this)"><option value="">Přesunout do…</option>${opts}</select>`;
+	return `<select class="transfer-select" onclick="event.stopPropagation()" onchange="initiateTransferWithConfirm('${participantId}', '${fromCourseId}', this)">${currentOpt}${otherOpts}</select>`;
 }
 
 function renderMemberRow(m, currentCourseId) {
@@ -717,8 +721,36 @@ function toggleMembersList(courseId) {
 		list.style.display = list.style.display === "none" ? "block" : "none";
 }
 
-async function initiateTransfer(participantId, fromCourseId, selectEl) {
+function initiateTransferWithConfirm(participantId, fromCourseId, selectEl) {
 	const toCourseId = selectEl.value;
+	if (!toCourseId || toCourseId === fromCourseId) {
+		selectEl.value = fromCourseId;
+		return;
+	}
+	const fromName =
+		allCoursesCache.find((c) => c.id === fromCourseId)?.name ?? fromCourseId;
+	const toName =
+		allCoursesCache.find((c) => c.id === toCourseId)?.name ?? toCourseId;
+	const body = `
+		<p style="margin-bottom:16px;">Přesunout maminku ze skupinky <strong>${fromName}</strong> do skupinky <strong>${toName}</strong>?</p>
+		<div style="display:flex;gap:8px;flex-wrap:wrap;">
+			<button class="btn btn-primary" onclick="hideInfoModal();initiateTransfer('${participantId}','${fromCourseId}',document.querySelector('[data-transfer-select-id=\\'${participantId}-${fromCourseId}\\']'))">Přesunout</button>
+			<button class="btn btn-secondary" onclick="hideInfoModal();document.querySelector('[data-transfer-select-id=\\'${participantId}-${fromCourseId}\\']').value='${fromCourseId}'">Zrušit</button>
+		</div>`;
+	selectEl.setAttribute(
+		"data-transfer-select-id",
+		`${participantId}-${fromCourseId}`,
+	);
+	selectEl.dataset.pendingToCourseId = toCourseId;
+	document.getElementById("info-modal-title").textContent = "Přesunout maminku";
+	document.getElementById("info-modal-body").innerHTML = body;
+	document.getElementById("info-modal").style.display = "flex";
+}
+
+async function initiateTransfer(participantId, fromCourseId, selectEl) {
+	const toCourseId = selectEl
+		? selectEl.dataset.pendingToCourseId || selectEl.value
+		: null;
 	if (!toCourseId) return;
 	selectEl.value = "";
 

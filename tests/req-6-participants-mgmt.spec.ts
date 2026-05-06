@@ -398,13 +398,17 @@ test.describe("REQ-5/6: Transfer participant between skupinky", () => {
 		const alfaCard = page.locator(`#course-card-${courseAlpha.id}`);
 		await alfaCard.locator('[onclick*="toggleMembersList"]').click();
 
-		// Select Beta in transfer dropdown → triggers phase-1 check
+		// Select Beta in transfer dropdown → confirmation dialog first
 		const transferSelect = alfaCard.locator("select.transfer-select");
 		await transferSelect.selectOption({ label: "Skupinka Beta" });
 
-		// Mismatch popup must appear (2 remaining in Alfa, 8 future in Beta)
 		await page.waitForSelector("#info-modal", { state: "visible" });
+		await page
+			.locator("#info-modal button")
+			.filter({ hasText: /přesunout|potvrdit|ano/i })
+			.click();
 
+		// Mismatch popup must appear (2 remaining in Alfa, 8 future in Beta)
 		const modal = page.locator("#info-modal");
 		await expect(modal).toContainText("2");
 		await expect(modal).toContainText("8");
@@ -435,9 +439,14 @@ test.describe("REQ-5/6: Transfer participant between skupinky", () => {
 		const transferSelect = alfaCard.locator("select.transfer-select");
 		await transferSelect.selectOption({ label: "Skupinka Beta" });
 
+		// Confirmation dialog
 		await page.waitForSelector("#info-modal", { state: "visible" });
+		await page
+			.locator("#info-modal button")
+			.filter({ hasText: /přesunout|potvrdit|ano/i })
+			.click();
 
-		// Click "prvních 2"
+		// Click "prvních 2" on the mismatch modal
 		await page
 			.locator("#info-modal button")
 			.filter({ hasText: /prvních/i })
@@ -458,7 +467,7 @@ test.describe("REQ-5/6: Transfer participant between skupinky", () => {
 		expect(found.remainingLessons).toBe(2);
 	});
 
-	test("transfer with matching counts is silent (no popup)", async ({
+	test("transfer with matching counts shows only confirm dialog (no mismatch popup)", async ({
 		page,
 	}) => {
 		// Build a 2-lesson Alpha, register participant on both, Beta also has 2 future lessons
@@ -527,15 +536,14 @@ test.describe("REQ-5/6: Transfer participant between skupinky", () => {
 		const transferSelect = c1Card.locator("select.transfer-select");
 		await transferSelect.selectOption({ label: "Match Beta" });
 
-		// No popup should appear — silent transfer
-		await page.waitForTimeout(500);
-		const modalVisible = await page
-			.locator("#info-modal")
-			.evaluate(
-				(el) =>
-					(el as HTMLElement).style.display !== "none" &&
-					(el as HTMLElement).style.display !== "",
-			);
-		expect(modalVisible).toBe(false);
+		// Confirm dialog appears (all transfers require confirm)
+		await page.waitForSelector("#info-modal", { state: "visible" });
+		await page
+			.locator("#info-modal button")
+			.filter({ hasText: /přesunout|potvrdit|ano/i })
+			.click();
+
+		// No mismatch popup should appear — modal closes after transfer
+		await page.waitForSelector("#info-modal", { state: "hidden" });
 	});
 });

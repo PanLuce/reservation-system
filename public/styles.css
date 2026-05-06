@@ -689,6 +689,24 @@ header p {
 	color: #fff;
 }
 
+/* ─── Inline transfer dropdown ───────────────────────────────────────────── */
+.transfer-select {
+	font-family: var(--font-body);
+	font-size: 13px;
+	padding: 4px 8px;
+	border: 1px solid var(--color-border-medium);
+	border-radius: 6px;
+	background: var(--color-bg-card);
+	color: var(--color-text-body);
+	cursor: pointer;
+	transition: border-color 0.2s;
+}
+
+.transfer-select:focus {
+	outline: none;
+	border-color: var(--color-cta);
+}
+
 /* ─── Global loading indicator ───────────────────────────────────────────── */
 
 .global-progress {

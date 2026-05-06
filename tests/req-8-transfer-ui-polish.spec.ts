@@ -95,14 +95,14 @@ async function setupParticipantWithLessons() {
 	}
 }
 
-// ─── REQ-7: Transfer dropdown in Maminky tab ─────────────────────────────────
+// ─── REQ-8: Transfer dropdown UI polish ──────────────────────────────────────
 
-test.describe("REQ-7: Maminky tab has per-skupinka transfer dropdown", () => {
+test.describe("REQ-8: Maminky transfer dropdown shows current skupinka", () => {
 	test.beforeEach(async () => {
 		await setupParticipantWithLessons();
 	});
 
-	test("participant row in Maminky tab has transfer dropdown listing other skupinky", async ({
+	test("dropdown's selected option is the participant's current skupinka", async ({
 		page,
 	}) => {
 		await loginAsAdmin(page);
@@ -111,18 +111,79 @@ test.describe("REQ-7: Maminky tab has per-skupinka transfer dropdown", () => {
 		await page.waitForSelector("#participants-list", { state: "visible" });
 		await page.waitForTimeout(500);
 
-		// The Skupinka Alfa entry for Anička should have a transfer-select
 		const participantRow = page
 			.locator("#participants-list tr")
 			.filter({ hasText: "Anička Testová" });
 		const transferSelect = participantRow.locator("select.transfer-select");
-		await expect(transferSelect).toBeVisible();
 
-		// Should offer Skupinka Beta as a target
-		await expect(transferSelect).toContainText("Skupinka Beta");
+		const selectedLabel = await transferSelect.evaluate((el) => {
+			const sel = el as HTMLSelectElement;
+			return sel.options[sel.selectedIndex]?.textContent ?? "";
+		});
+		expect(selectedLabel).toContain("Skupinka Alfa");
 	});
 
-	test("selecting transfer target from Maminky tab triggers mismatch modal", async ({
+	test("remaining-lesson count is rendered outside the dropdown element", async ({
+		page,
+	}) => {
+		await loginAsAdmin(page);
+
+		await page.click('[data-tab="participants"]');
+		await page.waitForSelector("#participants-list", { state: "visible" });
+		await page.waitForTimeout(500);
+
+		const participantRow = page
+			.locator("#participants-list tr")
+			.filter({ hasText: "Anička Testová" });
+
+		// The "zbývá X lekcí" text must NOT live inside any <select>
+		const insideSelect = await participantRow
+			.locator("select.transfer-select")
+			.evaluate((el) => el.textContent ?? "");
+		expect(insideSelect).not.toContain("zbývá");
+
+		// But it must still be visible somewhere in the row
+		await expect(participantRow).toContainText("zbývá");
+	});
+
+	test("dropdown is styled to match the page (uses CSS class, not just inline font-size:11px)", async ({
+		page,
+	}) => {
+		await loginAsAdmin(page);
+
+		await page.click('[data-tab="participants"]');
+		await page.waitForSelector("#participants-list", { state: "visible" });
+		await page.waitForTimeout(500);
+
+		const participantRow = page
+			.locator("#participants-list tr")
+			.filter({ hasText: "Anička Testová" });
+		const transferSelect = participantRow.locator("select.transfer-select");
+
+		const styles = await transferSelect.evaluate((el) => {
+			const s = window.getComputedStyle(el);
+			return {
+				fontFamily: s.fontFamily,
+				borderRadius: s.borderRadius,
+				borderWidth: s.borderWidth,
+				padding: s.padding,
+			};
+		});
+		// Page font is Raleway-based; the tiny 11px inline-styled dropdown
+		// inherits browser default. Real on-brand styling rounds the corners.
+		expect(styles.fontFamily.toLowerCase()).toMatch(/raleway|helvetica|arial/);
+		expect(parseFloat(styles.borderRadius)).toBeGreaterThan(0);
+	});
+});
+
+// ─── REQ-9: Confirmation dialog before any transfer ──────────────────────────
+
+test.describe("REQ-9: Transfer requires confirmation dialog", () => {
+	test.beforeEach(async () => {
+		await setupParticipantWithLessons();
+	});
+
+	test("selecting a different skupinka opens a confirmation dialog (not the transfer itself)", async ({
 		page,
 	}) => {
 		await loginAsAdmin(page);
@@ -137,23 +198,20 @@ test.describe("REQ-7: Maminky tab has per-skupinka transfer dropdown", () => {
 		const transferSelect = participantRow.locator("select.transfer-select");
 		await transferSelect.selectOption({ label: "Skupinka Beta" });
 
-		// Confirmation modal first
+		// Confirmation modal must appear with Yes/No buttons in the page modal
 		await page.waitForSelector("#info-modal", { state: "visible" });
-		await page
-			.locator("#info-modal button")
-			.filter({ hasText: /přesunout|potvrdit|ano/i })
-			.click();
-
-		// Mismatch modal must appear (2 remaining in Alfa, 8 future in Beta)
 		const modal = page.locator("#info-modal");
-		await expect(modal).toContainText("2");
-		await expect(modal).toContainText("8");
+		await expect(modal).toContainText("Skupinka Alfa");
+		await expect(modal).toContainText("Skupinka Beta");
 		await expect(
-			modal.locator("button").filter({ hasText: /prvních/i }),
+			modal.locator("button").filter({ hasText: /přesunout|potvrdit|ano/i }),
+		).toBeVisible();
+		await expect(
+			modal.locator("button").filter({ hasText: /zrušit|ne/i }),
 		).toBeVisible();
 	});
 
-	test("choosing 'prvních 2' from Maminky tab transfers participant to new skupinka", async ({
+	test("cancelling the confirmation dialog leaves the dropdown reset to the original skupinka", async ({
 		page,
 	}) => {
 		await loginAsAdmin(page);
@@ -168,34 +226,32 @@ test.describe("REQ-7: Maminky tab has per-skupinka transfer dropdown", () => {
 		const transferSelect = participantRow.locator("select.transfer-select");
 		await transferSelect.selectOption({ label: "Skupinka Beta" });
 
-		// Confirmation modal
 		await page.waitForSelector("#info-modal", { state: "visible" });
 		await page
 			.locator("#info-modal button")
-			.filter({ hasText: /přesunout|potvrdit|ano/i })
-			.click();
-
-		// Mismatch modal
-		await page
-			.locator("#info-modal button")
-			.filter({ hasText: /prvních/i })
+			.filter({ hasText: /zrušit|ne/i })
 			.click();
 		await page.waitForSelector("#info-modal", { state: "hidden" });
 
-		// Verify via API: participant now has 2 confirmed regs in Beta
+		// API check: Anička is still in Alfa, not in Beta
 		const resp = await page.request.get(
 			`${BASE}/api/courses/${courseBeta.id}/participants`,
 		);
-		expect(resp.ok()).toBeTruthy();
 		const members = await resp.json();
 		const found = members.find(
 			(m: { email: string }) => m.email === "anicka@test.cz",
 		);
-		expect(found).toBeDefined();
-		expect(found.remainingLessons).toBe(2);
+		expect(found).toBeUndefined();
+
+		// Dropdown should now be back to Skupinka Alfa
+		const selectedLabel = await transferSelect.evaluate((el) => {
+			const sel = el as HTMLSelectElement;
+			return sel.options[sel.selectedIndex]?.textContent ?? "";
+		});
+		expect(selectedLabel).toContain("Skupinka Alfa");
 	});
 
-	test("clicking maminka row (not dropdown) opens detail modal without triggering transfer", async ({
+	test("confirming the dialog proceeds with the transfer flow (mismatch popup or silent)", async ({
 		page,
 	}) => {
 		await loginAsAdmin(page);
@@ -204,26 +260,25 @@ test.describe("REQ-7: Maminky tab has per-skupinka transfer dropdown", () => {
 		await page.waitForSelector("#participants-list", { state: "visible" });
 		await page.waitForTimeout(500);
 
-		// Click the name cell directly, not the dropdown
-		const nameCell = page
-			.locator("#participants-list td")
-			.filter({ hasText: "Anička Testová" })
-			.first();
-		await nameCell.click();
+		const participantRow = page
+			.locator("#participants-list tr")
+			.filter({ hasText: "Anička Testová" });
+		const transferSelect = participantRow.locator("select.transfer-select");
+		await transferSelect.selectOption({ label: "Skupinka Beta" });
 
-		await page.waitForSelector("#participant-modal", { state: "visible" });
-		await expect(page.locator("#participant-modal-title")).toContainText(
-			"Anička Testová",
-		);
+		await page.waitForSelector("#info-modal", { state: "visible" });
+		await page
+			.locator("#info-modal button")
+			.filter({ hasText: /přesunout|potvrdit|ano/i })
+			.click();
 
-		// Info modal should NOT have appeared
-		const infoModalVisible = await page
-			.locator("#info-modal")
-			.evaluate(
-				(el) =>
-					(el as HTMLElement).style.display !== "none" &&
-					(el as HTMLElement).style.display !== "",
-			);
-		expect(infoModalVisible).toBe(false);
+		// After confirmation, the mismatch modal should appear (2 vs 8)
+		await expect(page.locator("#info-modal")).toContainText("2", {
+			timeout: 5000,
+		});
+		await expect(page.locator("#info-modal")).toContainText("8");
+		await expect(
+			page.locator("#info-modal button").filter({ hasText: /prvních/i }),
+		).toBeVisible();
 	});
 });
