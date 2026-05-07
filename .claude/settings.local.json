@@ -104,7 +104,8 @@
       "Bash(./node_modules/.bin/biome --version)",
       "Bash(./node_modules/.bin/biome explain *)",
       "Bash(./node_modules/.bin/biome migrate *)",
-      "mcp__plugin_playwright_playwright__browser_select_option"
+      "mcp__plugin_playwright_playwright__browser_select_option",
+      "Bash(./node_modules/.bin/biome format *)"
     ]
   },
   "sandbox": {

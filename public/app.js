@@ -1,28 +1,3 @@
-// ─── Global loading feedback ─────────────────────────────────────────────────
-
-let inFlight = 0;
-let globalProgressBar = null;
-
-function updateBusy() {
-	const busy = inFlight > 0;
-	document.body.classList.toggle("is-busy", busy);
-	if (globalProgressBar) globalProgressBar.hidden = !busy;
-}
-
-(function wrapFetch() {
-	if (window.fetch.__wrapped) return;
-	const _fetch = window.fetch;
-	window.fetch = function (...args) {
-		inFlight++;
-		updateBusy();
-		return _fetch.apply(this, args).finally(() => {
-			inFlight--;
-			updateBusy();
-		});
-	};
-	window.fetch.__wrapped = true;
-})();
-
 const API_URL = `${window.location.origin}/api`;
 
 // Current user state
@@ -758,7 +733,6 @@ async function addParticipantToLesson(participantId, lessonId) {
 
 // Initialize — load user first so calendar has currentUser.participantId for substitution fetch
 document.addEventListener("DOMContentLoaded", async () => {
-	globalProgressBar = document.getElementById("global-progress");
 	await loadCurrentUser();
 	loadCalendar();
 	loadAgeGroups();

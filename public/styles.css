@@ -510,10 +510,6 @@ header p {
 	);
 }
 
-.calendar-day.has-substitution .calendar-icon {
-	font-size: 1.15em;
-}
-
 .calendar-dots {
 	display: flex;
 	flex-wrap: wrap;
@@ -540,6 +536,10 @@ header p {
 	font-size: 14px;
 	line-height: 1;
 	cursor: default;
+}
+
+.calendar-day.has-substitution .calendar-icon {
+	font-size: 1.15em;
 }
 
 .calendar-pill {
