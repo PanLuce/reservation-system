@@ -492,6 +492,28 @@ header p {
 	justify-content: center;
 }
 
+.calendar-day.has-substitution {
+	background: linear-gradient(
+		135deg,
+		rgba(246, 156, 78, 0.1) 0%,
+		rgba(246, 156, 78, 0.18) 100%
+	);
+	border: 2px solid var(--color-cta);
+	padding: 4px;
+}
+
+.calendar-day.has-substitution:hover {
+	background: linear-gradient(
+		135deg,
+		rgba(246, 156, 78, 0.18) 0%,
+		rgba(246, 156, 78, 0.28) 100%
+	);
+}
+
+.calendar-day.has-substitution .calendar-icon {
+	font-size: 1.15em;
+}
+
 .calendar-dots {
 	display: flex;
 	flex-wrap: wrap;

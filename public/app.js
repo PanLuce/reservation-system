@@ -135,8 +135,7 @@ function populateAgeGroupSelect(selectEl) {
 	if (current) selectEl.value = current;
 }
 
-// Load user info on page load
-loadCurrentUser();
+// User is loaded in DOMContentLoaded before calendar to ensure participantId is set
 
 // Tab switching
 document.querySelectorAll(".tab").forEach((tab) => {
@@ -356,6 +355,16 @@ function renderMonthCalendar(year, month) {
 
 		const MAX_ICONS = 4;
 		const isParticipant = currentUser && currentUser.role !== "admin";
+		const hasMine =
+			isParticipant && lessons.some((l) => calendarMyRegisteredIds.has(l.id));
+		const hasSub =
+			isParticipant &&
+			!hasMine &&
+			lessons.some(
+				(l) =>
+					calendarSubCandidateIds.has(l.id) &&
+					(l.enrolledCount ?? 0) < (l.capacity ?? 0),
+			);
 		const icons = lessons
 			.slice(0, MAX_ICONS)
 			.map((l) => {
@@ -374,7 +383,7 @@ function renderMonthCalendar(year, month) {
 				: "";
 
 		html += `
-			<div class="calendar-day${isToday ? " today" : ""}" onclick="openDayModal('${dateStr}')">
+			<div class="calendar-day${isToday ? " today" : ""}${hasSub ? " has-substitution" : ""}" onclick="openDayModal('${dateStr}')">
 				<div class="calendar-day-number">${day}</div>
 				<div class="calendar-icons">${icons}${overflow}</div>
 			</div>`;
@@ -747,9 +756,10 @@ async function addParticipantToLesson(participantId, lessonId) {
 	}
 }
 
-// Initialize
-document.addEventListener("DOMContentLoaded", () => {
+// Initialize — load user first so calendar has currentUser.participantId for substitution fetch
+document.addEventListener("DOMContentLoaded", async () => {
 	globalProgressBar = document.getElementById("global-progress");
+	await loadCurrentUser();
 	loadCalendar();
 	loadAgeGroups();
 });

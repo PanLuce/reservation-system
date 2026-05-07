@@ -57,6 +57,55 @@ test.describe
 			participantCookie = await loginAs("eve@t.cz", "pass123");
 		});
 
+		test("participant CAN cancel a lesson scheduled for tomorrow (cutoff is midnight before)", async () => {
+			const course = createCourse({
+				name: "Tomorrow Cutoff Test",
+				ageGroup: "1 - 2 roky",
+				color: "#112233",
+			});
+			await CourseDB.insert(course);
+
+			const tomorrow = new Date();
+			tomorrow.setDate(tomorrow.getDate() + 1);
+			const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+
+			await LessonDB.insert(
+				{
+					id: "lesson_tomorrow",
+					title: "Tomorrow Lesson",
+					date: tomorrowStr,
+					dayOfWeek: "Monday",
+					time: "10:00",
+					location: "Studio",
+					ageGroup: "1 - 2 roky",
+					capacity: 10,
+					enrolledCount: 1,
+				},
+				course.id,
+			);
+
+			const reg = {
+				id: "reg_tomorrow",
+				lessonId: "lesson_tomorrow",
+				participantId,
+				status: "confirmed",
+			};
+			await RegistrationDB.insert(reg);
+
+			const res = await fetch(
+				`${BASE}/api/participants/${participantId}/cancel-registration`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Cookie: participantCookie,
+					},
+					body: JSON.stringify({ registrationId: "reg_tomorrow" }),
+				},
+			);
+			expect(res.status).toBe(200);
+		});
+
 		test("participant can cancel a registration for a lesson in the future (before midnight)", async () => {
 			const course = createCourse({
 				name: "Cutoff Test",
