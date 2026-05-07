@@ -196,7 +196,7 @@ test.describe("REQ-9: Transfer requires confirmation dialog", () => {
 			.locator("#participants-list tr")
 			.filter({ hasText: "Anička Testová" });
 		const transferSelect = participantRow.locator("select.transfer-select");
-		await transferSelect.selectOption({ label: "Skupinka Beta" });
+		await transferSelect.selectOption({ value: courseBeta.id });
 
 		// Confirmation modal must appear with Yes/No buttons in the page modal
 		await page.waitForSelector("#info-modal", { state: "visible" });
@@ -224,7 +224,7 @@ test.describe("REQ-9: Transfer requires confirmation dialog", () => {
 			.locator("#participants-list tr")
 			.filter({ hasText: "Anička Testová" });
 		const transferSelect = participantRow.locator("select.transfer-select");
-		await transferSelect.selectOption({ label: "Skupinka Beta" });
+		await transferSelect.selectOption({ value: courseBeta.id });
 
 		await page.waitForSelector("#info-modal", { state: "visible" });
 		await page
@@ -264,7 +264,7 @@ test.describe("REQ-9: Transfer requires confirmation dialog", () => {
 			.locator("#participants-list tr")
 			.filter({ hasText: "Anička Testová" });
 		const transferSelect = participantRow.locator("select.transfer-select");
-		await transferSelect.selectOption({ label: "Skupinka Beta" });
+		await transferSelect.selectOption({ value: courseBeta.id });
 
 		await page.waitForSelector("#info-modal", { state: "visible" });
 		await page

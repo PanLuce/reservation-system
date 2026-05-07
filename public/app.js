@@ -419,7 +419,8 @@ function renderDayLessons(lessons, dateStr) {
 
 			let actions;
 			if (isAdmin) {
-				actions = `<button class="btn btn-danger" onclick="deleteLesson('${l.id}', this)">Smazat</button>`;
+				actions = `<button class="btn btn-secondary" onclick="editLesson('${l.id}')">Upravit</button>
+				<button class="btn btn-danger" onclick="deleteLesson('${l.id}', this)">Smazat</button>`;
 			} else if (calendarSubCandidateIds.has(l.id)) {
 				const noCredit = calendarCreditCount <= 0;
 				actions = `<button class="btn btn-primary" onclick="selfRegister('${l.id}', this)"
@@ -435,7 +436,8 @@ function renderDayLessons(lessons, dateStr) {
 
 			const participantsBlock = isAdmin
 				? `<div id="day-lesson-members-${l.id}" style="margin:6px 0 2px;">
-					<span style="font-size:13px;cursor:pointer;color:#555;" onclick="toggleDayLessonMembers('${l.id}')">👩 Načíst účastníky ▾</span>
+					<span style="font-size:13px;cursor:pointer;color:#555;" onclick="toggleDayLessonMembers('${l.id}')">👶 Načíst účastníky ▾</span>
+					<button class="btn btn-secondary" style="font-size:11px;padding:3px 8px;margin-left:8px;" onclick="openLessonParticipantPicker('${l.id}')">+ Přidat dítě</button>
 				</div>`
 				: "";
 
@@ -586,6 +588,165 @@ async function deleteLesson(lessonId, triggerEl) {
 	});
 }
 
+// Edit lesson
+let editingLessonDateStr = null;
+
+async function editLesson(lessonId) {
+	const res = await fetch(`${API_URL}/lessons/${lessonId}`, {
+		credentials: "include",
+	});
+	if (!res.ok) {
+		showNotification("Nepodařilo se načíst lekci", "error");
+		return;
+	}
+	const lesson = await res.json();
+	editingLessonDateStr = lesson.date;
+	document.getElementById("edit-lesson-id").value = lesson.id;
+	document.getElementById("edit-lesson-title").value = lesson.title;
+	document.getElementById("edit-lesson-time").value = lesson.time;
+	document.getElementById("edit-lesson-capacity").value = lesson.capacity;
+	document.getElementById("edit-lesson-modal").style.display = "flex";
+}
+
+async function submitEditLesson(event) {
+	event.preventDefault();
+	const lessonId = document.getElementById("edit-lesson-id").value;
+	const title = document.getElementById("edit-lesson-title").value.trim();
+	const time = document.getElementById("edit-lesson-time").value;
+	const capacity = Number(
+		document.getElementById("edit-lesson-capacity").value,
+	);
+
+	try {
+		const res = await fetch(`${API_URL}/lessons/${lessonId}`, {
+			method: "PUT",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ title, time, capacity }),
+		});
+		if (!res.ok) {
+			showNotification("Chyba při ukládání lekce", "error");
+			return;
+		}
+		showNotification("Lekce byla uložena");
+		closeEditLessonModal();
+		await loadCalendar();
+		if (editingLessonDateStr) {
+			openDayModal(editingLessonDateStr);
+		}
+	} catch {
+		showNotification("Chyba při ukládání lekce", "error");
+	}
+}
+
+function closeEditLessonModal() {
+	document.getElementById("edit-lesson-modal").style.display = "none";
+}
+
+function closeEditLessonModalOnBackdrop(event) {
+	if (event.target === event.currentTarget) closeEditLessonModal();
+}
+
+// Cross-skupinka participant picker
+async function openLessonParticipantPicker(lessonId) {
+	await ensureCoursesCache();
+	let allParticipants;
+	try {
+		const res = await fetch(`${API_URL}/admin/participants`, {
+			credentials: "include",
+		});
+		if (!res.ok) throw new Error();
+		allParticipants = await res.json();
+	} catch {
+		showNotification("Nepodařilo se načíst účastníky", "error");
+		return;
+	}
+
+	if (allParticipants.length === 0) {
+		showInfoModal("Přidat dítě", "<p>Žádní účastníci k dispozici.</p>");
+		return;
+	}
+
+	const listHtml = allParticipants
+		.map((p) => {
+			const skupinky = p.courses.map((c) => c.name).join(", ") || "—";
+			return `<li style="padding:6px 0;border-bottom:1px solid #f0ebe3;display:flex;justify-content:space-between;align-items:center;">
+				<span><strong>${p.name}</strong> <span style="color:#888;font-size:12px;">${p.email}</span><br><span style="font-size:12px;color:#aaa;">${skupinky}</span></span>
+				<button class="btn btn-secondary" style="font-size:12px;padding:4px 10px;" onclick="confirmAddParticipantToLesson('${p.id}','${lessonId}','${p.name.replace(/'/g, "\\'")}')">Přidat</button>
+			</li>`;
+		})
+		.join("");
+
+	document.getElementById("info-modal-title").textContent =
+		"Přidat dítě na lekci";
+	document.getElementById("info-modal-body").innerHTML =
+		`<ul style="list-style:none;padding:0;margin:0;max-height:300px;overflow-y:auto;">${listHtml}</ul>`;
+	document.getElementById("info-modal").style.display = "flex";
+}
+
+function confirmAddParticipantToLesson(
+	participantId,
+	lessonId,
+	participantName,
+) {
+	const body = `
+		<p style="margin-bottom:16px;">Přidat <strong>${participantName}</strong> na tuto lekci?</p>
+		<div style="display:flex;gap:8px;">
+			<button class="btn btn-primary" onclick="addParticipantToLesson('${participantId}','${lessonId}')">Přidat</button>
+			<button class="btn btn-secondary" onclick="openLessonParticipantPicker('${lessonId}')">Zpět</button>
+		</div>`;
+	document.getElementById("info-modal-title").textContent = "Potvrdit přidání";
+	document.getElementById("info-modal-body").innerHTML = body;
+}
+
+async function addParticipantToLesson(participantId, lessonId) {
+	hideInfoModal();
+	try {
+		const pRes = await fetch(`${API_URL}/admin/participants`, {
+			credentials: "include",
+		});
+		const all = await pRes.json();
+		const p = all.find((x) => x.id === participantId);
+		if (!p) {
+			showNotification("Účastník nenalezen", "error");
+			return;
+		}
+		const res = await fetch(`${API_URL}/registrations`, {
+			method: "POST",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				lessonId,
+				participant: {
+					id: p.id,
+					name: p.name,
+					email: p.email,
+					phone: p.phone ?? "",
+					ageGroup: p.ageGroup,
+				},
+			}),
+		});
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			showNotification(err.error || "Chyba při přidávání", "error");
+			return;
+		}
+		showNotification("Dítě přidáno na lekci");
+		const membersContainer = document.getElementById(
+			`day-lesson-members-${lessonId}`,
+		);
+		if (membersContainer) {
+			const list = membersContainer.querySelector("ul");
+			if (list) list.remove();
+			membersContainer.querySelector("span").textContent =
+				"👶 Načíst účastníky ▾";
+			toggleDayLessonMembers(lessonId);
+		}
+	} catch {
+		showNotification("Chyba při přidávání", "error");
+	}
+}
+
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
 	globalProgressBar = document.getElementById("global-progress");
@@ -641,7 +802,7 @@ function renderCourseCard(course) {
 				isAdmin
 					? `
 			<div class="lesson-actions">
-				<button class="btn btn-primary" onclick="showAddMomModal('${course.id}')">+ Přidat maminku</button>
+				<button class="btn btn-primary" onclick="showAddMomModal('${course.id}')">+ Přidat dítě</button>
 				<button class="btn btn-secondary" onclick="editCourse('${course.id}')">Upravit</button>
 				<button class="btn btn-danger" onclick="deleteCourse('${course.id}', this)">Smazat</button>
 			</div>`
@@ -694,11 +855,15 @@ function renderTransferDropdown(participantId, fromCourseId) {
 	const current = allCoursesCache.find((c) => c.id === fromCourseId);
 	const others = allCoursesCache.filter((c) => c.id !== fromCourseId);
 	if (!current && others.length === 0) return "";
+	const courseLabel = (c) =>
+		c.location
+			? `${c.name} (${c.ageGroup}, ${c.location})`
+			: `${c.name} (${c.ageGroup})`;
 	const currentOpt = current
-		? `<option value="${current.id}" selected>${current.name}</option>`
+		? `<option value="${current.id}" selected>${courseLabel(current)}</option>`
 		: "";
 	const otherOpts = others
-		.map((c) => `<option value="${c.id}">${c.name}</option>`)
+		.map((c) => `<option value="${c.id}">${courseLabel(c)}</option>`)
 		.join("");
 	return `<select class="transfer-select" onclick="event.stopPropagation()" onchange="initiateTransferWithConfirm('${participantId}', '${fromCourseId}', this)">${currentOpt}${otherOpts}</select>`;
 }
@@ -732,7 +897,7 @@ function initiateTransferWithConfirm(participantId, fromCourseId, selectEl) {
 	const toName =
 		allCoursesCache.find((c) => c.id === toCourseId)?.name ?? toCourseId;
 	const body = `
-		<p style="margin-bottom:16px;">Přesunout maminku ze skupinky <strong>${fromName}</strong> do skupinky <strong>${toName}</strong>?</p>
+		<p style="margin-bottom:16px;">Přesunout dítě ze skupinky <strong>${fromName}</strong> do skupinky <strong>${toName}</strong>?</p>
 		<div style="display:flex;gap:8px;flex-wrap:wrap;">
 			<button class="btn btn-primary" onclick="hideInfoModal();initiateTransfer('${participantId}','${fromCourseId}',document.querySelector('[data-transfer-select-id=\\'${participantId}-${fromCourseId}\\']'))">Přesunout</button>
 			<button class="btn btn-secondary" onclick="hideInfoModal();document.querySelector('[data-transfer-select-id=\\'${participantId}-${fromCourseId}\\']').value='${fromCourseId}'">Zrušit</button>
@@ -742,7 +907,7 @@ function initiateTransferWithConfirm(participantId, fromCourseId, selectEl) {
 		`${participantId}-${fromCourseId}`,
 	);
 	selectEl.dataset.pendingToCourseId = toCourseId;
-	document.getElementById("info-modal-title").textContent = "Přesunout maminku";
+	document.getElementById("info-modal-title").textContent = "Přesunout dítě";
 	document.getElementById("info-modal-body").innerHTML = body;
 	document.getElementById("info-modal").style.display = "flex";
 }
@@ -800,7 +965,7 @@ function showTransferMismatchModal(
 	futureInNew,
 ) {
 	const body = `
-		<p style="margin-bottom:16px;">Maminka má <strong>${remainingInOld}</strong> zbývajících lekcí v aktuální skupince,
+		<p style="margin-bottom:16px;">Dítě má <strong>${remainingInOld}</strong> zbývajících lekcí v aktuální skupince,
 		ale nová skupinka má <strong>${futureInNew}</strong> budoucích lekcí.</p>
 		<p style="margin-bottom:20px;color:#666;font-size:13px;">Na kolik lekcí nové skupinky ji chcete zaregistrovat?</p>
 		<div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -848,7 +1013,7 @@ async function executeTransfer(
 			showNotification("Přesun se nezdařil", "error");
 			return;
 		}
-		showNotification("Maminka byla přesunuta");
+		showNotification("Dítě bylo přesunuto");
 		loadCourses();
 		if (document.getElementById("participants-list")) {
 			loadParticipants();
@@ -1375,8 +1540,8 @@ async function submitAddMom(event) {
 				const data = await res.json();
 				showNotification(
 					data.created
-						? "Maminka přidána a přihlášena na lekce"
-						: "Maminka již existuje — přihlášena na lekce",
+						? "Dítě přidáno a přihlášeno na lekce"
+						: "Dítě již existuje — přihlášeno na lekce",
 					"success",
 				);
 				closeAddMomModalDirect();
@@ -1384,10 +1549,10 @@ async function submitAddMom(event) {
 				loadCalendar();
 			} else {
 				const data = await res.json();
-				showNotification(data.error || "Chyba při přidávání maminky", "error");
+				showNotification(data.error || "Chyba při přidávání dítěte", "error");
 			}
 		} catch (error) {
-			showNotification("Chyba při přidávání maminky", "error");
+			showNotification("Chyba při přidávání dítěte", "error");
 			console.error(error);
 		}
 	});
@@ -1472,7 +1637,77 @@ async function toggleDayLessonMembers(lessonId) {
 	}
 }
 
-// ─── Maminky tab ─────────────────────────────────────────────────────────────
+// ─── Děti tab ────────────────────────────────────────────────────────────────
+
+let participantsCache = [];
+let participantsSortKey = null;
+let participantsSortDir = 1; // 1 = asc, -1 = desc
+
+function renderParticipantsTable(participants) {
+	const container = document.getElementById("participants-list");
+	if (!container) return;
+
+	if (participants.length === 0) {
+		container.innerHTML =
+			'<p style="text-align:center;color:#999;padding:40px;">Žádní účastníci.</p>';
+		return;
+	}
+
+	const sorted = participantsSortKey
+		? [...participants].sort((a, b) => {
+				const av = (a[participantsSortKey] ?? "").toLowerCase();
+				const bv = (b[participantsSortKey] ?? "").toLowerCase();
+				return av.localeCompare(bv) * participantsSortDir;
+			})
+		: [...participants];
+
+	const rows = sorted
+		.map((p) => {
+			const courseItems =
+				p.courses.length > 0
+					? p.courses
+							.map(
+								(c) =>
+									`<li style="margin-bottom:2px;">${renderTransferDropdown(p.id, c.id)} <span style="color:#888;">zbývá ${c.remainingLessons} lekcí</span></li>`,
+							)
+							.join("")
+					: '<li style="color:#aaa;">—</li>';
+			return `<tr style="border-bottom:1px solid #f0ebe3;cursor:pointer;" onclick="openParticipantDetail('${p.id}')">
+				<td style="padding:10px 8px;font-weight:500;">${p.name}</td>
+				<td style="padding:10px 8px;color:#666;">${p.email}</td>
+				<td style="padding:10px 8px;font-size:13px;"><ul style="list-style:none;padding:0;margin:0;">${courseItems}</ul></td>
+			</tr>`;
+		})
+		.join("");
+
+	const indicator = (key) =>
+		key === participantsSortKey
+			? participantsSortDir === 1
+				? " ▲"
+				: " ▼"
+			: "";
+
+	container.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+		<thead>
+			<tr style="background:#faf7f4;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:#666;">
+				<th style="padding:8px;text-align:left;cursor:pointer;user-select:none;" onclick="sortParticipants('name')">Jméno${indicator("name")}</th>
+				<th style="padding:8px;text-align:left;cursor:pointer;user-select:none;" onclick="sortParticipants('email')">Email${indicator("email")}</th>
+				<th style="padding:8px;text-align:left;">Skupinky</th>
+			</tr>
+		</thead>
+		<tbody>${rows}</tbody>
+	</table>`;
+}
+
+function sortParticipants(key) {
+	if (participantsSortKey === key) {
+		participantsSortDir *= -1;
+	} else {
+		participantsSortKey = key;
+		participantsSortDir = 1;
+	}
+	renderParticipantsTable(participantsCache);
+}
 
 async function loadParticipants() {
 	const container = document.getElementById("participants-list");
@@ -1487,45 +1722,8 @@ async function loadParticipants() {
 			credentials: "include",
 		});
 		if (!res.ok) throw new Error("Failed to load participants");
-		const participants = await res.json();
-
-		if (participants.length === 0) {
-			container.innerHTML =
-				'<p style="text-align:center;color:#999;padding:40px;">Žádní účastníci.</p>';
-			return;
-		}
-
-		const rows = participants
-			.map((p) => {
-				const courseItems =
-					p.courses.length > 0
-						? p.courses
-								.map(
-									(c) =>
-										`<li style="margin-bottom:2px;">${renderTransferDropdown(p.id, c.id)} <span style="color:#888;">zbývá ${c.remainingLessons} lekcí</span></li>`,
-								)
-								.join("")
-						: '<li style="color:#aaa;">—</li>';
-				return `<tr style="border-bottom:1px solid #f0ebe3;cursor:pointer;" onclick="openParticipantDetail('${p.id}')">
-					<td style="padding:10px 8px;font-weight:500;">${p.name}</td>
-					<td style="padding:10px 8px;color:#666;">${p.email}</td>
-					<td style="padding:10px 8px;color:#666;">${p.ageGroup}</td>
-					<td style="padding:10px 8px;font-size:13px;"><ul style="list-style:none;padding:0;margin:0;">${courseItems}</ul></td>
-				</tr>`;
-			})
-			.join("");
-
-		container.innerHTML = `<table style="width:100%;border-collapse:collapse;">
-			<thead>
-				<tr style="background:#faf7f4;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:#666;">
-					<th style="padding:8px;text-align:left;">Jméno</th>
-					<th style="padding:8px;text-align:left;">Email</th>
-					<th style="padding:8px;text-align:left;">Věk. skupina</th>
-					<th style="padding:8px;text-align:left;">Skupinky</th>
-				</tr>
-			</thead>
-			<tbody>${rows}</tbody>
-		</table>`;
+		participantsCache = await res.json();
+		renderParticipantsTable(participantsCache);
 	} catch (error) {
 		container.innerHTML =
 			'<p style="color:#dc3545;text-align:center;padding:20px;">Chyba při načítání.</p>';
@@ -1535,7 +1733,7 @@ async function loadParticipants() {
 
 async function openParticipantDetail(participantId) {
 	document.getElementById("participant-modal-title").textContent =
-		"Detail maminky";
+		"Detail dítěte";
 	document.getElementById("participant-modal-body").innerHTML =
 		'<p style="color:#aaa;">Načítám…</p>';
 	document.getElementById("participant-modal").style.display = "flex";

@@ -400,7 +400,7 @@ test.describe("REQ-5/6: Transfer participant between skupinky", () => {
 
 		// Select Beta in transfer dropdown → confirmation dialog first
 		const transferSelect = alfaCard.locator("select.transfer-select");
-		await transferSelect.selectOption({ label: "Skupinka Beta" });
+		await transferSelect.selectOption({ value: courseBeta.id });
 
 		await page.waitForSelector("#info-modal", { state: "visible" });
 		await page
@@ -437,7 +437,7 @@ test.describe("REQ-5/6: Transfer participant between skupinky", () => {
 		await alfaCard.locator('[onclick*="toggleMembersList"]').click();
 
 		const transferSelect = alfaCard.locator("select.transfer-select");
-		await transferSelect.selectOption({ label: "Skupinka Beta" });
+		await transferSelect.selectOption({ value: courseBeta.id });
 
 		// Confirmation dialog
 		await page.waitForSelector("#info-modal", { state: "visible" });
@@ -534,7 +534,7 @@ test.describe("REQ-5/6: Transfer participant between skupinky", () => {
 		await c1Card.locator('[onclick*="toggleMembersList"]').click();
 
 		const transferSelect = c1Card.locator("select.transfer-select");
-		await transferSelect.selectOption({ label: "Match Beta" });
+		await transferSelect.selectOption({ value: c2.id });
 
 		// Confirm dialog appears (all transfers require confirm)
 		await page.waitForSelector("#info-modal", { state: "visible" });

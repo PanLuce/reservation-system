@@ -324,7 +324,7 @@ app.get("/api/test-accounts", (_req, res) => {
 			role: "admin",
 		},
 		{
-			label: "Přihlásit jako maminka",
+			label: "Přihlásit jako rodič",
 			email: process.env.PARTICIPANT_EMAIL_SEED ?? DEFAULT_PARTICIPANT_EMAIL,
 			password:
 				process.env.PARTICIPANT_PASSWORD_SEED ?? DEFAULT_PARTICIPANT_PASSWORD,

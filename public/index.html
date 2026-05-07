@@ -24,8 +24,8 @@
         <nav class="tabs">
             <button type="button" class="tab active" data-tab="lessons">📅 Lekce</button>
             <button type="button" class="tab admin-only" data-tab="courses">🎯 Skupinky</button>
-            <button type="button" class="tab admin-only" data-tab="excel">📊 Import maminek ze souboru</button>
-            <button type="button" class="tab admin-only" data-tab="participants">📋 Maminky</button>
+            <button type="button" class="tab admin-only" data-tab="excel">📊 Import dětí ze souboru</button>
+            <button type="button" class="tab admin-only" data-tab="participants">📋 Děti</button>
             <button type="button" class="tab participant-only hidden" data-tab="my-reservations">📋 Moje rezervace</button>
         </nav>
 
@@ -109,7 +109,7 @@
         <div id="add-mom-modal" class="day-modal-overlay" onclick="closeAddMomModal(event)" style="display:none;">
             <div class="day-modal">
                 <div class="day-modal-header">
-                    <h3>Přidat maminku do skupinky</h3>
+                    <h3>Přidat dítě do skupinky</h3>
                     <button type="button" class="day-modal-close" onclick="closeAddMomModalDirect()">✕</button>
                 </div>
                 <div class="day-modal-body">
@@ -243,10 +243,10 @@
                 <div id="ods-commit-results"></div>
             </div>
         </div>
-        <!-- Maminky Tab (admin-only) -->
+        <!-- Děti Tab (admin-only) -->
         <div class="tab-content" id="participants">
             <div class="section-header">
-                <h2>Maminky (Účastníci)</h2>
+                <h2>Děti (Účastníci)</h2>
             </div>
             <div id="participants-list" class="form-card"></div>
         </div>
@@ -256,10 +256,43 @@
     <div id="participant-modal" class="day-modal-overlay" onclick="closeParticipantModalOnBackdrop(event)" style="display:none;">
         <div class="day-modal">
             <div class="day-modal-header">
-                <h3 id="participant-modal-title">Detail maminky</h3>
+                <h3 id="participant-modal-title">Detail dítěte</h3>
                 <button type="button" class="day-modal-close" onclick="closeParticipantModal()">✕</button>
             </div>
             <div id="participant-modal-body" class="day-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Edit Lesson Modal -->
+    <div id="edit-lesson-modal" class="day-modal-overlay" onclick="closeEditLessonModalOnBackdrop(event)" style="display:none;">
+        <div class="day-modal">
+            <div class="day-modal-header">
+                <h3>Upravit lekci</h3>
+                <button type="button" class="day-modal-close" onclick="closeEditLessonModal()">✕</button>
+            </div>
+            <div class="day-modal-body">
+                <form id="edit-lesson-form" onsubmit="submitEditLesson(event)">
+                    <input type="hidden" id="edit-lesson-id">
+                    <div class="form-group">
+                        <label>Název lekce:</label>
+                        <input type="text" id="edit-lesson-title" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Čas:</label>
+                            <input type="time" id="edit-lesson-time" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Kapacita:</label>
+                            <input type="number" id="edit-lesson-capacity" min="1" required>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Uložit</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeEditLessonModal()">Zrušit</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 

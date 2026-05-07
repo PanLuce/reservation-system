@@ -135,7 +135,7 @@ test.describe("REQ-7: Maminky tab has per-skupinka transfer dropdown", () => {
 			.locator("#participants-list tr")
 			.filter({ hasText: "Anička Testová" });
 		const transferSelect = participantRow.locator("select.transfer-select");
-		await transferSelect.selectOption({ label: "Skupinka Beta" });
+		await transferSelect.selectOption({ value: courseBeta.id });
 
 		// Confirmation modal first
 		await page.waitForSelector("#info-modal", { state: "visible" });
@@ -166,7 +166,7 @@ test.describe("REQ-7: Maminky tab has per-skupinka transfer dropdown", () => {
 			.locator("#participants-list tr")
 			.filter({ hasText: "Anička Testová" });
 		const transferSelect = participantRow.locator("select.transfer-select");
-		await transferSelect.selectOption({ label: "Skupinka Beta" });
+		await transferSelect.selectOption({ value: courseBeta.id });
 
 		// Confirmation modal
 		await page.waitForSelector("#info-modal", { state: "visible" });
