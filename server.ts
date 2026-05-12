@@ -108,7 +108,7 @@ try {
 
 const app = express();
 
-// Trust first proxy (Railway reverse proxy) — required for secure cookies behind proxy
+// Trust first proxy (Render reverse proxy) — required for secure cookies behind proxy
 app.set("trust proxy", 1);
 
 // Middleware

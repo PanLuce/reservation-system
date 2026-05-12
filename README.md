@@ -112,7 +112,7 @@ reservation-system/
 - Migrated from better-sqlite3 to @libsql/client for Turso compatibility
 - Local development uses file-based SQLite via libsql
 - Production uses remote Turso database
-- Deployed on Railway
+- Deployed on Render.com (CI via GitHub Actions)
 
 ---
 

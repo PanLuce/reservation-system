@@ -1,213 +1,89 @@
 # Deployment Guide
 
-## Quick Deploy to Vercel (Recommended - FREE!)
+## Overview
 
-Vercel offers free hosting perfect for this application.
+The app runs on **Render.com** (free tier, frankfurt region, Node 20) with **Turso** as the remote database. Deployments are gated by **GitHub Actions CI** — code only reaches Render after typecheck, lint, and the full Playwright test suite pass.
 
-### Prerequisites
-- GitHub account
-- Vercel account (free, sign up at [vercel.com](https://vercel.com))
-
-### Step 1: Push to GitHub
-
-If you haven't already:
-
-```bash
-# Initialize git repository (if not done)
-git init
-
-# Add remote repository
-git remote add origin https://github.com/YOUR_USERNAME/reservation-system.git
-
-# Push code
-git add -A
-git commit -m "Prepare for deployment"
-git push -u origin main
-```
-
-### Step 2: Deploy to Vercel
-
-1. **Go to [vercel.com](https://vercel.com)** and sign in
-2. **Click "Add New Project"**
-3. **Import your GitHub repository**
-   - Connect your GitHub account if not already connected
-   - Select the `reservation-system` repository
-   - Click "Import"
-
-4. **Configure Build Settings** (Vercel should auto-detect these)
-   - Framework Preset: Other
-   - Build Command: `npm run build` (or leave empty)
-   - Output Directory: `.` (current directory)
-   - Install Command: `npm install`
-
-5. **Add Environment Variables**
-   Click "Environment Variables" and add the required variables listed in the
-   [Required environment variables](#required-environment-variables) section below.
-
-   To generate SESSION_SECRET:
-   ```bash
-   openssl rand -base64 32
-   ```
-   Or use: https://randomkeygen.com/
-
-6. **Click "Deploy"**
-
-7. **Wait for deployment** (usually 1-2 minutes)
-
-8. **Get your URL**
-   - Will be something like: `https://reservation-system-abc123.vercel.app`
-   - This is your production URL!
-
-### Step 3: Configure Custom Domain (Optional)
-
-If you want `reservations.centrumrubacek.cz`:
-
-1. **In Vercel Dashboard**
-   - Go to Project Settings
-   - Click "Domains"
-   - Add `reservations.centrumrubacek.cz`
-
-2. **Update DNS** (at your domain registrar)
-   - Add CNAME record:
-     - Name: `reservations`
-     - Value: `cname.vercel-dns.com`
-   - TTL: 3600 (or default)
-
-3. **Wait for DNS propagation** (5-30 minutes)
-
-4. **Vercel will automatically provision SSL certificate**
-
-### Step 4: Test Your Deployment
-
-1. Open your Vercel URL in a browser
-2. Should see the login page
-3. Login with admin@centrumrubacek.cz / admin123
-4. Test creating a lesson
-5. Test registration
-
-### Step 5: Update WordPress
-
-1. Go to your WordPress admin panel
-2. Edit the page where you want the reservation system
-3. Add Custom HTML block
-4. Paste:
-
-```html
-<iframe
-    src="https://YOUR-VERCEL-URL.vercel.app"
-    width="100%"
-    height="800px"
-    frameborder="0"
-    style="border: none; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);"
-    allow="clipboard-write"
-    loading="lazy"
-></iframe>
-```
-
-Replace `YOUR-VERCEL-URL.vercel.app` with your actual Vercel URL.
-
-5. **Publish** the page
-6. **Test** - Visit the page and verify everything works!
-
-## Automatic Deployments
-
-Vercel automatically redeploys when you push to GitHub:
-
-```bash
-# Make changes
-git add -A
-git commit -m "Update feature"
-git push
-
-# Vercel automatically deploys!
-```
-
-You'll get a notification when deployment is complete.
-
-## Monitoring
-
-- **Vercel Dashboard**: See deployment logs, errors, analytics
-- **Email Notifications**: Get notified of failed deployments
-- **Logs**: Check server logs in Vercel dashboard
+---
 
 ## Required environment variables
 
-The following environment variables must be set on your hosting provider
-(Railway, Vercel, Render, etc.) for the app to work correctly.
+Set these in the Render dashboard (service → Environment):
 
 | Variable | Required | Description |
 |---|---|---|
 | `NODE_ENV` | yes | Set to `production` |
 | `SESSION_SECRET` | yes | Random string for signing session cookies (`openssl rand -base64 32`) |
-| `ALLOWED_ORIGINS` | yes | Comma-separated list of allowed CORS origins, e.g. `https://centrumrubacek.cz` |
+| `ALLOWED_ORIGINS` | yes | Comma-separated allowed CORS origins, e.g. `https://centrumrubacek.cz,https://reservations.centrumrubacek.cz` |
 | `TURSO_DATABASE_URL` | yes | Turso database URL, e.g. `libsql://your-db.turso.io` |
 | `TURSO_AUTH_TOKEN` | yes | Turso auth token |
 | `ADMIN_EMAIL_SEED` | yes | Email for the seeded admin account, e.g. `admin@centrumrubacek.cz` |
 | `ADMIN_PASSWORD_SEED` | yes | Password for the seeded admin account |
 | `PARTICIPANT_EMAIL_SEED` | yes | Email for the seeded demo participant, e.g. `maminka@test.cz` |
 | `PARTICIPANT_PASSWORD_SEED` | yes | Password for the seeded demo participant |
-| `ENABLE_QUICK_LOGIN` | optional | Set to `true` to show one-click login buttons for test accounts on the login page. Keep `false` (or unset) for real production. |
+| `ENABLE_QUICK_LOGIN` | optional | Set to `true` to show one-click login buttons. Keep unset in real production. |
+| `SMTP_HOST` | optional | SMTP server hostname for email sending |
+| `SMTP_PORT` | optional | SMTP server port (e.g. `587`) |
+| `SMTP_USER` | optional | SMTP username |
+| `SMTP_PASS` | optional | SMTP password |
+| `ADMIN_EMAIL` | optional | Admin email address for notifications |
+| `FROM_EMAIL` | optional | Sender address for outgoing emails |
+| `LOG_LEVEL` | optional | Winston log level, defaults to `info` in production |
 
-> **Note:** If `ADMIN_EMAIL_SEED`/`ADMIN_PASSWORD_SEED` or
-> `PARTICIPANT_EMAIL_SEED`/`PARTICIPANT_PASSWORD_SEED` are missing, the
-> app will log a warning on startup and skip the corresponding seed.
-> Without these env vars set, the corresponding test accounts will not
-> exist and login will fail.
-
----
-
-## Troubleshooting
-
-### Issue: "Cannot find module"
-**Solution**: Ensure all dependencies are in `package.json`
-
-### Issue: Database resets on each deployment
-**Solution**: This is expected with SQLite. For production, consider:
-- Using Vercel Postgres (free tier available)
-- Or keep SQLite (data resets are fine for development)
-
-### Issue: CORS errors
-**Solution**:
-- Check ALLOWED_ORIGINS environment variable
-- Ensure it includes your WordPress domain
-- Redeploy after changing
-
-### Issue: Login doesn't work
-**Solution**:
-- Ensure SESSION_SECRET is set
-- Check that cookies are enabled
-- Verify HTTPS is working
-
-## Alternative: Railway.app
-
-If you prefer Railway:
-
-1. Go to [railway.app](https://railway.app)
-2. Click "Start a New Project"
-3. Choose "Deploy from GitHub"
-4. Select your repository
-5. Add environment variables (same as Vercel)
-6. Deploy!
-
-## Alternative: Render.com
-
-1. Go to [render.com](https://render.com)
-2. Click "New +" → "Web Service"
-3. Connect GitHub repository
-4. Configure:
-   - Build Command: `npm install`
-   - Start Command: `npm start`
-5. Add environment variables
-6. Deploy!
+> If `ADMIN_EMAIL_SEED`/`ADMIN_PASSWORD_SEED` or `PARTICIPANT_EMAIL_SEED`/`PARTICIPANT_PASSWORD_SEED` are missing, the app logs a warning and skips that seed — the corresponding account won't exist and login will fail.
 
 ---
 
-**That's it!** Your reservation system is now live and can be embedded in WordPress.
+## Initial Render service setup
 
-## Support
+The repo contains `render.yaml` — Render can use it as a Blueprint or you can configure manually:
 
-Having issues? Check:
-- Vercel deployment logs
-- Browser console (F12)
-- Server logs in Vercel dashboard
-- Test the URL directly (outside iframe) first
+1. Render dashboard → **New +** → **Web Service** → connect GitHub repository
+2. Settings:
+   - **Region**: Frankfurt (EU Central)
+   - **Runtime**: Node
+   - **Node version**: 20
+   - **Build Command**: `npm ci --include=dev`
+   - **Start Command**: `npm start`
+   - **Health Check Path**: `/health`
+   - **Auto-Deploy**: Off (CI controls deploys via deploy hook)
+3. Add all required environment variables from the table above.
+4. Copy the **Deploy Hook URL** from Settings → Deploy Hooks — you'll need it for GitHub Actions.
+
+---
+
+## CI/CD flow
+
+Push to `main` → GitHub Actions runs three parallel jobs:
+
+1. **typecheck** — `tsc --noEmit`
+2. **lint** — `biome check .`
+3. **test** — Playwright suite (Chromium, ~291 tests)
+
+If all three pass, a fourth **deploy** job fires the Render deploy hook via `curl -X POST "$RENDER_DEPLOY_HOOK_URL"`.
+
+**Required GitHub secret**: `RENDER_DEPLOY_HOOK_URL` — set in repo Settings → Secrets → Actions.
+
+---
+
+## Custom domain
+
+`reservations.centrumrubacek.cz` is hosted at Gransy / subreg.cz DNS. To point it at Render:
+
+1. Render → service → Settings → Custom Domains → add `reservations.centrumrubacek.cz` → copy the `<service>.onrender.com` CNAME target.
+2. Gransy DNS panel → edit the `reservations` CNAME record → set target to `<service>.onrender.com`.
+3. DNS propagates within ~15 min (TTL is 900s). Render auto-issues a Let's Encrypt cert once DNS resolves.
+4. Verify: `dig +short reservations.centrumrubacek.cz CNAME` returns the onrender.com host; `curl -I https://reservations.centrumrubacek.cz/health` returns 200.
+5. Ensure `ALLOWED_ORIGINS` on Render includes `https://reservations.centrumrubacek.cz`.
+
+---
+
+## Cold-start note
+
+Render free tier spins down after 15 min of inactivity. The first request after idle takes 30–60 s. If this becomes a problem for users, upgrade to Render Starter ($7/mo) — no code change needed.
+
+---
+
+## Rollback
+
+Render dashboard → service → **Deploys** tab → click any prior successful deploy → **Rollback to this deploy**.

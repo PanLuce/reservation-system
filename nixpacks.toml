@@ -1,5 +1,0 @@
-[phases.install]
-cmds = ["npm ci --include=dev"]
-
-[start]
-cmd = "npm start"
