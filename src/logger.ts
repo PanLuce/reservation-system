@@ -1,9 +1,4 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import winston from "winston";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const isProduction = process.env.NODE_ENV === "production";
 const logLevel = process.env.LOG_LEVEL || (isProduction ? "info" : "debug");
@@ -28,35 +23,12 @@ const developmentFormat = winston.format.combine(
 	}),
 );
 
-// Create logs directory if it doesn't exist
-const logsDir = path.join(__dirname, "..", "logs");
-
-// Configure transports
+// Configure transports — stdout only (Render/Railway capture stdout automatically)
 const transports: winston.transport[] = [
-	// Console output
 	new winston.transports.Console({
 		format: isProduction ? productionFormat : developmentFormat,
 	}),
 ];
-
-// In production, also log to files
-if (isProduction) {
-	transports.push(
-		// Error logs - separate file
-		new winston.transports.File({
-			filename: path.join(logsDir, "error.log"),
-			level: "error",
-			maxsize: 5242880, // 5MB
-			maxFiles: 5,
-		}),
-		// Combined logs - all levels
-		new winston.transports.File({
-			filename: path.join(logsDir, "combined.log"),
-			maxsize: 5242880, // 5MB
-			maxFiles: 5,
-		}),
-	);
-}
 
 // Create the logger instance
 const logger = winston.createLogger({

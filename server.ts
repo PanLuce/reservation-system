@@ -1264,20 +1264,24 @@ app.post(
 		if (!req.file) {
 			return res.status(400).json({ error: "No file uploaded" });
 		}
-		const buffer = fs.readFileSync(req.file.path);
-		const parsed = parseOdsWorkbook(buffer);
+		try {
+			const buffer = fs.readFileSync(req.file.path);
+			const parsed = parseOdsWorkbook(buffer);
 
-		const sheets = parsed.sheets.map((s) => ({
-			sheetName: s.sheetName,
-			detectedLocation: s.detectedLocation,
-			candidates: s.blocks.flatMap((b) =>
-				b.rows
-					.filter((r) => r.email)
-					.map((r) => ({ kidName: r.name || r.email, parentEmail: r.email })),
-			),
-		}));
+			const sheets = parsed.sheets.map((s) => ({
+				sheetName: s.sheetName,
+				detectedLocation: s.detectedLocation,
+				candidates: s.blocks.flatMap((b) =>
+					b.rows
+						.filter((r) => r.email)
+						.map((r) => ({ kidName: r.name || r.email, parentEmail: r.email })),
+				),
+			}));
 
-		res.json({ sheets });
+			res.json({ sheets });
+		} finally {
+			fs.unlink(req.file.path, () => {});
+		}
 	},
 );
 

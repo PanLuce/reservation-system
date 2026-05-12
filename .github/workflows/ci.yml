@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci --include=dev
+      - run: npm run typecheck
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci --include=dev
+      - run: npm run lint
+
+  test:
+    name: Playwright tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      SESSION_SECRET: ci-test-secret
+      TURSO_DATABASE_URL: file:./data/test.db
+      ENABLE_QUICK_LOGIN: "true"
+      ADMIN_EMAIL_SEED: admin@centrumrubacek.cz
+      ADMIN_PASSWORD_SEED: admin123
+      PARTICIPANT_EMAIL_SEED: maminka@test.cz
+      PARTICIPANT_PASSWORD_SEED: test123
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci --include=dev
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+
+  deploy:
+    name: Deploy to Render
+    needs: [typecheck, lint, test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hook
+        run: curl -fsSL -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
