@@ -5,6 +5,9 @@
 try {
 	await import("./server.ts");
 } catch (error) {
-	console.error("FATAL: server.ts failed to load:", error);
+	process.stderr.write(`FATAL: server.ts failed to load: ${error}\n`);
+	if (error instanceof Error && error.stack) {
+		process.stderr.write(error.stack + "\n");
+	}
 	process.exit(1);
 }

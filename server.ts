@@ -56,11 +56,11 @@ declare global {
 
 // Register global error handlers FIRST — before any code that might crash
 process.on("uncaughtException", (error: Error) => {
-	console.error("FATAL uncaughtException:", error);
+	process.stderr.write(`FATAL uncaughtException: ${error}\n${error.stack}\n`);
 	process.exit(1);
 });
 process.on("unhandledRejection", (reason: unknown) => {
-	console.error("FATAL unhandledRejection:", reason);
+	process.stderr.write(`FATAL unhandledRejection: ${reason}\n`);
 	process.exit(1);
 });
 
@@ -77,14 +77,14 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 // Validate required environment variables in production
 if (isProduction) {
 	if (!process.env.SESSION_SECRET) {
-		logger.error(
-			"SESSION_SECRET environment variable is required in production",
+		process.stderr.write(
+			"FATAL: SESSION_SECRET environment variable is required in production\n",
 		);
 		process.exit(1);
 	}
 	if (!process.env.ALLOWED_ORIGINS) {
-		logger.warn(
-			"ALLOWED_ORIGINS not set, using default: https://centrumrubacek.cz",
+		process.stderr.write(
+			"WARN: ALLOWED_ORIGINS not set, using default: https://centrumrubacek.cz\n",
 		);
 	}
 }
