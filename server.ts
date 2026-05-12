@@ -75,7 +75,6 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 	: ["https://centrumrubacek.cz"];
 
 // Validate required environment variables in production
-process.stderr.write("[startup] env vars check\n");
 if (isProduction) {
 	if (!process.env.SESSION_SECRET) {
 		process.stderr.write(
@@ -97,12 +96,9 @@ if (!fs.existsSync(dataDir)) {
 }
 
 // Initialize database (async)
-process.stderr.write("[startup] initializing database\n");
 try {
 	await initializeDatabase();
-	process.stderr.write("[startup] database initialized\n");
 	await seedSampleData();
-	process.stderr.write("[startup] seed done\n");
 } catch (error) {
 	process.stderr.write(
 		`FATAL: Database initialization failed: ${error}\n${error instanceof Error ? error.stack : ""}\n`,
@@ -1413,9 +1409,7 @@ app.use(
 );
 
 // Start server
-process.stderr.write(`[startup] binding to port ${PORT}\n`);
 const server = app.listen(PORT, () => {
-	process.stderr.write(`[startup] server listening on port ${PORT}\n`);
 	logger.info("Reservation System started", {
 		port: PORT,
 		environment: isProduction ? "production" : "development",
