@@ -14,7 +14,7 @@ Set these in the Render dashboard (service → Environment):
 |---|---|---|
 | `NODE_ENV` | yes | Set to `production` |
 | `SESSION_SECRET` | yes | Random string for signing session cookies (`openssl rand -base64 32`) |
-| `ALLOWED_ORIGINS` | yes | Comma-separated allowed CORS origins, e.g. `https://centrumrubacek.cz,https://reservations.centrumrubacek.cz` |
+| `ALLOWED_ORIGINS` | yes | Comma-separated allowed CORS origins, e.g. `https://centrumrubacek.cz` |
 | `TURSO_DATABASE_URL` | yes | Turso database URL, e.g. `libsql://your-db.turso.io` |
 | `TURSO_AUTH_TOKEN` | yes | Turso auth token |
 | `ADMIN_EMAIL_SEED` | yes | Email for the seeded admin account, e.g. `admin@centrumrubacek.cz` |
@@ -63,18 +63,6 @@ Push to `main` → GitHub Actions runs three parallel jobs:
 If all three pass, a fourth **deploy** job fires the Render deploy hook via `curl -X POST "$RENDER_DEPLOY_HOOK_URL"`.
 
 **Required GitHub secret**: `RENDER_DEPLOY_HOOK_URL` — set in repo Settings → Secrets → Actions.
-
----
-
-## Custom domain
-
-`reservations.centrumrubacek.cz` is hosted at Gransy / subreg.cz DNS. To point it at Render:
-
-1. Render → service → Settings → Custom Domains → add `reservations.centrumrubacek.cz` → copy the `<service>.onrender.com` CNAME target.
-2. Gransy DNS panel → edit the `reservations` CNAME record → set target to `<service>.onrender.com`.
-3. DNS propagates within ~15 min (TTL is 900s). Render auto-issues a Let's Encrypt cert once DNS resolves.
-4. Verify: `dig +short reservations.centrumrubacek.cz CNAME` returns the onrender.com host; `curl -I https://reservations.centrumrubacek.cz/health` returns 200.
-5. Ensure `ALLOWED_ORIGINS` on Render includes `https://reservations.centrumrubacek.cz`.
 
 ---
 

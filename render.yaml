@@ -17,7 +17,7 @@ services:
       # TURSO_DATABASE_URL    - Turso database URL (libsql://...)
       # TURSO_AUTH_TOKEN      - Turso auth token
       # SESSION_SECRET        - strong random string (required in production)
-      # ALLOWED_ORIGINS       - comma-separated, e.g. https://centrumrubacek.cz,https://reservations.centrumrubacek.cz
+      # ALLOWED_ORIGINS       - comma-separated, e.g. https://centrumrubacek.cz
       # ADMIN_EMAIL_SEED      - admin account email for seed
       # ADMIN_PASSWORD_SEED   - admin account password for seed
       # PARTICIPANT_EMAIL_SEED
