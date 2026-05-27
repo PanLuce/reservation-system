@@ -1,5 +1,9 @@
 const API_URL = `${window.location.origin}/api`;
 
+function localDateString(date = new Date()) {
+	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 // Current user state
 let currentUser = null;
 
@@ -390,7 +394,7 @@ function renderDayLessons(lessons, dateStr) {
 		return '<p style="color:#999;text-align:center;padding:20px;">Žádné lekce tento den.</p>';
 	}
 	const isAdmin = currentUser && currentUser.role === "admin";
-	const todayStr = new Date().toISOString().slice(0, 10);
+	const todayStr = localDateString();
 	const canCancel = dateStr > todayStr;
 
 	return lessons
@@ -1165,7 +1169,7 @@ async function loadMyLessons(participantId) {
 		const registrations = await res.json();
 
 		const container = document.getElementById("my-lessons-list");
-		const now = new Date().toISOString().slice(0, 10);
+		const now = localDateString();
 
 		const upcoming = registrations.filter(
 			(r) => r.lessonDate >= now && r.status !== "cancelled",
