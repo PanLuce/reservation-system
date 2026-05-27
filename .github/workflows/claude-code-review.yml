@@ -1,0 +1,77 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  review:
+    if: >
+      (github.event_name == 'pull_request' &&
+        github.event.pull_request.user.login == 'PanLuce') ||
+      (github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request != null &&
+        github.event.comment.user.login == 'PanLuce' &&
+        contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' &&
+        github.event.comment.user.login == 'PanLuce' &&
+        contains(github.event.comment.body, '@claude'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code review
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--model claude-opus-4-7"
+          custom_instructions: |
+            You are reviewing a pull request authored by @PanLuce in the
+            reservation-system repo (Centrum Rubacek booking app). Apply, in
+            this order of priority:
+
+            1. Project rules from the root CLAUDE.md. Pay special attention to:
+                 - Biome is the only linter/formatter (`npm run lint`,
+                   `npm run lint:fix`). No ESLint/Prettier configs to consult.
+                 - Tests are Playwright end-to-end only (`tests/`, `smoke/`).
+                   There is no Vitest/Jest unit-test layer.
+                 - Use existing npm scripts (`npm test`, `npm run build`,
+                   `npm run typecheck`, `npm run lint:fix`); do not invent new
+                   ways to run project tasks.
+                 - "Do not add comments to the code" — code should be
+                   self-documenting; flag commented-out code and obvious
+                   what-comments.
+                 - Czech-language UI strings are intentional. Do not propose
+                   translating them to English.
+            2. Clean code: SOLID, intention-revealing names, small functions
+               (<20 lines, <4 params, no flag args), no dead code, no
+               commented-out code, error handling via exceptions not return
+               codes, no `any` types in TypeScript.
+            3. Bugs and edge cases: null/undefined handling, off-by-one,
+               async race conditions, incorrect business logic (booking,
+               capacity, dates, timezones), missing error paths, SQL
+               injection / Turso parameterization, auth/session correctness.
+            4. Test quality (Playwright): AAA structure, FIRST principles,
+               behavior over implementation, no redundant tests across levels.
+               Flag tests that depend on execution order or shared mutable state.
+
+            Read-only review. Do NOT run tests, install dependencies, or
+            modify files. Post inline comments on specific lines for each
+            finding, then a top-level summary comment that:
+              - lists must-fix issues (correctness, project-rule violations)
+              - lists nice-to-haves separately
+              - explicitly notes if the PR looks clean
+
+            Be direct. Skip flattery. If a finding is a judgment call, say so.
