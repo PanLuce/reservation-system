@@ -31,6 +31,7 @@ import {
 	seedSampleData,
 } from "./src/database.js";
 import { createEmailService } from "./src/email-factory.js";
+import { isQuickLoginEnabled } from "./src/env-flags.js";
 import { createLesson } from "./src/lesson.js";
 import { logger } from "./src/logger.js";
 import { parseOdsWorkbook } from "./src/ods-loader.js";
@@ -308,9 +309,9 @@ async function requireParticipantScope(
 
 // API Routes
 
-// Test accounts — always enabled until we go live (gate with ENABLE_QUICK_LOGIN=false to hide)
+// Test accounts quick-login — opt-in, served only when ENABLE_QUICK_LOGIN=true
 app.get("/api/test-accounts", (_req, res) => {
-	if (process.env.ENABLE_QUICK_LOGIN === "false") {
+	if (!isQuickLoginEnabled()) {
 		return res.status(404).json({ error: "Not available" });
 	}
 	const accounts: {

@@ -23,6 +23,11 @@ export default defineConfig({
 		timeout: 120 * 1000,
 		reuseExistingServer: !process.env.CI,
 		env: {
+			// Explicit NODE_ENV so a production value exported in the developer's
+			// shell cannot disable the seeding the specs depend on.
+			NODE_ENV: "test",
+			// Quick-login endpoint is opt-in; specs cover its enabled path.
+			ENABLE_QUICK_LOGIN: "true",
 			ADMIN_EMAIL_SEED: "admin@centrumrubacek.cz",
 			ADMIN_PASSWORD_SEED: "admin123",
 			PARTICIPANT_EMAIL_SEED: "maminka@test.cz",

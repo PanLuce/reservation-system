@@ -1,11 +1,36 @@
 import { expect, test } from "@playwright/test";
 import { initializeDatabase, resetDatabaseForTests } from "../src/database.js";
+import { isQuickLoginEnabled } from "../src/env-flags.js";
 
 const BASE = "http://localhost:3000";
 
-// Endpoint is always-on by default (hidden only when ENABLE_QUICK_LOGIN=false).
-// webServer in playwright.config.ts does NOT set ENABLE_QUICK_LOGIN=false,
-// so these tests run against the live default behaviour.
+// Endpoint is opt-in: served only when ENABLE_QUICK_LOGIN=true.
+// webServer in playwright.config.ts sets ENABLE_QUICK_LOGIN=true, so the
+// E2E tests below cover the enabled path; the disabled path is covered by
+// the unit tests on the gate helper (one shared webServer cannot run both).
+
+test.describe("isQuickLoginEnabled", () => {
+	test("is disabled when the flag is unset", () => {
+		expect(isQuickLoginEnabled(undefined)).toBe(false);
+	});
+
+	test("is disabled for empty string", () => {
+		expect(isQuickLoginEnabled("")).toBe(false);
+	});
+
+	test("is disabled for 'false'", () => {
+		expect(isQuickLoginEnabled("false")).toBe(false);
+	});
+
+	test("is disabled for near-miss values like '1' and 'TRUE'", () => {
+		expect(isQuickLoginEnabled("1")).toBe(false);
+		expect(isQuickLoginEnabled("TRUE")).toBe(false);
+	});
+
+	test("is enabled only for exact 'true'", () => {
+		expect(isQuickLoginEnabled("true")).toBe(true);
+	});
+});
 
 test.describe
 	.serial("GET /api/test-accounts", () => {
@@ -18,7 +43,7 @@ test.describe
 			await resetDatabaseForTests();
 		});
 
-		test("always returns both accounts by default", async () => {
+		test("returns both accounts when quick login is enabled", async () => {
 			const res = await fetch(`${BASE}/api/test-accounts`);
 			expect(res.status).toBe(200);
 			const data = (await res.json()) as {
