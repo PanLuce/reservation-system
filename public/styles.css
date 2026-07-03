@@ -390,22 +390,22 @@ header p {
 }
 
 .kurz-section {
-    margin-bottom: 32px;
+	margin-bottom: 32px;
 }
 
 .kurz-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--color-border-light);
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 14px;
+	padding-bottom: 8px;
+	border-bottom: 2px solid var(--color-border-light);
 }
 
 .kurz-header .kurz-actions {
-    margin-left: auto;
-    display: flex;
-    gap: 8px;
+	margin-left: auto;
+	display: flex;
+	gap: 8px;
 }
 
 .field-error {
