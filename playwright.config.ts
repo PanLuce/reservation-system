@@ -1,5 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Force a dedicated test database no matter what the shell has exported —
+// specs import src/database.js directly in this process and would otherwise
+// wipe the dev DB (or production, if a Turso URL leaked into the shell).
+const TEST_DATABASE_URL = "file:./data/test.db";
+process.env.TURSO_DATABASE_URL = TEST_DATABASE_URL;
+delete process.env.TURSO_AUTH_TOKEN;
+
 export default defineConfig({
 	testDir: "./tests",
 	fullyParallel: true,
@@ -23,6 +30,8 @@ export default defineConfig({
 		timeout: 120 * 1000,
 		reuseExistingServer: !process.env.CI,
 		env: {
+			TURSO_DATABASE_URL: TEST_DATABASE_URL,
+			TURSO_AUTH_TOKEN: "",
 			// Explicit NODE_ENV so a production value exported in the developer's
 			// shell cannot disable the seeding the specs depend on.
 			NODE_ENV: "test",

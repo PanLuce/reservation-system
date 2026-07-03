@@ -256,7 +256,16 @@ async function migrateDropParticipantCourseId() {
 	}
 }
 
+export function assertDatabaseIsResettable(databaseUrl: string = url) {
+	if (!databaseUrl.startsWith("file:")) {
+		throw new Error(
+			`Refusing to reset non-local database "${databaseUrl}" — resetDatabaseForTests wipes every table and must never run against a remote (dev/production) database`,
+		);
+	}
+}
+
 export async function resetDatabaseForTests() {
+	assertDatabaseIsResettable();
 	await client.batch(
 		[
 			{ sql: "DELETE FROM sessions", args: [] },
