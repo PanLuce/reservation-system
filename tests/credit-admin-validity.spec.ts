@@ -14,6 +14,16 @@ import { createParticipant } from "../src/participant.js";
 
 const BASE = "http://localhost:3000";
 
+// The credits endpoint only returns credits with expiresAt in the future,
+// and a fresh credit expires ~3 months out (see computeExpiry in src/credit.ts).
+// Dates must therefore be computed relative to "now" — hardcoded dates turn
+// this test into a time bomb once real time passes them.
+function isoDateMonthsFromNow(months: number): string {
+	const d = new Date();
+	d.setMonth(d.getMonth() + months);
+	return d.toISOString();
+}
+
 async function loginAs(email: string, password: string): Promise<string> {
 	const res = await fetch(`${BASE}/api/auth/login`, {
 		method: "POST",
@@ -137,7 +147,7 @@ test.describe
 				participantCookie,
 			);
 
-			const newExpiry = "2026-06-01T00:00:00.000Z";
+			const newExpiry = isoDateMonthsFromNow(1);
 			const res = await fetch(
 				`${BASE}/api/admin/participants/${participantId}/credits/${credit.id}/shorten`,
 				{
