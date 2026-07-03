@@ -338,3 +338,46 @@ test.describe("Authentication Service", () => {
 		});
 	});
 });
+
+const BASE = "http://localhost:3000";
+
+test.describe
+	.serial("POST /api/auth/register endpoint", () => {
+		test.beforeEach(async () => {
+			await initializeDatabase();
+			await resetDatabaseForTests();
+		});
+
+		test("ignores a client-supplied participantId (no self-binding)", async () => {
+			const victimParticipantId = "victim_participant_1";
+			await ParticipantDB.insert({
+				id: victimParticipantId,
+				name: "Victim Child",
+				email: "victim-child@example.com",
+				phone: "+420 000 000 000",
+				ageGroup: "6-9 měsíců (do lezení)",
+			});
+
+			const email = "attacker@example.com";
+			const res = await fetch(`${BASE}/api/auth/register`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					email,
+					password: "password123",
+					name: "Attacker",
+					participantId: victimParticipantId,
+				}),
+			});
+
+			expect(res.status).toBe(201);
+			const body = (await res.json()) as { user: { participantId?: string } };
+			expect(body.user.participantId).toBeUndefined();
+
+			const created = (await UserDB.getByEmail(email)) as Record<
+				string,
+				unknown
+			>;
+			expect(created.participantId ?? null).toBeNull();
+		});
+	});

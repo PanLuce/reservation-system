@@ -356,7 +356,7 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 app.post("/api/auth/register", async (req, res) => {
-	const { email, password, name, participantId } = req.body;
+	const { email, password, name } = req.body;
 
 	if (!email || !password || !name) {
 		return res
@@ -364,12 +364,14 @@ app.post("/api/auth/register", async (req, res) => {
 			.json({ error: "Email, password, and name required" });
 	}
 
+	// participantId is intentionally NOT read from the request body: binding a
+	// user to a participant must happen server-side (seed/admin invite), never
+	// from client input, or any caller could claim another participant's data.
 	const result = await authService.register(
 		email,
 		password,
 		name,
 		"participant",
-		participantId,
 	);
 
 	if (!result.success) {
