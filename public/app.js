@@ -411,8 +411,14 @@ function renderDayLessons(lessons, dateStr) {
 				<button class="btn btn-danger" onclick="deleteLesson('${l.id}', this)">Smazat</button>`;
 			} else if (calendarSubCandidateIds.has(l.id)) {
 				const noCredit = calendarCreditCount <= 0;
+				let subDisabled = "";
+				if (!canCancel) {
+					subDisabled = `disabled title="Nelze se přihlásit jako náhrada po půlnoci před lekcí"`;
+				} else if (noCredit) {
+					subDisabled = `disabled title="Potřebujete náhradu (aktuálně 0 kreditů)"`;
+				}
 				actions = `<button class="btn btn-primary" onclick="selfRegister('${l.id}', this)"
-				${noCredit ? `disabled title="Potřebujete náhradu (aktuálně 0 kreditů)"` : ""}>
+				${subDisabled}>
 				Přihlásit jako náhrada
 			</button>`;
 			} else {
@@ -1254,6 +1260,7 @@ async function loadSubstitutionCandidates(participantId) {
 			return;
 		}
 
+		const todayStr = localDateString();
 		container.innerHTML = lessons
 			.map(
 				(l) => `
@@ -1266,7 +1273,10 @@ async function loadSubstitutionCandidates(participantId) {
 					<div class="lesson-info-item"><strong>👥 Volná místa:</strong> ${l.capacity - l.enrolledCount}</div>
 				</div>
 				<div class="lesson-actions">
-					<button class="btn btn-primary" onclick="selfRegister('${l.id}', this)">Přihlásit jako náhrada</button>
+					<button class="btn btn-primary" onclick="selfRegister('${l.id}', this)"
+						${l.date > todayStr ? "" : "disabled title='Nelze se přihlásit jako náhrada po půlnoci před lekcí'"}>
+						Přihlásit jako náhrada
+					</button>
 				</div>
 			</div>`,
 			)

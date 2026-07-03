@@ -311,7 +311,7 @@ async function requireParticipantScope(
 
 // Test accounts quick-login — opt-in, served only when ENABLE_QUICK_LOGIN=true
 app.get("/api/test-accounts", (_req, res) => {
-	if (!isQuickLoginEnabled()) {
+	if (!isQuickLoginEnabled(process.env.ENABLE_QUICK_LOGIN)) {
 		return res.status(404).json({ error: "Not available" });
 	}
 	const accounts: {

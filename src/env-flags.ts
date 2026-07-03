@@ -1,5 +1,3 @@
-export function isQuickLoginEnabled(
-	value: string | undefined = process.env.ENABLE_QUICK_LOGIN,
-): boolean {
+export function isQuickLoginEnabled(value: string | undefined): boolean {
 	return value === "true";
 }
