@@ -58,7 +58,9 @@ export async function initializeDatabase() {
 				color TEXT NOT NULL,
 				location TEXT NOT NULL DEFAULT '',
 				description TEXT,
-				createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+                kurzId    TEXT,
+                createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (kurzId) REFERENCES kurzy (id) ON DELETE SET NULL
 			)`,
 				args: [],
 			},
@@ -199,6 +201,7 @@ export async function initializeDatabase() {
 	await migrateAgeGroups();
 	await migrateLocationToCourses();
 	await migrateDropParticipantCourseId();
+	await migrateAddKurzIdToCourses();
 
 	logger.info("Database initialized successfully");
 }
@@ -270,6 +273,24 @@ async function migrateDropParticipantCourseId() {
 	} catch {
 		// Column already dropped or not supported — nothing to do
 	}
+}
+
+async function migrateAddKurzIdToCourses() {
+	// Link courses (Skupinky) to their parent Kurz. Nullable — existing courses
+	// stay unassigned until an admin groups them. SQLite cannot add a column with
+	// an inline FK via ALTER, so the FK is enforced only on freshly created tables
+	// (see the courses DDL); the column add here is enough for existing databases.
+	try {
+		await client.execute("ALTER TABLE courses ADD COLUMN kurzId TEXT");
+	} catch {
+		// Column already exists — nothing to do
+	}
+
+	// Index creation must follow the column add: on existing databases the column
+	// does not exist during the initial CREATE batch, so indexing it there fails.
+	await client.execute(
+		"CREATE INDEX IF NOT EXISTS idx_courses_kurzId ON courses(kurzId)",
+	);
 }
 
 export function assertDatabaseIsResettable(databaseUrl: string = url) {
@@ -610,11 +631,21 @@ export const KurzDB = {
 	},
 
 	async delete(id: string) {
-		const result = await client.execute({
-			sql: "DELETE FROM kurzy WHERE id = ?",
-			args: [id],
-		});
-		return { changes: result.rowsAffected };
+		// Detach child courses first. On fresh databases the courses.kurzId FK
+		// handles this via ON DELETE SET NULL, but databases migrated with
+		// migrateAddKurzIdToCourses have a plain column without the FK, so we null
+		// it explicitly to keep behaviour identical everywhere.
+		await client.batch(
+			[
+				{
+					sql: "UPDATE courses SET kurzId = NULL WHERE kurzId = ?",
+					args: [id],
+				},
+				{ sql: "DELETE FROM kurzy WHERE id = ?", args: [id] },
+			],
+			"write",
+		);
+		return { changes: 1 };
 	},
 };
 
@@ -652,6 +683,14 @@ export const CourseDB = {
 		return result.rows[0];
 	},
 
+	async getByKurz(kurzId: string) {
+		const result = await client.execute({
+			sql: "SELECT * FROM courses WHERE kurzId = ? ORDER BY name",
+			args: [kurzId],
+		});
+		return result.rows;
+	},
+
 	async insert(course: {
 		id: string;
 		name: string;
@@ -659,9 +698,10 @@ export const CourseDB = {
 		color: string;
 		location?: string;
 		description?: string;
+		kurzId?: string;
 	}) {
 		const result = await client.execute({
-			sql: "INSERT INTO courses (id, name, ageGroup, color, location, description) VALUES (?, ?, ?, ?, ?, ?)",
+			sql: "INSERT INTO courses (id, name, ageGroup, color, location, description, kurzId) VALUES (?, ?, ?, ?, ?, ?, ?)",
 			args: [
 				course.id,
 				course.name,
@@ -669,6 +709,7 @@ export const CourseDB = {
 				course.color,
 				course.location ?? "",
 				course.description || null,
+				course.kurzId ?? null,
 			],
 		});
 		return { changes: result.rowsAffected };
@@ -682,6 +723,7 @@ export const CourseDB = {
 			color?: string;
 			location?: string;
 			description?: string;
+			kurzId?: string | null;
 		},
 	) {
 		const fields: string[] = [];
