@@ -1,10 +1,12 @@
 import { expect, test } from "@playwright/test";
 import {
+	ensureAdminUser,
 	initializeDatabase,
 	resetDatabaseForTests,
 	seedSampleData,
 	UserDB,
 } from "../src/database.js";
+import { withEnv } from "./helpers/env.js";
 
 test.describe("Admin seed account persistence", () => {
 	test.beforeEach(async () => {
@@ -54,6 +56,66 @@ test.describe("Admin seed account persistence", () => {
 		// Assert - admin should be created regardless of lesson count
 		const admin = await UserDB.getByEmail("admin@centrumrubacek.cz");
 		expect(admin).toBeDefined();
+	});
+});
+
+test.describe("Admin seed production gate", () => {
+	test.beforeEach(async () => {
+		process.env.ADMIN_EMAIL_SEED = "admin@centrumrubacek.cz";
+		process.env.ADMIN_PASSWORD_SEED = "admin123";
+		await initializeDatabase();
+		await resetDatabaseForTests();
+	});
+
+	test("production without seed env vars skips admin seeding", async () => {
+		await withEnv(
+			{
+				NODE_ENV: "production",
+				ADMIN_EMAIL_SEED: undefined,
+				ADMIN_PASSWORD_SEED: undefined,
+			},
+			async () => {
+				await client_deleteOnlyUsers();
+
+				await ensureAdminUser();
+
+				const admin = await UserDB.getByEmail("admin@centrumrubacek.cz");
+				expect(admin).toBeUndefined();
+			},
+		);
+	});
+
+	test("production with both seed env vars set seeds the admin", async () => {
+		await withEnv(
+			{
+				NODE_ENV: "production",
+				ADMIN_EMAIL_SEED: "prod-admin@example.com",
+				ADMIN_PASSWORD_SEED: "prod-secret",
+			},
+			async () => {
+				await client_deleteOnlyUsers();
+
+				await ensureAdminUser();
+
+				const admin = await UserDB.getByEmail("prod-admin@example.com");
+				expect(admin).toBeDefined();
+				expect(admin?.role).toBe("admin");
+			},
+		);
+	});
+
+	test("non-production keeps falling back to default credentials", async () => {
+		await withEnv(
+			{ ADMIN_EMAIL_SEED: undefined, ADMIN_PASSWORD_SEED: undefined },
+			async () => {
+				await client_deleteOnlyUsers();
+
+				await ensureAdminUser();
+
+				const admin = await UserDB.getByEmail("admin@centrumrubacek.cz");
+				expect(admin).toBeDefined();
+			},
+		);
 	});
 });
 

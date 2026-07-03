@@ -80,12 +80,20 @@ This document explains how to configure the reservation system for different env
 | `ADMIN_EMAIL` | No | `admin@centrumrubacek.cz` | Admin email for receiving notifications |
 | `FROM_EMAIL` | No | `reservations@centrumrubacek.cz` | From address for outgoing emails |
 
-### Admin Account
+### Seed Accounts
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `ADMIN_EMAIL_SEED` | **Yes (Production)** | - | Email for initial admin account (only used if database is empty) |
-| `ADMIN_PASSWORD_SEED` | **Yes (Production)** | - | Password for initial admin account (only used if database is empty) |
+| Variable                    | Required             | Default                             | Description                                                                                                                                                                |
+|-----------------------------|----------------------|-------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ADMIN_EMAIL_SEED`          | **Yes (Production)** | dev/test: `admin@centrumrubacek.cz` | Email for the seeded admin account. In production, seeding is **skipped with a warning** unless both `ADMIN_*_SEED` vars are set — no default admin is ever created there. |
+| `ADMIN_PASSWORD_SEED`       | **Yes (Production)** | dev/test: `admin123`                | Password for the seeded admin account. Same production rule as above.                                                                                                      |
+| `PARTICIPANT_EMAIL_SEED`    | No                   | dev/test: `maminka@test.cz`         | Email for the seeded demo participant. In production, the demo participant is seeded only when both `PARTICIPANT_*_SEED` vars are set.                                     |
+| `PARTICIPANT_PASSWORD_SEED` | No                   | dev/test: `test123`                 | Password for the seeded demo participant. Same production rule as above.                                                                                                   |
+
+### Quick Login
+
+| Variable             | Required | Default  | Description                                                                                                                                                                                   |
+|----------------------|----------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ENABLE_QUICK_LOGIN` | No       | disabled | Opt-in: set to `true` to enable `GET /api/test-accounts` and the one-click login buttons on the login page. **Never set in production** — the endpoint returns seed credentials in plaintext. |
 
 ## Security Best Practices
 
@@ -208,4 +216,3 @@ After configuring the environment:
 
 1. Read [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment instructions
 2. Read [WORDPRESS_INTEGRATION.md](./WORDPRESS_INTEGRATION.md) for WordPress setup
-3. Review [API.md](./API.md) for API documentation

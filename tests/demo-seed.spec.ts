@@ -8,6 +8,7 @@ import {
 	resetDatabaseForTests,
 	UserDB,
 } from "../src/database.js";
+import { withEnv } from "./helpers/env.js";
 
 test.describe
 	.serial("Demo participant seed", () => {
@@ -73,5 +74,38 @@ test.describe
 				user?.participantId as string,
 			);
 			expect(credits).toHaveLength(1);
+		});
+
+		test("production without seed env vars skips demo participant seeding", async () => {
+			await withEnv(
+				{
+					NODE_ENV: "production",
+					PARTICIPANT_EMAIL_SEED: undefined,
+					PARTICIPANT_PASSWORD_SEED: undefined,
+				},
+				async () => {
+					await ensureDemoParticipant();
+
+					const user = await UserDB.getByEmail("maminka@test.cz");
+					expect(user).toBeUndefined();
+				},
+			);
+		});
+
+		test("production with both seed env vars set seeds the demo participant", async () => {
+			await withEnv(
+				{
+					NODE_ENV: "production",
+					PARTICIPANT_EMAIL_SEED: "prod-maminka@example.com",
+					PARTICIPANT_PASSWORD_SEED: "prod-secret",
+				},
+				async () => {
+					await ensureDemoParticipant();
+
+					const user = await UserDB.getByEmail("prod-maminka@example.com");
+					expect(user).toBeDefined();
+					expect(user?.role).toBe("participant");
+				},
+			);
 		});
 	});

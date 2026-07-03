@@ -273,17 +273,45 @@ export async function resetDatabaseForTests() {
 	await ensureAdminUser();
 }
 
-// Default test credentials — used when the corresponding env vars are
-// not set. Safe for pre-launch; swap or gate once we go live.
+// Default test credentials — dev/test only. In production, seeding requires
+// the explicit *_SEED env vars; without them the seed is skipped entirely.
 export const DEFAULT_ADMIN_EMAIL = "admin@centrumrubacek.cz";
 export const DEFAULT_ADMIN_PASSWORD = "admin123";
 export const DEFAULT_PARTICIPANT_EMAIL = "maminka@test.cz";
 export const DEFAULT_PARTICIPANT_PASSWORD = "test123";
 
+type SeedCredentials = { email: string; password: string };
+
+function resolveSeedCredentials(
+	envEmail: string | undefined,
+	envPassword: string | undefined,
+	defaults: SeedCredentials,
+): SeedCredentials | null {
+	if (process.env.NODE_ENV === "production") {
+		if (!envEmail || !envPassword) {
+			return null;
+		}
+		return { email: envEmail, password: envPassword };
+	}
+	return {
+		email: envEmail ?? defaults.email,
+		password: envPassword ?? defaults.password,
+	};
+}
+
 export async function ensureAdminUser() {
-	const adminEmail = process.env.ADMIN_EMAIL_SEED ?? DEFAULT_ADMIN_EMAIL;
-	const adminPassword =
-		process.env.ADMIN_PASSWORD_SEED ?? DEFAULT_ADMIN_PASSWORD;
+	const credentials = resolveSeedCredentials(
+		process.env.ADMIN_EMAIL_SEED,
+		process.env.ADMIN_PASSWORD_SEED,
+		{ email: DEFAULT_ADMIN_EMAIL, password: DEFAULT_ADMIN_PASSWORD },
+	);
+	if (!credentials) {
+		logger.warn(
+			"Skipping admin seed: ADMIN_EMAIL_SEED/ADMIN_PASSWORD_SEED not set in production",
+		);
+		return;
+	}
+	const { email: adminEmail, password: adminPassword } = credentials;
 
 	const existing = await client.execute({
 		sql: "SELECT COUNT(*) as count FROM users WHERE email = ?",
@@ -304,10 +332,22 @@ export async function ensureAdminUser() {
 }
 
 export async function ensureDemoParticipant() {
-	const participantEmail =
-		process.env.PARTICIPANT_EMAIL_SEED ?? DEFAULT_PARTICIPANT_EMAIL;
-	const participantPassword =
-		process.env.PARTICIPANT_PASSWORD_SEED ?? DEFAULT_PARTICIPANT_PASSWORD;
+	const credentials = resolveSeedCredentials(
+		process.env.PARTICIPANT_EMAIL_SEED,
+		process.env.PARTICIPANT_PASSWORD_SEED,
+		{
+			email: DEFAULT_PARTICIPANT_EMAIL,
+			password: DEFAULT_PARTICIPANT_PASSWORD,
+		},
+	);
+	if (!credentials) {
+		logger.warn(
+			"Skipping demo participant seed: PARTICIPANT_EMAIL_SEED/PARTICIPANT_PASSWORD_SEED not set in production",
+		);
+		return;
+	}
+	const { email: participantEmail, password: participantPassword } =
+		credentials;
 
 	const existing = await client.execute({
 		sql: "SELECT COUNT(*) as count FROM users WHERE email = ?",

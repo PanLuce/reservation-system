@@ -17,7 +17,8 @@
    Or manually open `test-iframe.html` in your browser.
 
 3. **Test the integration**:
-   - Login with: `admin@centrumrubacek.cz` / `admin123`
+    - Login with: `admin@centrumrubacek.cz` / `admin123` (the one-click login buttons appear only when the server is
+      started with `ENABLE_QUICK_LOGIN=true`)
    - Verify all features work inside the iframe
    - Check that styling looks correct
 
@@ -67,7 +68,6 @@ Forwarding    https://abc123.ngrok-free.app -> http://localhost:3000
        src="https://abc123.ngrok-free.app"
        width="100%"
        height="800px"
-       frameborder="0"
        style="border: none; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);"
        allow="clipboard-write"
        loading="lazy"
@@ -155,7 +155,6 @@ docker run -d \
     src="http://localhost:3000"
     width="100%"
     height="800px"
-    frameborder="0"
 ></iframe>
 ```
 
