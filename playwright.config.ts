@@ -27,6 +27,10 @@ export default defineConfig({
 			ADMIN_PASSWORD_SEED: "admin123",
 			PARTICIPANT_EMAIL_SEED: "maminka@test.cz",
 			PARTICIPANT_PASSWORD_SEED: "test123",
+			// Blank SMTP_HOST forces NoOpEmailService (src/email-factory.ts) so
+			// tests never depend on a live SMTP server — Ethereal rate limiting
+			// (429) was causing flaky failures in registration-heavy specs.
+			SMTP_HOST: "",
 		},
 	},
 });

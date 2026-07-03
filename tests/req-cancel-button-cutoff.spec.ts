@@ -11,6 +11,13 @@ import {
 
 const BASE = "http://localhost:3000";
 
+// Mirrors localDateString() in public/app.js — the cutoff compares local
+// calendar dates, so the test must create lessons on the local date too,
+// or it goes flaky between 00:00–02:00 Prague time (UTC offset).
+function localDateString(date = new Date()) {
+	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 async function loginAsParticipant(page: import("@playwright/test").Page) {
 	await page.goto(`${BASE}/login.html`);
 	await page.fill("#login-email", "maminka@test.cz");
@@ -46,7 +53,7 @@ test.describe("REQ: Cancel button disabled after midnight cutoff", () => {
 		});
 		await CourseDB.insert(course);
 
-		const todayStr = new Date().toISOString().slice(0, 10);
+		const todayStr = localDateString();
 
 		await LessonDB.insert(
 			{
@@ -93,7 +100,7 @@ test.describe("REQ: Cancel button disabled after midnight cutoff", () => {
 
 		const tomorrow = new Date();
 		tomorrow.setDate(tomorrow.getDate() + 1);
-		const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+		const tomorrowStr = localDateString(tomorrow);
 
 		await LessonDB.insert(
 			{
