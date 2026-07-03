@@ -98,6 +98,7 @@ async function loadAgeGroups() {
 		ageGroups = await res.json();
 		populateAgeGroupSelect(document.getElementById("course-age-group"));
 		populateAgeGroupSelect(document.getElementById("lesson-age-group"));
+		populateAgeGroupSelect(document.getElementById("kurz-age-group"));
 	} catch (e) {
 		console.error("Failed to load age groups", e);
 	}
@@ -112,6 +113,17 @@ function populateAgeGroupSelect(selectEl) {
 			.map((g) => `<option value="${g.name}">${g.name}</option>`)
 			.join("");
 	if (current) selectEl.value = current;
+}
+
+function populateKurzSelect(selectEl) {
+	if (!selectEl) return;
+	const current = selectEl.value;
+	selectEl.innerHTML =
+		'<option value="">-- Bez kurzu --</option>' +
+		kurzyCache
+			.map((k) => `<option value="${k.id}">${k.name} (${k.ageGroup})</option>`)
+			.join("");
+	selectEl.value = current;
 }
 
 // User is loaded in DOMContentLoaded before calendar to ensure participantId is set
@@ -750,22 +762,40 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // ─── Skupinky (Courses) ───────────────────────────────────────────────────────
 
+// Cache of all kurzy (populated in loadKurzy; used for grouping + the course form select)
+let kurzyCache = [];
+
+async function loadKurzy() {
+	try {
+		const res = await fetch(`${API_URL}/kurzy`, { credentials: "include" });
+		if (!res.ok) throw new Error(`Failed to load kurzy: ${res.status}`);
+		const kurzy = await res.json();
+		if (!Array.isArray(kurzy)) throw new Error("Invalid kurzy response");
+		kurzyCache = kurzy;
+	} catch (error) {
+		kurzyCache = [];
+		console.error(error);
+	}
+}
+
 async function loadCourses() {
 	try {
+		await loadKurzy();
 		const res = await fetch(`${API_URL}/courses`, { credentials: "include" });
 		if (!res.ok) throw new Error(`Failed to load courses: ${res.status}`);
 		const courses = await res.json();
 		if (!Array.isArray(courses)) throw new Error("Invalid courses response");
 		allCoursesCache = courses;
+		populateKurzSelect(document.getElementById("course-kurz"));
 		const container = document.getElementById("courses-list");
 
-		if (courses.length === 0) {
+		if (courses.length === 0 && kurzyCache.length === 0) {
 			container.innerHTML =
 				'<p style="text-align:center;color:#999;padding:40px;">Žádné skupinky. Přidejte první skupinku!</p>';
 			return;
 		}
 
-		container.innerHTML = courses.map(renderCourseCard).join("");
+		container.innerHTML = renderCoursesGroupedByKurz(courses);
 		for (const course of courses) {
 			loadCourseMembers(course.id);
 		}
@@ -773,6 +803,55 @@ async function loadCourses() {
 		showNotification("Chyba při načítání skupinek", "error");
 		console.error(error);
 	}
+}
+
+function renderCoursesGroupedByKurz(courses) {
+	const isAdmin = currentUser && currentUser.role === "admin";
+	const sections = kurzyCache.map((kurz) => {
+		const members = courses.filter((c) => c.kurzId === kurz.id);
+		return renderKurzSection(kurz, members, isAdmin);
+	});
+
+	const unassigned = courses.filter(
+		(c) => !c.kurzId || !kurzyCache.some((k) => k.id === c.kurzId),
+	);
+	if (unassigned.length > 0) {
+		sections.push(renderUnassignedSection(unassigned));
+	}
+
+	return sections.join("");
+}
+
+function renderKurzSection(kurz, members, isAdmin) {
+	const cards = members.length
+		? members.map(renderCourseCard).join("")
+		: '<p style="color:#aaa;font-size:13px;padding:8px 0;">Zatím žádné skupinky v tomto kurzu.</p>';
+	const adminActions = isAdmin
+		? `<span class="kurz-actions">
+				<button class="btn btn-secondary" onclick="editKurz('${kurz.id}')">Upravit kurz</button>
+				<button class="btn btn-danger" onclick="deleteKurz('${kurz.id}', this)">Smazat kurz</button>
+			</span>`
+		: "";
+	return `
+		<section class="kurz-section" data-kurz-id="${kurz.id}">
+			<div class="kurz-header">
+				<span class="color-swatch" style="background:${kurz.color}"></span>
+				<h3 style="margin:0">${kurz.name}</h3>
+				<span style="color:#888;font-size:13px;">${kurz.ageGroup}</span>
+				${adminActions}
+			</div>
+			<div class="lessons-grid">${cards}</div>
+		</section>`;
+}
+
+function renderUnassignedSection(courses) {
+	return `
+		<section class="kurz-section" data-kurz-id="none">
+			<div class="kurz-header">
+				<h3 style="margin:0">Bez kurzu</h3>
+			</div>
+			<div class="lessons-grid">${courses.map(renderCourseCard).join("")}</div>
+		</section>`;
 }
 
 function renderCourseCard(course) {
@@ -1023,6 +1102,8 @@ function showAddCourseForm() {
 	document.getElementById("course-name").value = "";
 	document.getElementById("course-age-group").value = "";
 	document.getElementById("course-location").value = "";
+	populateKurzSelect(document.getElementById("course-kurz"));
+	document.getElementById("course-kurz").value = "";
 	clearCourseErrors();
 	document.getElementById("add-course-form").style.display = "block";
 }
@@ -1044,6 +1125,8 @@ async function editCourse(id) {
 		document.getElementById("course-name").value = course.name;
 		document.getElementById("course-age-group").value = course.ageGroup;
 		document.getElementById("course-location").value = course.location || "";
+		populateKurzSelect(document.getElementById("course-kurz"));
+		document.getElementById("course-kurz").value = course.kurzId || "";
 		clearCourseErrors();
 		document.getElementById("add-course-form").style.display = "block";
 		document.getElementById("add-course-form").scrollIntoView({
@@ -1062,6 +1145,7 @@ async function submitCourseForm(event) {
 	const name = document.getElementById("course-name").value.trim();
 	const ageGroup = document.getElementById("course-age-group").value;
 	const location = document.getElementById("course-location").value.trim();
+	const kurzId = document.getElementById("course-kurz").value || null;
 
 	let hasError = false;
 	if (!name) {
@@ -1084,7 +1168,7 @@ async function submitCourseForm(event) {
 				method,
 				headers: { "Content-Type": "application/json" },
 				credentials: "include",
-				body: JSON.stringify({ name, ageGroup, location }),
+				body: JSON.stringify({ name, ageGroup, location, kurzId }),
 			});
 
 			if (!res.ok) {
@@ -1131,6 +1215,110 @@ async function deleteCourse(id, triggerEl) {
 function clearCourseErrors() {
 	document.getElementById("course-name-error").textContent = "";
 	document.getElementById("course-location-error").textContent = "";
+}
+
+// ─── Kurzy (parent grouping of Skupinky) ──────────────────────────────────────
+
+function showAddKurzForm() {
+	document.getElementById("kurz-form-title").textContent = "Nový kurz";
+	document.getElementById("kurz-edit-id").value = "";
+	document.getElementById("kurz-name").value = "";
+	document.getElementById("kurz-age-group").value = "";
+	document.getElementById("kurz-name-error").textContent = "";
+	document.getElementById("add-kurz-form").style.display = "block";
+}
+
+function hideAddKurzForm() {
+	document.getElementById("add-kurz-form").style.display = "none";
+	document.getElementById("kurz-name-error").textContent = "";
+}
+
+async function editKurz(id) {
+	try {
+		const res = await fetch(`${API_URL}/kurzy/${id}`, {
+			credentials: "include",
+		});
+		const kurz = await res.json();
+		document.getElementById("kurz-form-title").textContent = "Upravit kurz";
+		document.getElementById("kurz-edit-id").value = kurz.id;
+		document.getElementById("kurz-name").value = kurz.name;
+		document.getElementById("kurz-age-group").value = kurz.ageGroup;
+		document.getElementById("kurz-name-error").textContent = "";
+		document.getElementById("add-kurz-form").style.display = "block";
+		document.getElementById("add-kurz-form").scrollIntoView({
+			behavior: "smooth",
+		});
+	} catch (error) {
+		showNotification("Chyba při načítání kurzu", "error");
+		console.error(error);
+	}
+}
+
+async function submitKurzForm(event) {
+	event.preventDefault();
+	document.getElementById("kurz-name-error").textContent = "";
+
+	const id = document.getElementById("kurz-edit-id").value;
+	const name = document.getElementById("kurz-name").value.trim();
+	const ageGroup = document.getElementById("kurz-age-group").value;
+
+	if (!name) {
+		document.getElementById("kurz-name-error").textContent = "Název je povinný";
+		return;
+	}
+
+	await withLoading(event.submitter, async () => {
+		try {
+			const url = id ? `${API_URL}/kurzy/${id}` : `${API_URL}/kurzy`;
+			const method = id ? "PUT" : "POST";
+			const res = await fetch(url, {
+				method,
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ name, ageGroup }),
+			});
+
+			if (!res.ok) {
+				const data = await res.json();
+				showNotification(data.error || "Chyba při ukládání", "error");
+				return;
+			}
+
+			hideAddKurzForm();
+			showNotification(id ? "Kurz byl upraven" : "Kurz byl přidán", "success");
+			loadCourses();
+		} catch (error) {
+			showNotification("Chyba při ukládání kurzu", "error");
+			console.error(error);
+		}
+	});
+}
+
+async function deleteKurz(id, triggerEl) {
+	if (
+		!confirm(
+			"Opravdu smazat tento kurz? Skupinky v něm zůstanou zachovány, jen ztratí zařazení.",
+		)
+	)
+		return;
+	await withLoading(triggerEl, async () => {
+		try {
+			const res = await fetch(`${API_URL}/kurzy/${id}`, {
+				method: "DELETE",
+				credentials: "include",
+			});
+			if (!res.ok) {
+				const data = await res.json();
+				showNotification(data.error || "Chyba při mazání", "error");
+				return;
+			}
+			showNotification("Kurz byl smazán", "success");
+			loadCourses();
+		} catch (error) {
+			showNotification("Chyba při mazání kurzu", "error");
+			console.error(error);
+		}
+	});
 }
 
 // ─── Moje rezervace (Participant self-service) ────────────────────────────────

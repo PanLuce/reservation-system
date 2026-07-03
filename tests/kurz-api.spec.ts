@@ -226,4 +226,26 @@ test.describe
 			expect(linked).toHaveLength(1);
 			expect(linked[0]?.id).toBe(course.id);
 		});
+
+		test("PUT /api/courses/:id with kurzId null un-assigns the course", async () => {
+			const kurz = createKurz({ name: "Odebrat", ageGroup: "1 - 2 roky" });
+			await KurzDB.insert(kurz);
+			const course = createCourse({
+				name: "Osamostatnělá",
+				ageGroup: "1 - 2 roky",
+				kurzId: kurz.id,
+			});
+			await CourseDB.insert(course);
+
+			const res = await fetch(`${BASE}/api/courses/${course.id}`, {
+				method: "PUT",
+				headers: { "Content-Type": "application/json", Cookie: adminCookie },
+				body: JSON.stringify({ kurzId: null }),
+			});
+			expect(res.status).toBe(200);
+
+			const retrieved = await CourseDB.getById(course.id);
+			expect(retrieved?.kurzId).toBeNull();
+			expect(await CourseDB.getByKurz(kurz.id)).toHaveLength(0);
+		});
 	});

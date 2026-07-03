@@ -151,7 +151,37 @@
         <div class="tab-content" id="courses">
             <div class="section-header">
                 <h2>Skupinky (Kurzy)</h2>
-                <button type="button" class="btn btn-primary admin-only" onclick="showAddCourseForm()">+ Přidat skupinku</button>
+                <div>
+                    <button type="button" class="btn btn-secondary admin-only" onclick="showAddKurzForm()">+ Přidat
+                        kurz
+                    </button>
+                    <button type="button" class="btn btn-primary admin-only" onclick="showAddCourseForm()">+ Přidat
+                        skupinku
+                    </button>
+                </div>
+            </div>
+
+            <div id="add-kurz-form" class="form-card" style="display: none;">
+                <h3 id="kurz-form-title">Nový kurz</h3>
+                <form onsubmit="submitKurzForm(event)">
+                    <input type="hidden" id="kurz-edit-id">
+                    <div class="form-group">
+                        <label>Název kurzu:</label>
+                        <input type="text" id="kurz-name" required placeholder="např. Cvičení s batolaty">
+                        <span class="field-error" id="kurz-name-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Věková skupina:</label>
+                        <select id="kurz-age-group" required>
+                            <!-- populated by loadAgeGroups() on boot -->
+                        </select>
+                        <small style="color: #888; font-size: 12px;">Barva kurzu se přiřadí automaticky.</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Uložit</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideAddKurzForm()">Zrušit</button>
+                    </div>
+                </form>
             </div>
 
             <div id="add-course-form" class="form-card" style="display: none;">
@@ -175,6 +205,13 @@
                         <input type="text" id="course-location" required placeholder="např. CVČ Vietnamská">
                         <span class="field-error" id="course-location-error"></span>
                     </div>
+                    <div class="form-group">
+                        <label>Kurz:</label>
+                        <select id="course-kurz">
+                            <!-- populated by populateKurzSelect() -->
+                        </select>
+                        <small style="color: #888; font-size: 12px;">Nepovinné — skupinku lze zařadit do kurzu.</small>
+                    </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Uložit</button>
                         <button type="button" class="btn btn-secondary" onclick="hideAddCourseForm()">Zrušit</button>
@@ -182,7 +219,7 @@
                 </form>
             </div>
 
-            <div id="courses-list" class="lessons-grid"></div>
+            <div id="courses-list"></div>
         </div>
 
         <!-- Moje rezervace Tab (participant-only) -->
