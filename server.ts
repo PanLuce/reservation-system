@@ -25,6 +25,7 @@ import {
 	DEFAULT_PARTICIPANT_EMAIL,
 	DEFAULT_PARTICIPANT_PASSWORD,
 	initializeDatabase,
+	KurzDB,
 	LessonDB,
 	ParticipantDB,
 	RegistrationDB,
@@ -32,6 +33,7 @@ import {
 } from "./src/database.js";
 import { createEmailService } from "./src/email-factory.js";
 import { isQuickLoginEnabled } from "./src/env-flags.js";
+import { createKurz } from "./src/kurz.js";
 import { createLesson } from "./src/lesson.js";
 import { logger } from "./src/logger.js";
 import { parseOdsWorkbook } from "./src/ods-loader.js";
@@ -506,6 +508,7 @@ app.post("/api/courses", requireAdmin, async (req, res) => {
 			location: req.body.location,
 			color: req.body.color, // optional — derived from ageGroup if absent
 			description: req.body.description,
+			kurzId: req.body.kurzId, // optional — links the Skupinka to a parent Kurz
 		});
 		await CourseDB.insert(course);
 		res.status(201).json(course);
@@ -523,7 +526,7 @@ app.put("/api/courses/:id", requireAdmin, async (req, res) => {
 		return res.status(404).json({ error: "Course not found" });
 	}
 	try {
-		const { name, ageGroup, location, description } = req.body;
+		const { name, ageGroup, location, description, kurzId } = req.body;
 		// Always derive color when ageGroup is valid; otherwise keep color from body (manual override)
 		const color =
 			ageGroup && isValidAgeGroup(ageGroup)
@@ -531,8 +534,8 @@ app.put("/api/courses/:id", requireAdmin, async (req, res) => {
 				: (req.body.color as string | undefined);
 		const updatePayload =
 			color !== undefined
-				? { name, ageGroup, location, color, description }
-				: { name, ageGroup, location, description };
+				? { name, ageGroup, location, color, description, kurzId }
+				: { name, ageGroup, location, description, kurzId };
 		await CourseDB.update(id, updatePayload);
 		res.json(await CourseDB.getById(id));
 	} catch (error) {
@@ -550,6 +553,72 @@ app.delete("/api/courses/:id", requireAdmin, async (req, res) => {
 	}
 	await CourseDB.delete(id);
 	res.json({ message: "Course deleted" });
+});
+
+// Kurzy — parent grouping of Skupinky (courses). CRUD.
+app.get("/api/kurzy", requireAuth, async (_req, res) => {
+	res.json(await KurzDB.getAll());
+});
+
+app.get("/api/kurzy/:id", requireAuth, async (req, res) => {
+	const kurz = await KurzDB.getById(req.params.id as string);
+	if (!kurz) {
+		return res.status(404).json({ error: "Kurz not found" });
+	}
+	res.json(kurz);
+});
+
+app.post("/api/kurzy", requireAdmin, async (req, res) => {
+	try {
+		const kurz = createKurz({
+			name: req.body.name,
+			ageGroup: req.body.ageGroup,
+			color: req.body.color, // optional — derived from ageGroup if absent
+			description: req.body.description,
+		});
+		await KurzDB.insert(kurz);
+		res.status(201).json(kurz);
+	} catch (error) {
+		res
+			.status(400)
+			.json({ error: error instanceof Error ? error.message : "Invalid data" });
+	}
+});
+
+app.put("/api/kurzy/:id", requireAdmin, async (req, res) => {
+	const id = req.params.id as string;
+	const existing = await KurzDB.getById(id);
+	if (!existing) {
+		return res.status(404).json({ error: "Kurz not found" });
+	}
+	try {
+		const { name, ageGroup, description } = req.body;
+		// Re-derive color when ageGroup is valid; otherwise honor an explicit override.
+		const color =
+			ageGroup && isValidAgeGroup(ageGroup)
+				? ageGroupToColor(ageGroup)
+				: (req.body.color as string | undefined);
+		const updatePayload =
+			color !== undefined
+				? { name, ageGroup, color, description }
+				: { name, ageGroup, description };
+		await KurzDB.update(id, updatePayload);
+		res.json(await KurzDB.getById(id));
+	} catch (error) {
+		res
+			.status(400)
+			.json({ error: error instanceof Error ? error.message : "Invalid data" });
+	}
+});
+
+app.delete("/api/kurzy/:id", requireAdmin, async (req, res) => {
+	const id = req.params.id as string;
+	const existing = await KurzDB.getById(id);
+	if (!existing) {
+		return res.status(404).json({ error: "Kurz not found" });
+	}
+	await KurzDB.delete(id);
+	res.json({ message: "Kurz deleted" });
 });
 
 app.post("/api/courses/:id/participants", requireAdmin, async (req, res) => {
