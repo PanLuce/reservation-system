@@ -39,6 +39,18 @@ export async function initializeDatabase() {
 	await client.batch(
 		[
 			{
+				sql: `CREATE TABLE IF NOT EXISTS kurzy
+                      (
+                          id          TEXT PRIMARY KEY,
+                          name        TEXT NOT NULL,
+                          ageGroup    TEXT NOT NULL,
+                          color       TEXT NOT NULL,
+                          description TEXT,
+                          createdAt   DATETIME DEFAULT CURRENT_TIMESTAMP
+                      )`,
+				args: [],
+			},
+			{
 				sql: `CREATE TABLE IF NOT EXISTS courses (
 				id TEXT PRIMARY KEY,
 				name TEXT NOT NULL,
@@ -134,6 +146,10 @@ export async function initializeDatabase() {
 				sess TEXT NOT NULL,
 				expired DATETIME NOT NULL
 			)`,
+				args: [],
+			},
+			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_kurzy_ageGroup ON kurzy(ageGroup)",
 				args: [],
 			},
 			{
@@ -276,6 +292,7 @@ export async function resetDatabaseForTests() {
 			{ sql: "DELETE FROM lessons", args: [] },
 			{ sql: "DELETE FROM participants", args: [] },
 			{ sql: "DELETE FROM courses", args: [] },
+			{ sql: "DELETE FROM kurzy", args: [] },
 		],
 		"write",
 	);
@@ -522,6 +539,84 @@ export async function seedSampleData() {
 	await ensureAdminUser();
 	await ensureDemoParticipant();
 }
+
+// Database operations for Kurzy (parent grouping of courses/Skupinky)
+export const KurzDB = {
+	async getAll() {
+		const result = await client.execute({
+			sql: "SELECT * FROM kurzy ORDER BY name",
+			args: [],
+		});
+		return result.rows;
+	},
+
+	async getById(id: string) {
+		const result = await client.execute({
+			sql: "SELECT * FROM kurzy WHERE id = ?",
+			args: [id],
+		});
+		return result.rows[0];
+	},
+
+	async insert(kurz: {
+		id: string;
+		name: string;
+		ageGroup: string;
+		color: string;
+		description?: string;
+	}) {
+		const result = await client.execute({
+			sql: "INSERT INTO kurzy (id, name, ageGroup, color, description) VALUES (?, ?, ?, ?, ?)",
+			args: [
+				kurz.id,
+				kurz.name,
+				kurz.ageGroup,
+				kurz.color,
+				kurz.description || null,
+			],
+		});
+		return { changes: result.rowsAffected };
+	},
+
+	async update(
+		id: string,
+		updates: {
+			name?: string;
+			ageGroup?: string;
+			color?: string;
+			description?: string;
+		},
+	) {
+		const fields: string[] = [];
+		const values: InValue[] = [];
+
+		for (const [key, value] of Object.entries(updates)) {
+			if (value !== undefined) {
+				fields.push(`${key} = ?`);
+				values.push(value);
+			}
+		}
+
+		if (fields.length === 0) return;
+
+		values.push(id);
+		const result = await client.execute({
+			sql: `UPDATE kurzy
+                  SET ${fields.join(", ")}
+                  WHERE id = ?`,
+			args: values as InValue[],
+		});
+		return { changes: result.rowsAffected };
+	},
+
+	async delete(id: string) {
+		const result = await client.execute({
+			sql: "DELETE FROM kurzy WHERE id = ?",
+			args: [id],
+		});
+		return { changes: result.rowsAffected };
+	},
+};
 
 // Database operations for Courses
 export const CourseDB = {
