@@ -2,258 +2,111 @@
 
 ## Overview
 
-This guide shows how to integrate the Centrum Rubáček Reservation System into your WordPress website.
+This guide shows how to integrate the Centrum Rubáček Reservation System into the
+`centrumrubacek.cz` WordPress website.
 
-## Integration Method: Iframe Embedding
+## Integration method: subdomain redirect
 
-The simplest and most reliable method for WordPress integration is using an iframe. This works even if you have only admin access (not site owner).
+The app is deployed at its own subdomain (`reservations.centrumrubacek.cz`) and
+WordPress links to it. The user makes a normal top-level browser navigation into the
+app and logs in there — no iframe.
+
+**This is deliberate, not a shortcut.** The app's session cookie is host-scoped (no
+`Domain` attribute) with `sameSite: "lax"`, and production sets
+`X-Frame-Options: SAMEORIGIN` (see `server.ts`). Both are correct for a first-party
+subdomain and both actively **break an iframe**:
+
+- `sameSite: "lax"` suppresses the session cookie in a cross-site iframe context, so
+  login inside a frame on `centrumrubacek.cz` would silently fail.
+- `X-Frame-Options: SAMEORIGIN` (no CSP `frame-ancestors` override) means the browser
+  refuses to render the app in a frame on any other origin at all — WordPress included.
+
+Making iframe embedding work would require downgrading the cookie to
+`sameSite: "none"` (a real security trade-off) plus CSP changes plus a `postMessage`
+auto-height handshake that does not exist in the client code. None of that is
+necessary: the redirect model works with the app exactly as it is today.
 
 ## Prerequisites
 
-1. **Deployed Application**
-   - The reservation system must be deployed and accessible via HTTPS
-   - Example: `https://reservations.centrumrubacek.cz`
+1. **Deployed application** — reachable over HTTPS, e.g.
+   `https://reservations.centrumrubacek.cz`. See "Hosting" below.
+2. **DNS access** for `centrumrubacek.cz` — to add a `reservations` CNAME.
+3. **WordPress admin access** — to add a menu item, button, or link.
 
-2. **WordPress Admin Access**
-   - Access to edit pages/posts in WordPress
-   - Ability to use HTML blocks or Code blocks
+## Integration steps
 
-## Integration Steps
+1. **Deploy the app** to its subdomain (see Hosting below) and confirm
+   `https://reservations.centrumrubacek.cz/health` returns `{"status":"ok",...}`.
+2. **Add DNS record**: CNAME `reservations` → the hosting provider's target host.
+3. **Add a link from WordPress**, e.g. a menu item or button labelled "Rezervace" /
+   "Přihlásit se" pointing at `https://reservations.centrumrubacek.cz`. A plain `<a>`
+   tag or WordPress menu item is enough — no plugin, shortcode, or custom PHP required.
+4. **Publish** and click through: WordPress → link → app's `/login.html`.
 
-### Option 1: Using WordPress HTML Block (Recommended)
+## Hosting
 
-1. **Edit the target page** in WordPress (e.g., "Lekce a kroužky")
+The app is deployed on **Render** (see `render.yaml`), not Vercel:
 
-2. **Add a Custom HTML block**
-   - Click the (+) button to add a new block
-   - Search for "Custom HTML"
-   - Click to add it
+- Region: Frankfurt, Node 20, `npm start`, health check `GET /health`.
+- Required env vars: `NODE_ENV=production`, `SESSION_SECRET`, `ALLOWED_ORIGINS`,
+  `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` (see `docs/ENVIRONMENT_SETUP.md` /
+  `docs/DEPLOYMENT.md` for the full list).
+- **Do not skip `TURSO_DATABASE_URL`.** If unset, the app silently falls back to a
+  local SQLite file on Render's ephemeral filesystem — the next redeploy wipes all
+  data. See `docs/DESIGN_REVIEW.md` Stage 3 and `docs/REQUIREMENTS.md` item 10.
+- Point the `reservations` CNAME at the Render service's custom-domain target, per
+  Render's dashboard instructions for the deployed service.
 
-3. **Paste the iframe code**:
-   ```html
-   <iframe
-       src="https://your-deployment-url.com"
-       width="100%"
-       height="800px"
-       frameborder="0"
-       style="border: none; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);"
-       allow="clipboard-write"
-       loading="lazy"
-   ></iframe>
-   ```
+## Optional: a WordPress-side schedule teaser
 
-4. **Adjust the height** as needed (800px is a good starting point)
+The redirect model needs nothing beyond a link. If a WordPress page later wants to
+`fetch()` a live lesson list to render directly on the apex domain (e.g. an "upcoming
+lessons" teaser), that is a cross-origin, credential-less read and needs:
 
-5. **Publish** the page
+- `ALLOWED_ORIGINS` to include `https://centrumrubacek.cz` (already the default in
+  `server.ts`).
+- One of the public read endpoints: `GET /api/lessons` or
+  `GET /api/courses/:courseId/lessons`.
 
-### Option 2: Using Shortcode
+This is optional and separate from the core integration — booking/login still happens
+on the app's own subdomain.
 
-If your WordPress theme supports custom shortcodes, you can add this to your theme's `functions.php`:
+## Testing the integration
 
-```php
-function centrum_rubacek_reservation_shortcode() {
-    return '<iframe
-        src="https://your-deployment-url.com"
-        width="100%"
-        height="800px"
-        frameborder="0"
-        style="border: none; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);"
-        allow="clipboard-write"
-        loading="lazy"
-    ></iframe>';
-}
-add_shortcode('rezervace', 'centrum_rubacek_reservation_shortcode');
-```
+A Playwright harness (`tests/wordpress-pluggability.spec.ts`) exercises the contract
+this doc depends on: the `/` → `/login.html` redirect, host-scoped `SameSite=Lax`
+session cookie, `/health` and `/ready`, the public `GET /api/lessons` endpoint, and a
+mock WordPress page linking into the app. Run it with `npm test`.
 
-Then use `[rezervace]` in any page/post.
-
-### Option 3: Page Builder (Elementor, Divi, etc.)
-
-If using a page builder:
-
-1. Add an **HTML widget** or **Code block**
-2. Paste the iframe code above
-3. Adjust styling using the page builder's tools
-
-## Deployment Options
-
-### Option A: Free Hosting (Vercel - Recommended)
-
-1. **Create a GitHub repository** (if not already done)
-   ```bash
-   git remote add origin https://github.com/yourusername/reservation-system.git
-   git push -u origin main
-   ```
-
-2. **Deploy to Vercel**
-   - Go to [vercel.com](https://vercel.com)
-   - Click "Import Project"
-   - Connect your GitHub repository
-   - Vercel will auto-detect the settings
-   - Click "Deploy"
-
-3. **Configure Environment Variables** (in Vercel dashboard)
-   - `SESSION_SECRET`: Generate a random secret string
-   - Any other environment variables
-
-4. **Use the Vercel URL** in your iframe
-   - Example: `https://reservation-system.vercel.app`
-
-### Option B: Custom Domain
-
-If you want `reservations.centrumrubacek.cz`:
-
-1. Deploy to Vercel (as above)
-2. In Vercel dashboard, go to Settings → Domains
-3. Add `reservations.centrumrubacek.cz`
-4. Update your DNS records as instructed by Vercel
-   - Add CNAME record: `reservations` → `cname.vercel-dns.com`
-5. Wait for DNS propagation (usually 5-30 minutes)
-
-### Option C: Self-Hosting
-
-If you have your own server:
-
-1. **Build the application**
-   ```bash
-   npm run build
-   ```
-
-2. **Deploy files to your server**
-   - Upload all files to your server
-   - Install Node.js on the server
-   - Install dependencies: `npm install --production`
-
-3. **Start the server**
-   ```bash
-   npm start
-   ```
-
-4. **Use a process manager** (PM2 recommended)
-   ```bash
-   npm install -g pm2
-   pm2 start server.ts --name reservation-system
-   pm2 save
-   pm2 startup
-   ```
-
-5. **Configure reverse proxy** (nginx/Apache)
-   - Point subdomain to the application port
-   - Enable HTTPS with Let's Encrypt
-
-## Styling Tips
-
-### Make iframe responsive
-
-```html
-<div style="position: relative; padding-bottom: 800px; height: 0; overflow: hidden;">
-    <iframe
-        src="https://your-url.com"
-        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
-        frameborder="0"
-        allow="clipboard-write"
-    ></iframe>
-</div>
-```
-
-### Auto-adjust height with JavaScript
-
-Add this to your WordPress page (in Custom HTML block):
-
-```html
-<iframe
-    id="rezervace-iframe"
-    src="https://your-url.com"
-    width="100%"
-    frameborder="0"
-    style="border: none;"
-></iframe>
-
-<script>
-window.addEventListener('message', function(e) {
-    if (e.origin === 'https://your-url.com') {
-        document.getElementById('rezervace-iframe').style.height = e.data.height + 'px';
-    }
-});
-</script>
-```
-
-## Testing Locally
-
-To test the integration before deploying:
-
-1. **Start the local server**
-   ```bash
-   npm start
-   ```
-
-2. **Use ngrok for temporary public URL**
-   ```bash
-   npx ngrok http 3000
-   ```
-
-3. **Use the ngrok URL** in your WordPress iframe
-   - Example: `https://abc123.ngrok.io`
-
-4. **Test on your WordPress site**
-   - Add the iframe to a test page
-   - Verify login works
-   - Test all features
-
-5. **Note**: ngrok URLs expire after session ends
-
-## Security Considerations
-
-1. **Always use HTTPS** in production
-2. **Configure CORS** properly (see server.ts)
-3. **Use secure cookies** (already configured)
-4. **Keep SESSION_SECRET** secret and strong
-5. **Regular updates** of dependencies
+To test manually against a real deployment before pointing DNS at it, use the app's
+Render preview/staging URL directly (no ngrok or iframe needed) — open it in a browser,
+confirm the redirect and login, then swap in the final subdomain URL once DNS is live.
 
 ## Troubleshooting
 
+### Issue: link from WordPress doesn't load the app
+
+- Confirm `https://reservations.centrumrubacek.cz/health` works directly in a browser.
+- Confirm the `reservations` CNAME has propagated (`dig reservations.centrumrubacek.cz`).
+- Check the Render service is running and not sleeping (free plan).
+
+### Issue: login fails after clicking the link
+
+- Confirm the browser actually navigated to `reservations.centrumrubacek.cz` (check the
+  address bar) rather than being loaded in a frame — the cookie is host-scoped and only
+  works on a top-level navigation to the app's own origin.
+- Confirm `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN` are set in Render (otherwise sessions
+  may not persist correctly across restarts).
+
 ### Issue: "Refused to display in a frame"
 
-**Solution**: The app is already configured to allow iframe embedding with proper headers.
+This is expected and correct — the app is deliberately not configured for iframe
+embedding (see "Integration method" above). Use a link, not an iframe.
 
-### Issue: Login doesn't work in iframe
+## Next steps
 
-**Solution**:
-- Ensure cookies are enabled
-- Use HTTPS (required for cross-site cookies)
-- Check browser console for errors
-
-### Issue: Styling looks broken
-
-**Solution**:
-- Clear browser cache
-- Check iframe dimensions
-- Verify CSS files are loading (check Network tab)
-
-### Issue: Can't see the iframe
-
-**Solution**:
-- Check if the URL is correct
-- Open the URL directly in a browser first
-- Verify the server is running
-- Check browser console for errors
-
-## Support
-
-For issues or questions:
-- Check server logs: Look at server console output
-- Browser console: Press F12 and check Console tab
-- Test directly: Open the app URL without WordPress first
-
-## Next Steps
-
-1. Deploy the application (recommended: Vercel)
-2. Get the public URL
-3. Add iframe to WordPress page
-4. Test thoroughly
-5. Train users on the new system
-6. Monitor for issues
-
----
-
-**Ready to integrate!** Follow the steps above and your reservation system will be live on your WordPress site.
+1. Deploy to Render with `TURSO_DATABASE_URL` set (see Hosting).
+2. Point the `reservations` CNAME at Render.
+3. Add the WordPress link.
+4. Run `tests/wordpress-pluggability.spec.ts` / `smoke-login.yml` against the live URL.
+5. Train users on the new link.
