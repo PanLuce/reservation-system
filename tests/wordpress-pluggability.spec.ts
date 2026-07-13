@@ -71,6 +71,16 @@ test.describe("WordPress pluggability — subdomain redirect", () => {
 	}) => {
 		await page.goto(MOCK_WORDPRESS_PAGE);
 
+		// Point the mock menu link at this worker's server. The static fixture
+		// hard-codes a single origin, but each parallel worker runs on its own port.
+		await page.$eval(
+			"#rezervace-link",
+			(link, base) => {
+				(link as HTMLAnchorElement).href = `${base}/`;
+			},
+			BASE,
+		);
+
 		await page.click("#rezervace-link");
 		await page.waitForURL(`${BASE}/login.html`);
 
