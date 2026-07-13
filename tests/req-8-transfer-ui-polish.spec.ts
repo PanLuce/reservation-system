@@ -109,7 +109,10 @@ test.describe("REQ-8: Maminky transfer dropdown shows current skupinka", () => {
 
 		await page.click('[data-tab="participants"]');
 		await page.waitForSelector("#participants-list", { state: "visible" });
-		await page.waitForTimeout(500);
+		// Wait for the row's transfer dropdown to render before reading it.
+		await page.waitForSelector("#participants-list select.transfer-select", {
+			state: "visible",
+		});
 
 		const participantRow = page
 			.locator("#participants-list tr")
@@ -130,7 +133,10 @@ test.describe("REQ-8: Maminky transfer dropdown shows current skupinka", () => {
 
 		await page.click('[data-tab="participants"]');
 		await page.waitForSelector("#participants-list", { state: "visible" });
-		await page.waitForTimeout(500);
+		// Wait for the row's transfer dropdown to render before reading it.
+		await page.waitForSelector("#participants-list select.transfer-select", {
+			state: "visible",
+		});
 
 		const participantRow = page
 			.locator("#participants-list tr")
@@ -153,7 +159,10 @@ test.describe("REQ-8: Maminky transfer dropdown shows current skupinka", () => {
 
 		await page.click('[data-tab="participants"]');
 		await page.waitForSelector("#participants-list", { state: "visible" });
-		await page.waitForTimeout(500);
+		// Wait for the row's transfer dropdown to render before reading it.
+		await page.waitForSelector("#participants-list select.transfer-select", {
+			state: "visible",
+		});
 
 		const participantRow = page
 			.locator("#participants-list tr")
@@ -190,7 +199,10 @@ test.describe("REQ-9: Transfer requires confirmation dialog", () => {
 
 		await page.click('[data-tab="participants"]');
 		await page.waitForSelector("#participants-list", { state: "visible" });
-		await page.waitForTimeout(500);
+		// Wait for the row's transfer dropdown to render before reading it.
+		await page.waitForSelector("#participants-list select.transfer-select", {
+			state: "visible",
+		});
 
 		const participantRow = page
 			.locator("#participants-list tr")
@@ -218,7 +230,10 @@ test.describe("REQ-9: Transfer requires confirmation dialog", () => {
 
 		await page.click('[data-tab="participants"]');
 		await page.waitForSelector("#participants-list", { state: "visible" });
-		await page.waitForTimeout(500);
+		// Wait for the row's transfer dropdown to render before reading it.
+		await page.waitForSelector("#participants-list select.transfer-select", {
+			state: "visible",
+		});
 
 		const participantRow = page
 			.locator("#participants-list tr")
@@ -258,7 +273,10 @@ test.describe("REQ-9: Transfer requires confirmation dialog", () => {
 
 		await page.click('[data-tab="participants"]');
 		await page.waitForSelector("#participants-list", { state: "visible" });
-		await page.waitForTimeout(500);
+		// Wait for the row's transfer dropdown to render before reading it.
+		await page.waitForSelector("#participants-list select.transfer-select", {
+			state: "visible",
+		});
 
 		const participantRow = page
 			.locator("#participants-list tr")

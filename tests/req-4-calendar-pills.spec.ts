@@ -55,7 +55,10 @@ async function navigateToMonth(
 		} else {
 			await page.click('button[onclick="calendarPrevMonth()"]');
 		}
-		await page.waitForTimeout(100);
+		// Wait for the label to change rather than guessing a fixed delay.
+		await expect(page.locator("#calendar-month-label")).not.toHaveText(
+			current ?? "",
+		);
 	}
 }
 

@@ -6,9 +6,7 @@ test("register participant via UI and verify email would be sent", async ({
 }) => {
 	// Navigate to the app
 	await page.goto(BASE);
-
-	// Wait for page to load
-	await page.waitForTimeout(1000);
+	await page.waitForLoadState("networkidle");
 
 	console.log("📄 Page loaded");
 

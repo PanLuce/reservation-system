@@ -109,7 +109,6 @@ test.describe("REQ-7: Maminky tab has per-skupinka transfer dropdown", () => {
 
 		await page.click('[data-tab="participants"]');
 		await page.waitForSelector("#participants-list", { state: "visible" });
-		await page.waitForTimeout(500);
 
 		// The Skupinka Alfa entry for Anička should have a transfer-select
 		const participantRow = page
@@ -129,7 +128,6 @@ test.describe("REQ-7: Maminky tab has per-skupinka transfer dropdown", () => {
 
 		await page.click('[data-tab="participants"]');
 		await page.waitForSelector("#participants-list", { state: "visible" });
-		await page.waitForTimeout(500);
 
 		const participantRow = page
 			.locator("#participants-list tr")
@@ -160,7 +158,6 @@ test.describe("REQ-7: Maminky tab has per-skupinka transfer dropdown", () => {
 
 		await page.click('[data-tab="participants"]');
 		await page.waitForSelector("#participants-list", { state: "visible" });
-		await page.waitForTimeout(500);
 
 		const participantRow = page
 			.locator("#participants-list tr")
@@ -202,7 +199,6 @@ test.describe("REQ-7: Maminky tab has per-skupinka transfer dropdown", () => {
 
 		await page.click('[data-tab="participants"]');
 		await page.waitForSelector("#participants-list", { state: "visible" });
-		await page.waitForTimeout(500);
 
 		// Click the name cell directly, not the dropdown
 		const nameCell = page

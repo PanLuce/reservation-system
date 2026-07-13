@@ -227,7 +227,10 @@ test.describe("REQ-2: Day-modal shows enrolled participants per lesson", () => {
 			} else {
 				await page.click('button[onclick="calendarPrevMonth()"]');
 			}
-			await page.waitForTimeout(100);
+			// Wait for the label to change rather than guessing a fixed delay.
+			await expect(page.locator("#calendar-month-label")).not.toHaveText(
+				current ?? "",
+			);
 		}
 	}
 
@@ -258,7 +261,6 @@ test.describe("REQ-2: Day-modal shows enrolled participants per lesson", () => {
 			.first();
 		await expect(toggleSpan).toBeVisible({ timeout: 3000 });
 		await toggleSpan.click();
-		await page.waitForTimeout(500);
 	}
 
 	test("day-modal lesson row shows enrolled participant name and email", async ({

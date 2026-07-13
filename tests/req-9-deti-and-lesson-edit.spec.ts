@@ -118,7 +118,10 @@ async function navigateToMonth(
 		} else {
 			await page.click('button[onclick="calendarPrevMonth()"]');
 		}
-		await page.waitForTimeout(100);
+		// Wait for the label to change rather than guessing a fixed delay.
+		await expect(page.locator("#calendar-month-label")).not.toHaveText(
+			current ?? "",
+		);
 	}
 }
 
@@ -150,12 +153,11 @@ test.describe("REQ-2: Maminky → Děti rename", () => {
 		await loginAsAdmin(page);
 		await page.click('[data-tab="participants"]');
 		await page.waitForSelector("#participants-list", { state: "visible" });
-		await page.waitForTimeout(500);
-		await page
+		const anickaCell = page
 			.locator("#participants-list td")
 			.filter({ hasText: "Anička Alfová" })
-			.first()
-			.click();
+			.first();
+		await anickaCell.click();
 		await page.waitForSelector("#participant-modal", { state: "visible" });
 		await expect(page.locator("#participant-modal-title")).not.toContainText(
 			"maminky",
@@ -197,12 +199,12 @@ test.describe("REQ-4: Skupinka label includes age and location", () => {
 		await loginAsAdmin(page);
 		await page.click('[data-tab="participants"]');
 		await page.waitForSelector("#participants-list", { state: "visible" });
-		await page.waitForTimeout(500);
 
 		const participantRow = page
 			.locator("#participants-list tr")
 			.filter({ hasText: "Anička Alfová" });
 		const transferSelect = participantRow.locator("select.transfer-select");
+		await expect(transferSelect).toBeVisible();
 		const optionTexts = await transferSelect.evaluate((el) =>
 			Array.from((el as HTMLSelectElement).options).map((o) => o.textContent),
 		);
@@ -261,34 +263,30 @@ test.describe("REQ-5: Sortable Děti table", () => {
 		await page.waitForSelector("#participants-list table", {
 			state: "visible",
 		});
-		await page.waitForTimeout(500);
+		const rows = page.locator("#participants-list tbody tr");
 
-		// Click Jméno header → ascending
+		// Click Jméno header → ascending; first row settles to the earliest name.
 		await page
 			.locator("#participants-list th")
 			.filter({ hasText: "Jméno" })
 			.click();
-		await page.waitForTimeout(200);
+		const firstCell = rows.first().locator("td").first();
+		await expect(firstCell).toHaveText("Adam Azurový");
 
-		const rows = page.locator("#participants-list tbody tr");
-		const firstNameAsc = await rows.first().locator("td").first().textContent();
+		const firstNameAsc = await firstCell.textContent();
 		const lastNameAsc = await rows.last().locator("td").first().textContent();
 		expect(firstNameAsc?.localeCompare(lastNameAsc ?? "") ?? -1).toBeLessThan(
 			0,
 		);
 
-		// Click again → descending
+		// Click again → descending; first row becomes what was last.
 		await page
 			.locator("#participants-list th")
 			.filter({ hasText: "Jméno" })
 			.click();
-		await page.waitForTimeout(200);
+		await expect(firstCell).toHaveText(lastNameAsc ?? "");
 
-		const firstNameDesc = await rows
-			.first()
-			.locator("td")
-			.first()
-			.textContent();
+		const firstNameDesc = await firstCell.textContent();
 		expect(firstNameDesc).toBe(lastNameAsc);
 	});
 
@@ -298,16 +296,17 @@ test.describe("REQ-5: Sortable Děti table", () => {
 		await page.waitForSelector("#participants-list table", {
 			state: "visible",
 		});
-		await page.waitForTimeout(500);
+		const rows = page.locator("#participants-list tbody tr");
 
 		await page
 			.locator("#participants-list th")
 			.filter({ hasText: "Email" })
 			.click();
-		await page.waitForTimeout(200);
+		// Ascending by email settles adam@test.cz into the first row.
+		const firstEmailCell = rows.first().locator("td").nth(1);
+		await expect(firstEmailCell).toHaveText("adam@test.cz");
 
-		const rows = page.locator("#participants-list tbody tr");
-		const firstEmail = await rows.first().locator("td").nth(1).textContent();
+		const firstEmail = await firstEmailCell.textContent();
 		const lastEmail = await rows.last().locator("td").nth(1).textContent();
 		expect(firstEmail?.localeCompare(lastEmail ?? "") ?? -1).toBeLessThan(0);
 	});
@@ -456,7 +455,6 @@ test.describe("REQ-3: Cross-skupinka kid assignment to individual lesson", () =>
 			.filter({ hasText: /účastník|Načíst/i })
 			.first();
 		await toggleSpan.click();
-		await page.waitForTimeout(500);
 		await expect(alphaLesonRow).toContainText("Betuška Betová");
 	});
 });
