@@ -11,9 +11,28 @@ import { toDateString } from "./types.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const url =
-	process.env.TURSO_DATABASE_URL ||
-	`file:${path.join(__dirname, "..", "data", "reservations.db")}`;
+export function resolveDatabaseUrl({
+	isProduction,
+	tursoDatabaseUrl,
+}: {
+	isProduction: boolean;
+	tursoDatabaseUrl: string | undefined;
+}): string {
+	if (tursoDatabaseUrl) {
+		return tursoDatabaseUrl;
+	}
+	if (isProduction) {
+		throw new Error(
+			"FATAL: TURSO_DATABASE_URL is required in production — refusing to start on an ephemeral local SQLite file (data would be lost on every redeploy)",
+		);
+	}
+	return `file:${path.join(__dirname, "..", "data", "reservations.db")}`;
+}
+
+const url = resolveDatabaseUrl({
+	isProduction: process.env.NODE_ENV === "production",
+	tursoDatabaseUrl: process.env.TURSO_DATABASE_URL,
+});
 const authToken = process.env.TURSO_AUTH_TOKEN;
 
 // Ensure data directory exists for local file mode
@@ -36,10 +55,12 @@ export async function initializeDatabase() {
 		await client.execute("PRAGMA busy_timeout = 5000");
 	}
 
+	await migrateKurzyToPrograms();
+
 	await client.batch(
 		[
 			{
-				sql: `CREATE TABLE IF NOT EXISTS kurzy
+				sql: `CREATE TABLE IF NOT EXISTS programs
                       (
                           id          TEXT PRIMARY KEY,
                           name        TEXT NOT NULL,
@@ -58,9 +79,9 @@ export async function initializeDatabase() {
 				color TEXT NOT NULL,
 				location TEXT NOT NULL DEFAULT '',
 				description TEXT,
-                kurzId    TEXT,
+                programId TEXT,
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (kurzId) REFERENCES kurzy (id) ON DELETE SET NULL
+                FOREIGN KEY (programId) REFERENCES programs (id) ON DELETE SET NULL
 			)`,
 				args: [],
 			},
@@ -151,7 +172,7 @@ export async function initializeDatabase() {
 				args: [],
 			},
 			{
-				sql: "CREATE INDEX IF NOT EXISTS idx_kurzy_ageGroup ON kurzy(ageGroup)",
+				sql: "CREATE INDEX IF NOT EXISTS idx_programs_ageGroup ON programs(ageGroup)",
 				args: [],
 			},
 			{
@@ -201,7 +222,7 @@ export async function initializeDatabase() {
 	await migrateAgeGroups();
 	await migrateLocationToCourses();
 	await migrateDropParticipantCourseId();
-	await migrateAddKurzIdToCourses();
+	await migrateAddProgramIdToCourses();
 
 	logger.info("Database initialized successfully");
 }
@@ -275,13 +296,13 @@ async function migrateDropParticipantCourseId() {
 	}
 }
 
-async function migrateAddKurzIdToCourses() {
-	// Link courses (Skupinky) to their parent Kurz. Nullable — existing courses
+async function migrateAddProgramIdToCourses() {
+	// Link courses (Skupinky) to their parent Program. Nullable — existing courses
 	// stay unassigned until an admin groups them. SQLite cannot add a column with
 	// an inline FK via ALTER, so the FK is enforced only on freshly created tables
 	// (see the courses DDL); the column add here is enough for existing databases.
 	try {
-		await client.execute("ALTER TABLE courses ADD COLUMN kurzId TEXT");
+		await client.execute("ALTER TABLE courses ADD COLUMN programId TEXT");
 	} catch {
 		// Column already exists — nothing to do
 	}
@@ -289,8 +310,26 @@ async function migrateAddKurzIdToCourses() {
 	// Index creation must follow the column add: on existing databases the column
 	// does not exist during the initial CREATE batch, so indexing it there fails.
 	await client.execute(
-		"CREATE INDEX IF NOT EXISTS idx_courses_kurzId ON courses(kurzId)",
+		"CREATE INDEX IF NOT EXISTS idx_courses_programId ON courses(programId)",
 	);
+}
+
+async function migrateKurzyToPrograms() {
+	// Renames the Czech-named "kurzy" entity to "Program", matching the rest of the
+	// domain's English naming (Course, Lesson, Participant). Renaming, not
+	// recreating, so existing rows on already-initialized databases survive.
+	try {
+		await client.execute("ALTER TABLE kurzy RENAME TO programs");
+	} catch {
+		// Already renamed, or table never existed on a fresh database — nothing to do
+	}
+	try {
+		await client.execute(
+			"ALTER TABLE courses RENAME COLUMN kurzId TO programId",
+		);
+	} catch {
+		// Already renamed, or column doesn't exist yet on a fresh database
+	}
 }
 
 export function assertDatabaseIsResettable(databaseUrl: string = url) {
@@ -313,7 +352,7 @@ export async function resetDatabaseForTests() {
 			{ sql: "DELETE FROM lessons", args: [] },
 			{ sql: "DELETE FROM participants", args: [] },
 			{ sql: "DELETE FROM courses", args: [] },
-			{ sql: "DELETE FROM kurzy", args: [] },
+			{ sql: "DELETE FROM programs", args: [] },
 		],
 		"write",
 	);
@@ -561,11 +600,11 @@ export async function seedSampleData() {
 	await ensureDemoParticipant();
 }
 
-// Database operations for Kurzy (parent grouping of courses/Skupinky)
-export const KurzDB = {
+// Database operations for Programs (parent grouping of courses/Skupinky)
+export const ProgramDB = {
 	async getAll() {
 		const result = await client.execute({
-			sql: "SELECT * FROM kurzy ORDER BY name",
+			sql: "SELECT * FROM programs ORDER BY name",
 			args: [],
 		});
 		return result.rows;
@@ -573,13 +612,13 @@ export const KurzDB = {
 
 	async getById(id: string) {
 		const result = await client.execute({
-			sql: "SELECT * FROM kurzy WHERE id = ?",
+			sql: "SELECT * FROM programs WHERE id = ?",
 			args: [id],
 		});
 		return result.rows[0];
 	},
 
-	async insert(kurz: {
+	async insert(program: {
 		id: string;
 		name: string;
 		ageGroup: string;
@@ -587,13 +626,13 @@ export const KurzDB = {
 		description?: string;
 	}) {
 		const result = await client.execute({
-			sql: "INSERT INTO kurzy (id, name, ageGroup, color, description) VALUES (?, ?, ?, ?, ?)",
+			sql: "INSERT INTO programs (id, name, ageGroup, color, description) VALUES (?, ?, ?, ?, ?)",
 			args: [
-				kurz.id,
-				kurz.name,
-				kurz.ageGroup,
-				kurz.color,
-				kurz.description || null,
+				program.id,
+				program.name,
+				program.ageGroup,
+				program.color,
+				program.description || null,
 			],
 		});
 		return { changes: result.rowsAffected };
@@ -622,7 +661,7 @@ export const KurzDB = {
 
 		values.push(id);
 		const result = await client.execute({
-			sql: `UPDATE kurzy
+			sql: `UPDATE programs
                   SET ${fields.join(", ")}
                   WHERE id = ?`,
 			args: values as InValue[],
@@ -631,17 +670,17 @@ export const KurzDB = {
 	},
 
 	async delete(id: string) {
-		// Detach child courses first. On fresh databases the courses.kurzId FK
+		// Detach child courses first. On fresh databases the courses.programId FK
 		// handles this via ON DELETE SET NULL, but databases migrated with
-		// migrateAddKurzIdToCourses have a plain column without the FK, so we null
-		// it explicitly to keep behaviour identical everywhere.
+		// migrateAddProgramIdToCourses have a plain column without the FK, so we
+		// null it explicitly to keep behaviour identical everywhere.
 		await client.batch(
 			[
 				{
-					sql: "UPDATE courses SET kurzId = NULL WHERE kurzId = ?",
+					sql: "UPDATE courses SET programId = NULL WHERE programId = ?",
 					args: [id],
 				},
-				{ sql: "DELETE FROM kurzy WHERE id = ?", args: [id] },
+				{ sql: "DELETE FROM programs WHERE id = ?", args: [id] },
 			],
 			"write",
 		);
@@ -683,10 +722,10 @@ export const CourseDB = {
 		return result.rows[0];
 	},
 
-	async getByKurz(kurzId: string) {
+	async getByProgram(programId: string) {
 		const result = await client.execute({
-			sql: "SELECT * FROM courses WHERE kurzId = ? ORDER BY name",
-			args: [kurzId],
+			sql: "SELECT * FROM courses WHERE programId = ? ORDER BY name",
+			args: [programId],
 		});
 		return result.rows;
 	},
@@ -698,10 +737,10 @@ export const CourseDB = {
 		color: string;
 		location?: string;
 		description?: string;
-		kurzId?: string;
+		programId?: string;
 	}) {
 		const result = await client.execute({
-			sql: "INSERT INTO courses (id, name, ageGroup, color, location, description, kurzId) VALUES (?, ?, ?, ?, ?, ?, ?)",
+			sql: "INSERT INTO courses (id, name, ageGroup, color, location, description, programId) VALUES (?, ?, ?, ?, ?, ?, ?)",
 			args: [
 				course.id,
 				course.name,
@@ -709,7 +748,7 @@ export const CourseDB = {
 				course.color,
 				course.location ?? "",
 				course.description || null,
-				course.kurzId ?? null,
+				course.programId ?? null,
 			],
 		});
 		return { changes: result.rowsAffected };
@@ -723,7 +762,7 @@ export const CourseDB = {
 			color?: string;
 			location?: string;
 			description?: string;
-			kurzId?: string | null;
+			programId?: string | null;
 		},
 	) {
 		const fields: string[] = [];

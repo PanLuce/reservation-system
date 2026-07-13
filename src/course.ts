@@ -7,7 +7,7 @@ export type Course = {
 	color: string;
 	location: string;
 	description?: string;
-	kurzId?: string;
+	programId?: string;
 	createdAt?: Date;
 };
 
@@ -17,7 +17,7 @@ type CourseInput = {
 	location?: string;
 	color?: string;
 	description?: string;
-	kurzId?: string;
+	programId?: string;
 };
 
 export function createCourse(input: CourseInput): Course {
@@ -50,7 +50,7 @@ export function createCourse(input: CourseInput): Course {
 		...(trimmedDescription !== undefined && {
 			description: trimmedDescription,
 		}),
-		...(input.kurzId !== undefined && { kurzId: input.kurzId }),
+		...(input.programId !== undefined && { programId: input.programId }),
 		createdAt: new Date(),
 	};
 }

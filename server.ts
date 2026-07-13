@@ -25,19 +25,19 @@ import {
 	DEFAULT_PARTICIPANT_EMAIL,
 	DEFAULT_PARTICIPANT_PASSWORD,
 	initializeDatabase,
-	KurzDB,
 	LessonDB,
 	ParticipantDB,
+	ProgramDB,
 	RegistrationDB,
 	seedSampleData,
 } from "./src/database.js";
 import { createEmailService } from "./src/email-factory.js";
 import { isQuickLoginEnabled } from "./src/env-flags.js";
-import { createKurz } from "./src/kurz.js";
 import { createLesson } from "./src/lesson.js";
 import { logger } from "./src/logger.js";
 import { parseOdsWorkbook } from "./src/ods-loader.js";
 import { createParticipant } from "./src/participant.js";
+import { createProgram } from "./src/program.js";
 import { RegistrationManagerDB } from "./src/registration-db.js";
 import { LibSQLSessionStore } from "./src/session-store.js";
 
@@ -508,7 +508,7 @@ app.post("/api/courses", requireAdmin, async (req, res) => {
 			location: req.body.location,
 			color: req.body.color, // optional — derived from ageGroup if absent
 			description: req.body.description,
-			kurzId: req.body.kurzId, // optional — links the Skupinka to a parent Kurz
+			programId: req.body.programId, // optional — links the Skupinka to a parent Program
 		});
 		await CourseDB.insert(course);
 		res.status(201).json(course);
@@ -526,7 +526,7 @@ app.put("/api/courses/:id", requireAdmin, async (req, res) => {
 		return res.status(404).json({ error: "Course not found" });
 	}
 	try {
-		const { name, ageGroup, location, description, kurzId } = req.body;
+		const { name, ageGroup, location, description, programId } = req.body;
 		// Always derive color when ageGroup is valid; otherwise keep color from body (manual override)
 		const color =
 			ageGroup && isValidAgeGroup(ageGroup)
@@ -534,8 +534,8 @@ app.put("/api/courses/:id", requireAdmin, async (req, res) => {
 				: (req.body.color as string | undefined);
 		const updatePayload =
 			color !== undefined
-				? { name, ageGroup, location, color, description, kurzId }
-				: { name, ageGroup, location, description, kurzId };
+				? { name, ageGroup, location, color, description, programId }
+				: { name, ageGroup, location, description, programId };
 		await CourseDB.update(id, updatePayload);
 		res.json(await CourseDB.getById(id));
 	} catch (error) {
@@ -555,29 +555,29 @@ app.delete("/api/courses/:id", requireAdmin, async (req, res) => {
 	res.json({ message: "Course deleted" });
 });
 
-// Kurzy — parent grouping of Skupinky (courses). CRUD.
-app.get("/api/kurzy", requireAuth, async (_req, res) => {
-	res.json(await KurzDB.getAll());
+// Programs (Kurzy) — parent grouping of Skupinky (courses). CRUD.
+app.get("/api/programs", requireAuth, async (_req, res) => {
+	res.json(await ProgramDB.getAll());
 });
 
-app.get("/api/kurzy/:id", requireAuth, async (req, res) => {
-	const kurz = await KurzDB.getById(req.params.id as string);
-	if (!kurz) {
-		return res.status(404).json({ error: "Kurz not found" });
+app.get("/api/programs/:id", requireAuth, async (req, res) => {
+	const program = await ProgramDB.getById(req.params.id as string);
+	if (!program) {
+		return res.status(404).json({ error: "Program not found" });
 	}
-	res.json(kurz);
+	res.json(program);
 });
 
-app.post("/api/kurzy", requireAdmin, async (req, res) => {
+app.post("/api/programs", requireAdmin, async (req, res) => {
 	try {
-		const kurz = createKurz({
+		const program = createProgram({
 			name: req.body.name,
 			ageGroup: req.body.ageGroup,
 			color: req.body.color, // optional — derived from ageGroup if absent
 			description: req.body.description,
 		});
-		await KurzDB.insert(kurz);
-		res.status(201).json(kurz);
+		await ProgramDB.insert(program);
+		res.status(201).json(program);
 	} catch (error) {
 		res
 			.status(400)
@@ -585,11 +585,11 @@ app.post("/api/kurzy", requireAdmin, async (req, res) => {
 	}
 });
 
-app.put("/api/kurzy/:id", requireAdmin, async (req, res) => {
+app.put("/api/programs/:id", requireAdmin, async (req, res) => {
 	const id = req.params.id as string;
-	const existing = await KurzDB.getById(id);
+	const existing = await ProgramDB.getById(id);
 	if (!existing) {
-		return res.status(404).json({ error: "Kurz not found" });
+		return res.status(404).json({ error: "Program not found" });
 	}
 	try {
 		const { name, ageGroup, description } = req.body;
@@ -602,8 +602,8 @@ app.put("/api/kurzy/:id", requireAdmin, async (req, res) => {
 			color !== undefined
 				? { name, ageGroup, color, description }
 				: { name, ageGroup, description };
-		await KurzDB.update(id, updatePayload);
-		res.json(await KurzDB.getById(id));
+		await ProgramDB.update(id, updatePayload);
+		res.json(await ProgramDB.getById(id));
 	} catch (error) {
 		res
 			.status(400)
@@ -611,14 +611,14 @@ app.put("/api/kurzy/:id", requireAdmin, async (req, res) => {
 	}
 });
 
-app.delete("/api/kurzy/:id", requireAdmin, async (req, res) => {
+app.delete("/api/programs/:id", requireAdmin, async (req, res) => {
 	const id = req.params.id as string;
-	const existing = await KurzDB.getById(id);
+	const existing = await ProgramDB.getById(id);
 	if (!existing) {
-		return res.status(404).json({ error: "Kurz not found" });
+		return res.status(404).json({ error: "Program not found" });
 	}
-	await KurzDB.delete(id);
-	res.json({ message: "Kurz deleted" });
+	await ProgramDB.delete(id);
+	res.json({ message: "Program deleted" });
 });
 
 app.post("/api/courses/:id/participants", requireAdmin, async (req, res) => {

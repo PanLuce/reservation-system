@@ -1,6 +1,6 @@
 import { ageGroupToColor, isValidAgeGroup } from "./age-groups.js";
 
-export type Kurz = {
+export type Program = {
 	id: string;
 	name: string;
 	ageGroup: string;
@@ -9,16 +9,16 @@ export type Kurz = {
 	createdAt?: Date;
 };
 
-type KurzInput = {
+type ProgramInput = {
 	name: string;
 	ageGroup: string;
 	color?: string;
 	description?: string;
 };
 
-export function createKurz(input: KurzInput): Kurz {
+export function createProgram(input: ProgramInput): Program {
 	if (!input.name || input.name.trim() === "") {
-		throw new Error("Kurz name is required");
+		throw new Error("Program name is required");
 	}
 	if (!input.ageGroup || input.ageGroup.trim() === "") {
 		throw new Error("Age group is required");
@@ -30,7 +30,7 @@ export function createKurz(input: KurzInput): Kurz {
 		input.color && isValidHexColor(input.color)
 			? input.color
 			: ageGroupToColor(input.ageGroup.trim());
-	const id = `kurz_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+	const id = `program_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 	const trimmedDescription = input.description?.trim();
 	return {
 		id,

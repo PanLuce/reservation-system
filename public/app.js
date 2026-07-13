@@ -98,7 +98,7 @@ async function loadAgeGroups() {
 		ageGroups = await res.json();
 		populateAgeGroupSelect(document.getElementById("course-age-group"));
 		populateAgeGroupSelect(document.getElementById("lesson-age-group"));
-		populateAgeGroupSelect(document.getElementById("kurz-age-group"));
+		populateAgeGroupSelect(document.getElementById("program-age-group"));
 	} catch (e) {
 		console.error("Failed to load age groups", e);
 	}
@@ -115,12 +115,12 @@ function populateAgeGroupSelect(selectEl) {
 	if (current) selectEl.value = current;
 }
 
-function populateKurzSelect(selectEl) {
+function populateProgramSelect(selectEl) {
 	if (!selectEl) return;
 	const current = selectEl.value;
 	selectEl.innerHTML =
 		'<option value="">-- Bez kurzu --</option>' +
-		kurzyCache
+		programsCache
 			.map((k) => `<option value="${k.id}">${k.name} (${k.ageGroup})</option>`)
 			.join("");
 	selectEl.value = current;
@@ -762,40 +762,40 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // ─── Skupinky (Courses) ───────────────────────────────────────────────────────
 
-// Cache of all kurzy (populated in loadKurzy; used for grouping + the course form select)
-let kurzyCache = [];
+// Cache of all programs (populated in loadPrograms; used for grouping + the course form select)
+let programsCache = [];
 
-async function loadKurzy() {
+async function loadPrograms() {
 	try {
-		const res = await fetch(`${API_URL}/kurzy`, { credentials: "include" });
-		if (!res.ok) throw new Error(`Failed to load kurzy: ${res.status}`);
-		const kurzy = await res.json();
-		if (!Array.isArray(kurzy)) throw new Error("Invalid kurzy response");
-		kurzyCache = kurzy;
+		const res = await fetch(`${API_URL}/programs`, { credentials: "include" });
+		if (!res.ok) throw new Error(`Failed to load programs: ${res.status}`);
+		const programs = await res.json();
+		if (!Array.isArray(programs)) throw new Error("Invalid programs response");
+		programsCache = programs;
 	} catch (error) {
-		kurzyCache = [];
+		programsCache = [];
 		console.error(error);
 	}
 }
 
 async function loadCourses() {
 	try {
-		await loadKurzy();
+		await loadPrograms();
 		const res = await fetch(`${API_URL}/courses`, { credentials: "include" });
 		if (!res.ok) throw new Error(`Failed to load courses: ${res.status}`);
 		const courses = await res.json();
 		if (!Array.isArray(courses)) throw new Error("Invalid courses response");
 		allCoursesCache = courses;
-		populateKurzSelect(document.getElementById("course-kurz"));
+		populateProgramSelect(document.getElementById("course-program"));
 		const container = document.getElementById("courses-list");
 
-		if (courses.length === 0 && kurzyCache.length === 0) {
+		if (courses.length === 0 && programsCache.length === 0) {
 			container.innerHTML =
 				'<p style="text-align:center;color:#999;padding:40px;">Žádné skupinky. Přidejte první skupinku!</p>';
 			return;
 		}
 
-		container.innerHTML = renderCoursesGroupedByKurz(courses);
+		container.innerHTML = renderCoursesGroupedByProgram(courses);
 		for (const course of courses) {
 			loadCourseMembers(course.id);
 		}
@@ -805,15 +805,15 @@ async function loadCourses() {
 	}
 }
 
-function renderCoursesGroupedByKurz(courses) {
+function renderCoursesGroupedByProgram(courses) {
 	const isAdmin = currentUser && currentUser.role === "admin";
-	const sections = kurzyCache.map((kurz) => {
-		const members = courses.filter((c) => c.kurzId === kurz.id);
-		return renderKurzSection(kurz, members, isAdmin);
+	const sections = programsCache.map((program) => {
+		const members = courses.filter((c) => c.programId === program.id);
+		return renderProgramSection(program, members, isAdmin);
 	});
 
 	const unassigned = courses.filter(
-		(c) => !c.kurzId || !kurzyCache.some((k) => k.id === c.kurzId),
+		(c) => !c.programId || !programsCache.some((k) => k.id === c.programId),
 	);
 	if (unassigned.length > 0) {
 		sections.push(renderUnassignedSection(unassigned));
@@ -822,22 +822,22 @@ function renderCoursesGroupedByKurz(courses) {
 	return sections.join("");
 }
 
-function renderKurzSection(kurz, members, isAdmin) {
+function renderProgramSection(program, members, isAdmin) {
 	const cards = members.length
 		? members.map(renderCourseCard).join("")
 		: '<p style="color:#aaa;font-size:13px;padding:8px 0;">Zatím žádné skupinky v tomto kurzu.</p>';
 	const adminActions = isAdmin
-		? `<span class="kurz-actions">
-				<button class="btn btn-secondary" onclick="editKurz('${kurz.id}')">Upravit kurz</button>
-				<button class="btn btn-danger" onclick="deleteKurz('${kurz.id}', this)">Smazat kurz</button>
+		? `<span class="program-actions">
+				<button class="btn btn-secondary" onclick="editProgram('${program.id}')">Upravit kurz</button>
+				<button class="btn btn-danger" onclick="deleteProgram('${program.id}', this)">Smazat kurz</button>
 			</span>`
 		: "";
 	return `
-		<section class="kurz-section" data-kurz-id="${kurz.id}">
-			<div class="kurz-header">
-				<span class="color-swatch" style="background:${kurz.color}"></span>
-				<h3 style="margin:0">${kurz.name}</h3>
-				<span style="color:#888;font-size:13px;">${kurz.ageGroup}</span>
+		<section class="program-section" data-program-id="${program.id}">
+			<div class="program-header">
+				<span class="color-swatch" style="background:${program.color}"></span>
+				<h3 style="margin:0">${program.name}</h3>
+				<span style="color:#888;font-size:13px;">${program.ageGroup}</span>
 				${adminActions}
 			</div>
 			<div class="lessons-grid">${cards}</div>
@@ -846,8 +846,8 @@ function renderKurzSection(kurz, members, isAdmin) {
 
 function renderUnassignedSection(courses) {
 	return `
-		<section class="kurz-section" data-kurz-id="none">
-			<div class="kurz-header">
+		<section class="program-section" data-program-id="none">
+			<div class="program-header">
 				<h3 style="margin:0">Bez kurzu</h3>
 			</div>
 			<div class="lessons-grid">${courses.map(renderCourseCard).join("")}</div>
@@ -1102,8 +1102,8 @@ function showAddCourseForm() {
 	document.getElementById("course-name").value = "";
 	document.getElementById("course-age-group").value = "";
 	document.getElementById("course-location").value = "";
-	populateKurzSelect(document.getElementById("course-kurz"));
-	document.getElementById("course-kurz").value = "";
+	populateProgramSelect(document.getElementById("course-program"));
+	document.getElementById("course-program").value = "";
 	clearCourseErrors();
 	document.getElementById("add-course-form").style.display = "block";
 }
@@ -1125,8 +1125,8 @@ async function editCourse(id) {
 		document.getElementById("course-name").value = course.name;
 		document.getElementById("course-age-group").value = course.ageGroup;
 		document.getElementById("course-location").value = course.location || "";
-		populateKurzSelect(document.getElementById("course-kurz"));
-		document.getElementById("course-kurz").value = course.kurzId || "";
+		populateProgramSelect(document.getElementById("course-program"));
+		document.getElementById("course-program").value = course.programId || "";
 		clearCourseErrors();
 		document.getElementById("add-course-form").style.display = "block";
 		document.getElementById("add-course-form").scrollIntoView({
@@ -1145,7 +1145,7 @@ async function submitCourseForm(event) {
 	const name = document.getElementById("course-name").value.trim();
 	const ageGroup = document.getElementById("course-age-group").value;
 	const location = document.getElementById("course-location").value.trim();
-	const kurzId = document.getElementById("course-kurz").value || null;
+	const programId = document.getElementById("course-program").value || null;
 
 	let hasError = false;
 	if (!name) {
@@ -1168,7 +1168,7 @@ async function submitCourseForm(event) {
 				method,
 				headers: { "Content-Type": "application/json" },
 				credentials: "include",
-				body: JSON.stringify({ name, ageGroup, location, kurzId }),
+				body: JSON.stringify({ name, ageGroup, location, programId }),
 			});
 
 			if (!res.ok) {
@@ -1217,35 +1217,35 @@ function clearCourseErrors() {
 	document.getElementById("course-location-error").textContent = "";
 }
 
-// ─── Kurzy (parent grouping of Skupinky) ──────────────────────────────────────
+// ─── Programs / Kurzy (parent grouping of Skupinky) ───────────────────────────
 
-function showAddKurzForm() {
-	document.getElementById("kurz-form-title").textContent = "Nový kurz";
-	document.getElementById("kurz-edit-id").value = "";
-	document.getElementById("kurz-name").value = "";
-	document.getElementById("kurz-age-group").value = "";
-	document.getElementById("kurz-name-error").textContent = "";
-	document.getElementById("add-kurz-form").style.display = "block";
+function showAddProgramForm() {
+	document.getElementById("program-form-title").textContent = "Nový kurz";
+	document.getElementById("program-edit-id").value = "";
+	document.getElementById("program-name").value = "";
+	document.getElementById("program-age-group").value = "";
+	document.getElementById("program-name-error").textContent = "";
+	document.getElementById("add-program-form").style.display = "block";
 }
 
-function hideAddKurzForm() {
-	document.getElementById("add-kurz-form").style.display = "none";
-	document.getElementById("kurz-name-error").textContent = "";
+function hideAddProgramForm() {
+	document.getElementById("add-program-form").style.display = "none";
+	document.getElementById("program-name-error").textContent = "";
 }
 
-async function editKurz(id) {
+async function editProgram(id) {
 	try {
-		const res = await fetch(`${API_URL}/kurzy/${id}`, {
+		const res = await fetch(`${API_URL}/programs/${id}`, {
 			credentials: "include",
 		});
-		const kurz = await res.json();
-		document.getElementById("kurz-form-title").textContent = "Upravit kurz";
-		document.getElementById("kurz-edit-id").value = kurz.id;
-		document.getElementById("kurz-name").value = kurz.name;
-		document.getElementById("kurz-age-group").value = kurz.ageGroup;
-		document.getElementById("kurz-name-error").textContent = "";
-		document.getElementById("add-kurz-form").style.display = "block";
-		document.getElementById("add-kurz-form").scrollIntoView({
+		const program = await res.json();
+		document.getElementById("program-form-title").textContent = "Upravit kurz";
+		document.getElementById("program-edit-id").value = program.id;
+		document.getElementById("program-name").value = program.name;
+		document.getElementById("program-age-group").value = program.ageGroup;
+		document.getElementById("program-name-error").textContent = "";
+		document.getElementById("add-program-form").style.display = "block";
+		document.getElementById("add-program-form").scrollIntoView({
 			behavior: "smooth",
 		});
 	} catch (error) {
@@ -1254,22 +1254,23 @@ async function editKurz(id) {
 	}
 }
 
-async function submitKurzForm(event) {
+async function submitProgramForm(event) {
 	event.preventDefault();
-	document.getElementById("kurz-name-error").textContent = "";
+	document.getElementById("program-name-error").textContent = "";
 
-	const id = document.getElementById("kurz-edit-id").value;
-	const name = document.getElementById("kurz-name").value.trim();
-	const ageGroup = document.getElementById("kurz-age-group").value;
+	const id = document.getElementById("program-edit-id").value;
+	const name = document.getElementById("program-name").value.trim();
+	const ageGroup = document.getElementById("program-age-group").value;
 
 	if (!name) {
-		document.getElementById("kurz-name-error").textContent = "Název je povinný";
+		document.getElementById("program-name-error").textContent =
+			"Název je povinný";
 		return;
 	}
 
 	await withLoading(event.submitter, async () => {
 		try {
-			const url = id ? `${API_URL}/kurzy/${id}` : `${API_URL}/kurzy`;
+			const url = id ? `${API_URL}/programs/${id}` : `${API_URL}/programs`;
 			const method = id ? "PUT" : "POST";
 			const res = await fetch(url, {
 				method,
@@ -1284,7 +1285,7 @@ async function submitKurzForm(event) {
 				return;
 			}
 
-			hideAddKurzForm();
+			hideAddProgramForm();
 			showNotification(id ? "Kurz byl upraven" : "Kurz byl přidán", "success");
 			loadCourses();
 		} catch (error) {
@@ -1294,7 +1295,7 @@ async function submitKurzForm(event) {
 	});
 }
 
-async function deleteKurz(id, triggerEl) {
+async function deleteProgram(id, triggerEl) {
 	if (
 		!confirm(
 			"Opravdu smazat tento kurz? Skupinky v něm zůstanou zachovány, jen ztratí zařazení.",
@@ -1303,7 +1304,7 @@ async function deleteKurz(id, triggerEl) {
 		return;
 	await withLoading(triggerEl, async () => {
 		try {
-			const res = await fetch(`${API_URL}/kurzy/${id}`, {
+			const res = await fetch(`${API_URL}/programs/${id}`, {
 				method: "DELETE",
 				credentials: "include",
 			});

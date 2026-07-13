@@ -4,10 +4,10 @@ import {
 	CourseDB,
 	ensureDemoParticipant,
 	initializeDatabase,
-	KurzDB,
+	ProgramDB,
 	resetDatabaseForTests,
 } from "../src/database.js";
-import { createKurz } from "../src/kurz.js";
+import { createProgram } from "../src/program.js";
 
 const BASE = "http://localhost:3000";
 
@@ -26,7 +26,7 @@ async function openSkupinkyTab(page: import("@playwright/test").Page) {
 }
 
 test.describe
-	.serial("REQ: Kurz grouping in the Skupinky tab", () => {
+	.serial("REQ: Program grouping in the Skupinky tab", () => {
 		test.beforeEach(async () => {
 			process.env.ADMIN_EMAIL_SEED = "admin@centrumrubacek.cz";
 			process.env.ADMIN_PASSWORD_SEED = "admin123";
@@ -48,26 +48,28 @@ test.describe
 			).toBeVisible();
 		});
 
-		test("a Skupinka linked to a Kurz renders under that Kurz's section header", async ({
+		test("a Skupinka linked to a Program renders under that Program's section header", async ({
 			page,
 		}) => {
-			const kurz = createKurz({
+			const program = createProgram({
 				name: "Cvičení s batolaty",
 				ageGroup: "1 - 2 roky",
 			});
-			await KurzDB.insert(kurz);
+			await ProgramDB.insert(program);
 			const course = createCourse({
 				name: "Pondělí 10h",
 				ageGroup: "1 - 2 roky",
 				location: "Studio",
-				kurzId: kurz.id,
+				programId: program.id,
 			});
 			await CourseDB.insert(course);
 
 			await loginAsAdmin(page);
 			await openSkupinkyTab(page);
 
-			const section = page.locator(`.kurz-section[data-kurz-id="${kurz.id}"]`);
+			const section = page.locator(
+				`.program-section[data-program-id="${program.id}"]`,
+			);
 			await expect(section).toBeVisible();
 			await expect(section).toContainText("Cvičení s batolaty");
 			await expect(section.locator(`#course-card-${course.id}`)).toBeVisible();
@@ -86,26 +88,26 @@ test.describe
 			await loginAsAdmin(page);
 			await openSkupinkyTab(page);
 
-			const section = page.locator('.kurz-section[data-kurz-id="none"]');
+			const section = page.locator('.program-section[data-program-id="none"]');
 			await expect(section).toBeVisible();
 			await expect(section).toContainText("Bez kurzu");
 			await expect(section.locator(`#course-card-${course.id}`)).toBeVisible();
 		});
 
-		test("creating a Kurz via the form makes it appear as a section", async ({
+		test("creating a Program via the form makes it appear as a section", async ({
 			page,
 		}) => {
 			await loginAsAdmin(page);
 			await openSkupinkyTab(page);
 
 			await page.locator("button").filter({ hasText: "Přidat kurz" }).click();
-			await page.waitForSelector("#add-kurz-form", { state: "visible" });
-			await page.fill("#kurz-name", "Nový kurz UI");
-			await page.selectOption("#kurz-age-group", "1 - 2 roky");
-			await page.locator("#add-kurz-form button[type='submit']").click();
+			await page.waitForSelector("#add-program-form", { state: "visible" });
+			await page.fill("#program-name", "Nový kurz UI");
+			await page.selectOption("#program-age-group", "1 - 2 roky");
+			await page.locator("#add-program-form button[type='submit']").click();
 
 			await expect(
-				page.locator(".kurz-section").filter({ hasText: "Nový kurz UI" }),
+				page.locator(".program-section").filter({ hasText: "Nový kurz UI" }),
 			).toBeVisible({ timeout: 5000 });
 		});
 	});

@@ -4,11 +4,11 @@ import { createCourse } from "../src/course.js";
 import {
 	CourseDB,
 	initializeDatabase,
-	KurzDB,
+	ProgramDB,
 	resetDatabaseForTests,
 	UserDB,
 } from "../src/database.js";
-import { createKurz } from "../src/kurz.js";
+import { createProgram } from "../src/program.js";
 
 const BASE = "http://localhost:3000";
 
@@ -25,7 +25,7 @@ async function loginAs(
 }
 
 test.describe
-	.serial("Kurz API — CRUD", () => {
+	.serial("Program API — CRUD", () => {
 		let adminCookie: string;
 		let participantCookie: string;
 
@@ -49,8 +49,8 @@ test.describe
 				.cookie;
 		});
 
-		test("GET /api/kurzy returns empty array when none exist", async () => {
-			const res = await fetch(`${BASE}/api/kurzy`, {
+		test("GET /api/programs returns empty array when none exist", async () => {
+			const res = await fetch(`${BASE}/api/programs`, {
 				headers: { Cookie: adminCookie },
 			});
 			expect(res.status).toBe(200);
@@ -59,11 +59,15 @@ test.describe
 			expect(data).toHaveLength(0);
 		});
 
-		test("GET /api/kurzy returns all kurzy", async () => {
-			await KurzDB.insert(createKurz({ name: "Alfa", ageGroup: "1 - 2 roky" }));
-			await KurzDB.insert(createKurz({ name: "Beta", ageGroup: "1 - 2 roky" }));
+		test("GET /api/programs returns all programs", async () => {
+			await ProgramDB.insert(
+				createProgram({ name: "Alfa", ageGroup: "1 - 2 roky" }),
+			);
+			await ProgramDB.insert(
+				createProgram({ name: "Beta", ageGroup: "1 - 2 roky" }),
+			);
 
-			const res = await fetch(`${BASE}/api/kurzy`, {
+			const res = await fetch(`${BASE}/api/programs`, {
 				headers: { Cookie: adminCookie },
 			});
 			expect(res.status).toBe(200);
@@ -71,11 +75,11 @@ test.describe
 			expect(data).toHaveLength(2);
 		});
 
-		test("GET /api/kurzy/:id returns a single kurz", async () => {
-			const kurz = createKurz({ name: "Solo", ageGroup: "1 - 2 roky" });
-			await KurzDB.insert(kurz);
+		test("GET /api/programs/:id returns a single program", async () => {
+			const program = createProgram({ name: "Solo", ageGroup: "1 - 2 roky" });
+			await ProgramDB.insert(program);
 
-			const res = await fetch(`${BASE}/api/kurzy/${kurz.id}`, {
+			const res = await fetch(`${BASE}/api/programs/${program.id}`, {
 				headers: { Cookie: adminCookie },
 			});
 			expect(res.status).toBe(200);
@@ -83,15 +87,15 @@ test.describe
 			expect(data.name).toBe("Solo");
 		});
 
-		test("GET /api/kurzy/:id returns 404 for unknown id", async () => {
-			const res = await fetch(`${BASE}/api/kurzy/nope`, {
+		test("GET /api/programs/:id returns 404 for unknown id", async () => {
+			const res = await fetch(`${BASE}/api/programs/nope`, {
 				headers: { Cookie: adminCookie },
 			});
 			expect(res.status).toBe(404);
 		});
 
-		test("POST /api/kurzy creates a kurz (admin)", async () => {
-			const res = await fetch(`${BASE}/api/kurzy`, {
+		test("POST /api/programs creates a program (admin)", async () => {
+			const res = await fetch(`${BASE}/api/programs`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json", Cookie: adminCookie },
 				body: JSON.stringify({
@@ -101,13 +105,13 @@ test.describe
 			});
 			expect(res.status).toBe(201);
 			const data = await res.json();
-			expect(data.id).toMatch(/^kurz_/);
+			expect(data.id).toMatch(/^program_/);
 			expect(data.name).toBe("Nový kurz");
 			expect(data.color).toMatch(/^#/);
 		});
 
-		test("POST /api/kurzy returns 400 for an empty name", async () => {
-			const res = await fetch(`${BASE}/api/kurzy`, {
+		test("POST /api/programs returns 400 for an empty name", async () => {
+			const res = await fetch(`${BASE}/api/programs`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json", Cookie: adminCookie },
 				body: JSON.stringify({ name: "", ageGroup: "1 - 2 roky" }),
@@ -115,8 +119,8 @@ test.describe
 			expect(res.status).toBe(400);
 		});
 
-		test("POST /api/kurzy returns 400 for an invalid age group", async () => {
-			const res = await fetch(`${BASE}/api/kurzy`, {
+		test("POST /api/programs returns 400 for an invalid age group", async () => {
+			const res = await fetch(`${BASE}/api/programs`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json", Cookie: adminCookie },
 				body: JSON.stringify({ name: "X", ageGroup: "not-a-real-age" }),
@@ -124,8 +128,8 @@ test.describe
 			expect(res.status).toBe(400);
 		});
 
-		test("POST /api/kurzy returns 403 for a participant", async () => {
-			const res = await fetch(`${BASE}/api/kurzy`, {
+		test("POST /api/programs returns 403 for a participant", async () => {
+			const res = await fetch(`${BASE}/api/programs`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -136,11 +140,11 @@ test.describe
 			expect(res.status).toBe(403);
 		});
 
-		test("PUT /api/kurzy/:id updates a kurz (admin)", async () => {
-			const kurz = createKurz({ name: "Před", ageGroup: "1 - 2 roky" });
-			await KurzDB.insert(kurz);
+		test("PUT /api/programs/:id updates a program (admin)", async () => {
+			const program = createProgram({ name: "Před", ageGroup: "1 - 2 roky" });
+			await ProgramDB.insert(program);
 
-			const res = await fetch(`${BASE}/api/kurzy/${kurz.id}`, {
+			const res = await fetch(`${BASE}/api/programs/${program.id}`, {
 				method: "PUT",
 				headers: { "Content-Type": "application/json", Cookie: adminCookie },
 				body: JSON.stringify({ name: "Po" }),
@@ -150,8 +154,8 @@ test.describe
 			expect(data.name).toBe("Po");
 		});
 
-		test("PUT /api/kurzy/:id returns 404 for unknown id", async () => {
-			const res = await fetch(`${BASE}/api/kurzy/nope`, {
+		test("PUT /api/programs/:id returns 404 for unknown id", async () => {
+			const res = await fetch(`${BASE}/api/programs/nope`, {
 				method: "PUT",
 				headers: { "Content-Type": "application/json", Cookie: adminCookie },
 				body: JSON.stringify({ name: "X" }),
@@ -159,36 +163,39 @@ test.describe
 			expect(res.status).toBe(404);
 		});
 
-		test("DELETE /api/kurzy/:id deletes a kurz (admin)", async () => {
-			const kurz = createKurz({ name: "Smazat", ageGroup: "1 - 2 roky" });
-			await KurzDB.insert(kurz);
+		test("DELETE /api/programs/:id deletes a program (admin)", async () => {
+			const program = createProgram({ name: "Smazat", ageGroup: "1 - 2 roky" });
+			await ProgramDB.insert(program);
 
-			const res = await fetch(`${BASE}/api/kurzy/${kurz.id}`, {
+			const res = await fetch(`${BASE}/api/programs/${program.id}`, {
 				method: "DELETE",
 				headers: { Cookie: adminCookie },
 			});
 			expect(res.status).toBe(200);
 
-			const check = await fetch(`${BASE}/api/kurzy/${kurz.id}`, {
+			const check = await fetch(`${BASE}/api/programs/${program.id}`, {
 				headers: { Cookie: adminCookie },
 			});
 			expect(check.status).toBe(404);
 		});
 
-		test("DELETE /api/kurzy/:id returns 403 for a participant", async () => {
-			const kurz = createKurz({ name: "Chráněný", ageGroup: "1 - 2 roky" });
-			await KurzDB.insert(kurz);
+		test("DELETE /api/programs/:id returns 403 for a participant", async () => {
+			const program = createProgram({
+				name: "Chráněný",
+				ageGroup: "1 - 2 roky",
+			});
+			await ProgramDB.insert(program);
 
-			const res = await fetch(`${BASE}/api/kurzy/${kurz.id}`, {
+			const res = await fetch(`${BASE}/api/programs/${program.id}`, {
 				method: "DELETE",
 				headers: { Cookie: participantCookie },
 			});
 			expect(res.status).toBe(403);
 		});
 
-		test("POST /api/courses accepts a kurzId and links the course", async () => {
-			const kurz = createKurz({ name: "Rodič", ageGroup: "1 - 2 roky" });
-			await KurzDB.insert(kurz);
+		test("POST /api/courses accepts a programId and links the course", async () => {
+			const program = createProgram({ name: "Rodič", ageGroup: "1 - 2 roky" });
+			await ProgramDB.insert(program);
 
 			const res = await fetch(`${BASE}/api/courses`, {
 				method: "POST",
@@ -197,18 +204,18 @@ test.describe
 					name: "Skupinka v kurzu",
 					ageGroup: "1 - 2 roky",
 					location: "Studio",
-					kurzId: kurz.id,
+					programId: program.id,
 				}),
 			});
 			expect(res.status).toBe(201);
 
-			const linked = await CourseDB.getByKurz(kurz.id);
+			const linked = await CourseDB.getByProgram(program.id);
 			expect(linked).toHaveLength(1);
 		});
 
-		test("PUT /api/courses/:id can reassign a course's kurzId", async () => {
-			const kurz = createKurz({ name: "Cíl", ageGroup: "1 - 2 roky" });
-			await KurzDB.insert(kurz);
+		test("PUT /api/courses/:id can reassign a course's programId", async () => {
+			const program = createProgram({ name: "Cíl", ageGroup: "1 - 2 roky" });
+			await ProgramDB.insert(program);
 			const course = createCourse({
 				name: "Přesouvaná",
 				ageGroup: "1 - 2 roky",
@@ -218,34 +225,37 @@ test.describe
 			const res = await fetch(`${BASE}/api/courses/${course.id}`, {
 				method: "PUT",
 				headers: { "Content-Type": "application/json", Cookie: adminCookie },
-				body: JSON.stringify({ kurzId: kurz.id }),
+				body: JSON.stringify({ programId: program.id }),
 			});
 			expect(res.status).toBe(200);
 
-			const linked = await CourseDB.getByKurz(kurz.id);
+			const linked = await CourseDB.getByProgram(program.id);
 			expect(linked).toHaveLength(1);
 			expect(linked[0]?.id).toBe(course.id);
 		});
 
-		test("PUT /api/courses/:id with kurzId null un-assigns the course", async () => {
-			const kurz = createKurz({ name: "Odebrat", ageGroup: "1 - 2 roky" });
-			await KurzDB.insert(kurz);
+		test("PUT /api/courses/:id with programId null un-assigns the course", async () => {
+			const program = createProgram({
+				name: "Odebrat",
+				ageGroup: "1 - 2 roky",
+			});
+			await ProgramDB.insert(program);
 			const course = createCourse({
 				name: "Osamostatnělá",
 				ageGroup: "1 - 2 roky",
-				kurzId: kurz.id,
+				programId: program.id,
 			});
 			await CourseDB.insert(course);
 
 			const res = await fetch(`${BASE}/api/courses/${course.id}`, {
 				method: "PUT",
 				headers: { "Content-Type": "application/json", Cookie: adminCookie },
-				body: JSON.stringify({ kurzId: null }),
+				body: JSON.stringify({ programId: null }),
 			});
 			expect(res.status).toBe(200);
 
 			const retrieved = await CourseDB.getById(course.id);
-			expect(retrieved?.kurzId).toBeNull();
-			expect(await CourseDB.getByKurz(kurz.id)).toHaveLength(0);
+			expect(retrieved?.programId).toBeNull();
+			expect(await CourseDB.getByProgram(program.id)).toHaveLength(0);
 		});
 	});
