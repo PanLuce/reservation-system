@@ -342,8 +342,11 @@ export async function ensureAdminUser() {
 	}
 
 	const passwordHash = await bcrypt.hash(adminPassword, 10);
+	// OR REPLACE on the fixed admin_seed id: if a stale seed row survives a reset
+	// (e.g. a test that seeded a different admin email), overwrite it with the
+	// current correct credentials instead of colliding on the primary key.
 	await client.execute({
-		sql: "INSERT INTO users (id, email, passwordHash, name, role) VALUES (?, ?, ?, ?, ?)",
+		sql: "INSERT OR REPLACE INTO users (id, email, passwordHash, name, role) VALUES (?, ?, ?, ?, ?)",
 		args: ["admin_seed", adminEmail, passwordHash, "Admin", "admin"],
 	});
 
