@@ -13,14 +13,6 @@ A complete reservation management system for exercise classes with lessons, part
 
 ## 🚀 Quick Start
 
-### **Option 1: Test UI Only (No Setup)**
-
-1. Open `standalone.html` in your browser
-2. Click around to test all features with mock data
-3. Perfect for UI testing!
-
-### **Option 2: Run Full Server with Database**
-
 ```bash
 # Install dependencies (first time only)
 npm install
@@ -94,16 +86,22 @@ Age groups: `3-12 months`, `1-2 years`, `2-3 years`, `3-4 years`
 
 ```
 reservation-system/
-├── src/                    # Business logic
-│   ├── database.ts         # Database layer ✨
-│   ├── calendar-db.ts      # DB-backed calendar ✨
-│   ├── registration-db.ts  # DB-backed registrations ✨
-│   └── ...
-├── server.ts               # API server
-├── public/                 # Frontend
-├── data/                   # Database (auto-created) ✨
-│   └── reservations.db     # Your data lives here!
-└── standalone.html         # Test version
+├── src/                    # Business logic (18 modules)
+│   ├── database.ts         # DB layer: schema + per-entity gateways
+│   ├── auth.ts             # Authentication (bcrypt + sessions)
+│   ├── session-store.ts    # libSQL-backed express-session store
+│   ├── registration-db.ts  # Registration/booking business logic
+│   ├── calendar-db.ts      # DB-backed calendar + bulk lesson creation
+│   ├── program.ts / course.ts / lesson.ts / participant.ts / credit.ts  # Domain models
+│   ├── email-factory.ts / email-service.ts  # Email (nodemailer)
+│   ├── ods-loader.ts       # Participant import from .ods spreadsheets
+│   └── age-groups.ts / registration-rules.ts / env-flags.ts / logger.ts / types.ts
+├── server.ts               # Express API server (routes + middleware)
+├── public/                 # Frontend (static MPA: index.html, login.html, app.js)
+├── scripts/                # backup-db.ts (scheduled DB dump)
+├── tests/                  # Playwright E2E specs
+└── data/                   # Local SQLite (auto-created)
+    └── reservations.db     # Dev data (Turso in production)
 ```
 
 ## ✅ What's New

@@ -4,7 +4,8 @@
 
 Centrum Rubacek booking app. Single Express 5 + TypeScript server serving a Czech-language UI for managing group activity reservations (courses, lessons, participants). Database: Turso/libSQL via `@libsql/client`. Deployed to Render. Auth via express-session + bcrypt. Email via nodemailer.
 
-Entry points: `start.mjs` → `server.ts` (main router/middleware), modules in `src/` (auth, calendar, course, lesson, participant, email, xlsx-export, etc.).
+Entry points: `start.mjs` → `server.ts` (main router/middleware), modules in `src/` (auth, database, program, course,
+lesson, participant, registration-db, credit, email-service, ods-loader, session-store, etc.).
 
 ## Build & run
 
@@ -45,4 +46,6 @@ Playwright tests in `tests/` must be independent and seed their own data. Do not
 
 ## Deployment
 
-CI (`ci.yml`) runs typecheck → lint → test on every PR, then triggers a Render deploy on push to `main` via `RENDER_DEPLOY_HOOK_URL`. There is also a manual smoke test workflow (`smoke-login.yml`) that runs Playwright against production.
+CI (`ci.yml`) runs typecheck → lint → test on every push and PR to `main`, then triggers a Render deploy on push to
+`main` via `RENDER_DEPLOY_HOOK_URL`. There is also a manual smoke test workflow (`smoke-login.yml`) that runs Playwright
+against production, and a scheduled `backup-db.yml` that dumps the DB to a GitHub artifact.
