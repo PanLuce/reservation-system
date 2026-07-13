@@ -1,10 +1,11 @@
 import { test } from "@playwright/test";
+import { BASE } from "./helpers/base.js";
 
 test("register participant via UI and verify email would be sent", async ({
 	page,
 }) => {
 	// Navigate to the app
-	await page.goto("http://localhost:3000");
+	await page.goto(BASE);
 
 	// Wait for page to load
 	await page.waitForTimeout(1000);

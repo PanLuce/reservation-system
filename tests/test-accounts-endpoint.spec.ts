@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { initializeDatabase, resetDatabaseForTests } from "../src/database.js";
 import { isQuickLoginEnabled } from "../src/env-flags.js";
 
-const BASE = "http://localhost:3000";
+import { BASE } from "./helpers/base.js";
 
 // Endpoint is opt-in: served only when ENABLE_QUICK_LOGIN=true.
 // webServer in playwright.config.ts sets ENABLE_QUICK_LOGIN=true, so the

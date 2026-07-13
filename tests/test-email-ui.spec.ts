@@ -4,6 +4,7 @@ import {
 	resetDatabaseForTests,
 	seedSampleData,
 } from "../src/database.js";
+import { BASE } from "./helpers/base.js";
 
 test.describe("Email UI Tests", () => {
 	test.beforeEach(async () => {
@@ -20,7 +21,7 @@ test.describe("Email UI Tests", () => {
 		page,
 	}) => {
 		// Login first
-		await page.goto("http://localhost:3000/login.html");
+		await page.goto(`${BASE}/login.html`);
 		await page.fill("#login-email", "admin@centrumrubacek.cz");
 		await page.fill("#login-password", "admin123");
 

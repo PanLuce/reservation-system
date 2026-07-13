@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { initializeDatabase, resetDatabaseForTests } from "../src/database.js";
 
-const BASE = "http://localhost:3000";
+import { BASE } from "./helpers/base.js";
 
 test.describe("REQ-11: Login page — busy cursor feedback", () => {
 	test.beforeEach(async () => {

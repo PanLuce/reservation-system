@@ -9,7 +9,7 @@ import {
 	resetDatabaseForTests,
 } from "../src/database.js";
 
-const BASE = "http://localhost:3000";
+import { BASE } from "./helpers/base.js";
 
 // Mirrors localDateString() in public/app.js — the cutoff compares local
 // calendar dates, so the test must create lessons on the local date too,

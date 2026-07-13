@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { BASE } from "../helpers/base.js";
 
 /**
  * Test Suite: CSS File Loading Verification
@@ -10,7 +11,7 @@ import { expect, test } from "@playwright/test";
 test.describe("CSS File Loading - Direct Check", () => {
 	test("styles.css should return 200 OK", async ({ request }) => {
 		// Act: Fetch CSS file directly
-		const response = await request.get("http://localhost:3000/styles.css");
+		const response = await request.get(`${BASE}/styles.css`);
 
 		// Assert: Returns 200
 		expect(response.status()).toBe(200);
@@ -28,7 +29,7 @@ test.describe("CSS File Loading - Direct Check", () => {
 
 	test("app.js should return 200 OK", async ({ request }) => {
 		// Act: Fetch JS file directly
-		const response = await request.get("http://localhost:3000/app.js");
+		const response = await request.get(`${BASE}/app.js`);
 
 		// Assert: Returns 200
 		expect(response.status()).toBe(200);
@@ -59,7 +60,7 @@ test.describe("Dashboard Page - CSS Applied", () => {
 		});
 
 		// Act: Navigate to dashboard (redirects to login if not authenticated)
-		await page.goto("http://localhost:3000/");
+		await page.goto(`${BASE}/`);
 
 		// Assert: CSS was requested
 		expect(cssRequests.length).toBeGreaterThan(0);
@@ -71,7 +72,7 @@ test.describe("Dashboard Page - CSS Applied", () => {
 
 	test("login page should have warm brand background", async ({ page }) => {
 		// Arrange
-		await page.goto("http://localhost:3000/login.html");
+		await page.goto(`${BASE}/login.html`);
 		await page.waitForLoadState("networkidle");
 
 		// Act: Get body background color
@@ -103,7 +104,7 @@ test.describe("Static Assets - No 404 Errors", () => {
 		});
 
 		// Act: Navigate to homepage
-		await page.goto("http://localhost:3000/");
+		await page.goto(`${BASE}/`);
 		await page.waitForLoadState("networkidle");
 
 		// Assert: No 404s for styles.css or app.js
@@ -124,7 +125,7 @@ test.describe("Interactive Elements - Function Names Fixed", () => {
 		request,
 	}) => {
 		// Act: Fetch app.js source code
-		const response = await request.get("http://localhost:3000/app.js");
+		const response = await request.get(`${BASE}/app.js`);
 		const source = await response.text();
 
 		// Assert: core functions are defined with correct names (no underscores)
@@ -147,8 +148,8 @@ test.describe("Interactive Elements - Function Names Fixed", () => {
 	}) => {
 		// Arrange: Fetch both files
 		const [htmlResponse, jsResponse] = await Promise.all([
-			request.get("http://localhost:3000/index.html"),
-			request.get("http://localhost:3000/app.js"),
+			request.get(`${BASE}/index.html`),
+			request.get(`${BASE}/app.js`),
 		]);
 
 		const htmlSource = await htmlResponse.text();

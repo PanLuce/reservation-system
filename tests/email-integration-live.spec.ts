@@ -1,9 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { BASE as baseUrl } from "./helpers/base.js";
 
 test.describe("Email Integration - Live Test", () => {
 	test.skip("should send emails for registration and verify functionality — requires SMTP server", async () => {
-		const baseUrl = "http://localhost:3000";
-
 		// Test 1: Create a registration via API
 		console.log("📝 Step 1: Creating registration...");
 
@@ -79,8 +78,6 @@ test.describe("Email Integration - Live Test", () => {
 	});
 
 	test.skip("should handle full lesson (waitlist scenario) — requires SMTP server", async () => {
-		const baseUrl = "http://localhost:3000";
-
 		// First, check lesson capacity
 		const lessonsResponse = await fetch(`${baseUrl}/api/lessons`);
 		const lessons = await lessonsResponse.json();

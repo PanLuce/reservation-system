@@ -7,7 +7,7 @@ import {
 	resetDatabaseForTests,
 } from "../src/database.js";
 
-const BASE = "http://localhost:3000";
+import { BASE } from "./helpers/base.js";
 
 test.describe
 	.serial("GET /api/lessons includes courseColor and courseName", () => {

@@ -10,7 +10,7 @@ import {
 } from "../src/database.js";
 import { createProgram } from "../src/program.js";
 
-const BASE = "http://localhost:3000";
+import { BASE } from "./helpers/base.js";
 
 async function loginAs(
 	email: string,

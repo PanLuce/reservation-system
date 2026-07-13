@@ -7,7 +7,7 @@ import {
 	resetDatabaseForTests,
 } from "../src/database.js";
 
-const BASE = "http://localhost:3000";
+import { BASE } from "./helpers/base.js";
 
 async function loginAsAdmin(): Promise<string> {
 	const res = await fetch(`${BASE}/api/auth/login`, {

@@ -12,8 +12,8 @@ import {
 // docs/WORDPRESS_INTEGRATION.md: a plain top-level link from WordPress must
 // land on the app's own login page, first-party session cookies must work,
 // and the health/public-read surface a WordPress admin depends on must be up.
+import { BASE } from "./helpers/base.js";
 
-const BASE = "http://localhost:3000";
 const FIXTURE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const MOCK_WORDPRESS_PAGE = `file://${path.join(FIXTURE_DIR, "fixtures", "mock-wordpress.html")}`;
 

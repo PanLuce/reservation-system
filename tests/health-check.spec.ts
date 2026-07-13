@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
-
-const API_BASE = "http://localhost:3000";
+import { BASE as API_BASE } from "./helpers/base.js";
 
 test.describe("Health Check Endpoints", () => {
 	test("GET /health should return status ok", async ({ request }) => {

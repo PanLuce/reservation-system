@@ -12,7 +12,7 @@ import {
 } from "../src/database.js";
 import { createParticipant } from "../src/participant.js";
 
-const BASE = "http://localhost:3000";
+import { BASE } from "./helpers/base.js";
 
 // The credits endpoint only returns credits with expiresAt in the future,
 // and a fresh credit expires ~3 months out (see computeExpiry in src/credit.ts).

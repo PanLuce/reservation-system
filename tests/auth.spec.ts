@@ -7,6 +7,7 @@ import {
 	resetDatabaseForTests,
 	UserDB,
 } from "../src/database.js";
+import { BASE } from "./helpers/base.js";
 
 test.describe.configure({ mode: "serial" });
 
@@ -338,8 +339,6 @@ test.describe("Authentication Service", () => {
 		});
 	});
 });
-
-const BASE = "http://localhost:3000";
 
 test.describe
 	.serial("POST /api/auth/register endpoint", () => {

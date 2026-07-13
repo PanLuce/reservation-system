@@ -10,7 +10,7 @@ import {
 	resetDatabaseForTests,
 } from "../src/database.js";
 
-const BASE = "http://localhost:3000";
+import { BASE } from "./helpers/base.js";
 
 const CUTOFF_TOOLTIP = "Nelze se přihlásit jako náhrada po půlnoci před lekcí";
 
