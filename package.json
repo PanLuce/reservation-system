@@ -13,6 +13,7 @@
 		"test:debug": "./node_modules/.bin/playwright test --debug",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
+		"backup": "node --import tsx/esm scripts/backup-db.ts",
 		"format": "biome format --write .",
 		"build": "tsc",
 		"typecheck": "tsc --noEmit"
