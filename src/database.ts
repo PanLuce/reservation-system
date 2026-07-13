@@ -4,7 +4,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Client, createClient, type InValue } from "@libsql/client";
 import bcrypt from "bcrypt";
-import { AGE_GROUP_MIGRATION, ageGroupToColor } from "./age-groups.js";
 import { logger } from "./logger.js";
 import { toDateString } from "./types.js";
 
@@ -208,6 +207,10 @@ export async function initializeDatabase() {
 				args: [],
 			},
 			{
+				sql: "CREATE INDEX IF NOT EXISTS idx_courses_programId ON courses(programId)",
+				args: [],
+			},
+			{
 				sql: "CREATE INDEX IF NOT EXISTS idx_lessons_dayOfWeek ON lessons(dayOfWeek)",
 				args: [],
 			},
@@ -247,99 +250,7 @@ export async function initializeDatabase() {
 		"write",
 	);
 
-	await migrateAgeGroups();
-	await migrateLocationToCourses();
-	await migrateDropParticipantCourseId();
-	await migrateAddProgramIdToCourses();
-
 	logger.info("Database initialized successfully");
-}
-
-async function migrateAgeGroups() {
-	for (const [oldName, newName] of Object.entries(AGE_GROUP_MIGRATION)) {
-		const newColor = ageGroupToColor(newName);
-		await client.batch(
-			[
-				{
-					sql: "UPDATE courses SET ageGroup = ?, color = ? WHERE ageGroup = ?",
-					args: [newName, newColor, oldName],
-				},
-				{
-					sql: "UPDATE participants SET ageGroup = ? WHERE ageGroup = ?",
-					args: [newName, oldName],
-				},
-				{
-					sql: "UPDATE lessons SET ageGroup = ? WHERE ageGroup = ?",
-					args: [newName, oldName],
-				},
-			],
-			"write",
-		);
-	}
-}
-
-async function migrateLocationToCourses() {
-	// Add location column to courses if it doesn't exist yet (idempotent)
-	try {
-		await client.execute(
-			"ALTER TABLE courses ADD COLUMN location TEXT NOT NULL DEFAULT ''",
-		);
-	} catch {
-		// Column already exists — nothing to do
-	}
-
-	// Backfill courses.location from their first lesson's location BEFORE dropping the column
-	try {
-		await client.execute(`
-			UPDATE courses
-			SET location = (
-				SELECT location FROM lessons
-				WHERE lessons.courseId = courses.id
-				  AND location IS NOT NULL AND location != ''
-				LIMIT 1
-			)
-			WHERE location = '' AND EXISTS (
-				SELECT 1 FROM lessons
-				WHERE lessons.courseId = courses.id
-				  AND location IS NOT NULL AND location != ''
-			)
-		`);
-	} catch {
-		// lessons.location may already be gone — ignore
-	}
-
-	// Remove location column from lessons (it now lives on courses)
-	try {
-		await client.execute("ALTER TABLE lessons DROP COLUMN location");
-	} catch {
-		// Already removed or not supported — nothing to do
-	}
-}
-
-async function migrateDropParticipantCourseId() {
-	try {
-		await client.execute("ALTER TABLE participants DROP COLUMN courseId");
-	} catch {
-		// Column already dropped or not supported — nothing to do
-	}
-}
-
-async function migrateAddProgramIdToCourses() {
-	// Link courses (Skupinky) to their parent Program. Nullable — existing courses
-	// stay unassigned until an admin groups them. SQLite cannot add a column with
-	// an inline FK via ALTER, so the FK is enforced only on freshly created tables
-	// (see the courses DDL); the column add here is enough for existing databases.
-	try {
-		await client.execute("ALTER TABLE courses ADD COLUMN programId TEXT");
-	} catch {
-		// Column already exists — nothing to do
-	}
-
-	// Index creation must follow the column add: on existing databases the column
-	// does not exist during the initial CREATE batch, so indexing it there fails.
-	await client.execute(
-		"CREATE INDEX IF NOT EXISTS idx_courses_programId ON courses(programId)",
-	);
 }
 
 export function assertDatabaseIsResettable(databaseUrl: string = url) {
@@ -693,9 +604,9 @@ export const ProgramDB = {
 
 	async delete(id: string) {
 		// Detach child courses first. On fresh databases the courses.programId FK
-		// handles this via ON DELETE SET NULL, but databases migrated with
-		// migrateAddProgramIdToCourses have a plain column without the FK, so we
-		// null it explicitly to keep behaviour identical everywhere.
+		// handles this via ON DELETE SET NULL, but older databases where programId
+		// was added via ALTER have a plain column without the FK, so we null it
+		// explicitly to keep behaviour identical everywhere.
 		await client.batch(
 			[
 				{
