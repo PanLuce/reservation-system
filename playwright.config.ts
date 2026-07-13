@@ -6,6 +6,12 @@ import { defineConfig, devices } from "@playwright/test";
 const TEST_DATABASE_URL = "file:./data/test.db";
 process.env.TURSO_DATABASE_URL = TEST_DATABASE_URL;
 delete process.env.TURSO_AUTH_TOKEN;
+// The test-runner process (which imports src/database.js directly) must be in
+// test mode so its in-process client resolves to the same per-worker file
+// (file:./data/test-<TEST_PARALLEL_INDEX>.db) that the webServer opens. Without
+// this the runner stays on the shared test.db while the server uses test-0.db,
+// so seeded data is invisible over HTTP. Workers inherit this env.
+process.env.NODE_ENV = "test";
 
 export default defineConfig({
 	testDir: "./tests",
@@ -30,7 +36,11 @@ export default defineConfig({
 		timeout: 120 * 1000,
 		reuseExistingServer: !process.env.CI,
 		env: {
-			TURSO_DATABASE_URL: TEST_DATABASE_URL,
+			// The single shared server must target the same file the (single) test
+			// worker resolves to. Workers rewrite file:./data/test.db to include
+			// TEST_PARALLEL_INDEX (see perWorkerTestDatabaseUrl); with workers: 1 that
+			// is slot 0. CP4 replaces this shared server with a per-worker fixture.
+			TURSO_DATABASE_URL: "file:./data/test-0.db",
 			TURSO_AUTH_TOKEN: "",
 			// Explicit NODE_ENV so a production value exported in the developer's
 			// shell cannot disable the seeding the specs depend on.

@@ -29,10 +29,40 @@ export function resolveDatabaseUrl({
 	return `file:${path.join(__dirname, "..", "data", "reservations.db")}`;
 }
 
-const url = resolveDatabaseUrl({
-	isProduction: process.env.NODE_ENV === "production",
-	tursoDatabaseUrl: process.env.TURSO_DATABASE_URL,
-});
+// Give each parallel Playwright slot its own SQLite file so the suite can run
+// in parallel without workers clobbering a shared database. The index is
+// TEST_PARALLEL_INDEX (bounded 0..workers-1, stable across worker respawns) — not
+// TEST_WORKER_INDEX, which increments unboundedly. The webServer subprocess is
+// handed an already-resolved URL instead, so this is a no-op there.
+export function perWorkerTestDatabaseUrl(
+	baseUrl: string,
+	opts: { nodeEnv: string | undefined; parallelIndex: string | undefined },
+): string {
+	if (opts.nodeEnv !== "test") {
+		return baseUrl;
+	}
+	if (!baseUrl.startsWith("file:")) {
+		return baseUrl;
+	}
+	if (opts.parallelIndex === undefined) {
+		return baseUrl;
+	}
+	if (!baseUrl.endsWith(".db")) {
+		return baseUrl;
+	}
+	return `${baseUrl.slice(0, -".db".length)}-${opts.parallelIndex}.db`;
+}
+
+const url = perWorkerTestDatabaseUrl(
+	resolveDatabaseUrl({
+		isProduction: process.env.NODE_ENV === "production",
+		tursoDatabaseUrl: process.env.TURSO_DATABASE_URL,
+	}),
+	{
+		nodeEnv: process.env.NODE_ENV,
+		parallelIndex: process.env.TEST_PARALLEL_INDEX,
+	},
+);
 const authToken = process.env.TURSO_AUTH_TOKEN;
 
 // Ensure data directory exists for local file mode
