@@ -342,13 +342,25 @@ export function assertDatabaseIsResettable(databaseUrl: string = url) {
 
 export async function resetDatabaseForTests() {
 	assertDatabaseIsResettable();
+	// Preserve the row for the current admin-seed email so ensureAdminUser() below
+	// no-ops (its existence check is by email) instead of re-running bcrypt.hash on
+	// every test — a heavy per-test cost across the suite. A row with a stale email
+	// (e.g. left by a test that seeds a different admin) is still deleted, so
+	// ensureAdminUser re-creates a correct one and the reset stays self-healing.
+	const adminEmail = resolveSeedCredentials(
+		process.env.ADMIN_EMAIL_SEED,
+		process.env.ADMIN_PASSWORD_SEED,
+		{ email: DEFAULT_ADMIN_EMAIL, password: DEFAULT_ADMIN_PASSWORD },
+	)?.email;
 	await client.batch(
 		[
 			{ sql: "DELETE FROM sessions", args: [] },
 			{ sql: "DELETE FROM substitution_credits", args: [] },
 			{ sql: "DELETE FROM registrations", args: [] },
 			{ sql: "DELETE FROM course_participants", args: [] },
-			{ sql: "DELETE FROM users", args: [] },
+			adminEmail
+				? { sql: "DELETE FROM users WHERE email != ?", args: [adminEmail] }
+				: { sql: "DELETE FROM users", args: [] },
 			{ sql: "DELETE FROM lessons", args: [] },
 			{ sql: "DELETE FROM participants", args: [] },
 			{ sql: "DELETE FROM courses", args: [] },

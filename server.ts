@@ -1266,40 +1266,32 @@ app.post(
 	},
 );
 
+// Extend and shorten are the same operation — set a credit's expiry to a new
+// date. Two routes are kept for API clarity; they share one handler.
+async function setCreditExpiry(req: express.Request, res: express.Response) {
+	const creditId = req.params.creditId as string;
+	const { newExpiresAt } = req.body;
+	if (!newExpiresAt) {
+		return res.status(400).json({ error: "newExpiresAt is required" });
+	}
+	const result = await CreditDB.updateExpiry(creditId, newExpiresAt);
+	if (result.changes === 0) {
+		return res.status(404).json({ error: "Credit not found" });
+	}
+	const updated = await CreditDB.getById(creditId);
+	res.json(updated);
+}
+
 app.post(
 	"/api/admin/participants/:participantId/credits/:creditId/extend",
 	requireAdmin,
-	async (req, res) => {
-		const creditId = req.params.creditId as string;
-		const { newExpiresAt } = req.body;
-		if (!newExpiresAt) {
-			return res.status(400).json({ error: "newExpiresAt is required" });
-		}
-		const result = await CreditDB.updateExpiry(creditId, newExpiresAt);
-		if (result.changes === 0) {
-			return res.status(404).json({ error: "Credit not found" });
-		}
-		const updated = await CreditDB.getById(creditId);
-		res.json(updated);
-	},
+	setCreditExpiry,
 );
 
 app.post(
 	"/api/admin/participants/:participantId/credits/:creditId/shorten",
 	requireAdmin,
-	async (req, res) => {
-		const creditId = req.params.creditId as string;
-		const { newExpiresAt } = req.body;
-		if (!newExpiresAt) {
-			return res.status(400).json({ error: "newExpiresAt is required" });
-		}
-		const result = await CreditDB.updateExpiry(creditId, newExpiresAt);
-		if (result.changes === 0) {
-			return res.status(404).json({ error: "Credit not found" });
-		}
-		const updated = await CreditDB.getById(creditId);
-		res.json(updated);
-	},
+	setCreditExpiry,
 );
 
 // Substitutions
