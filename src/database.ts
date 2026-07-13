@@ -85,8 +85,6 @@ export async function initializeDatabase() {
 		await client.execute("PRAGMA busy_timeout = 5000");
 	}
 
-	await migrateKurzyToPrograms();
-
 	await client.batch(
 		[
 			{
@@ -342,24 +340,6 @@ async function migrateAddProgramIdToCourses() {
 	await client.execute(
 		"CREATE INDEX IF NOT EXISTS idx_courses_programId ON courses(programId)",
 	);
-}
-
-async function migrateKurzyToPrograms() {
-	// Renames the Czech-named "kurzy" entity to "Program", matching the rest of the
-	// domain's English naming (Course, Lesson, Participant). Renaming, not
-	// recreating, so existing rows on already-initialized databases survive.
-	try {
-		await client.execute("ALTER TABLE kurzy RENAME TO programs");
-	} catch {
-		// Already renamed, or table never existed on a fresh database — nothing to do
-	}
-	try {
-		await client.execute(
-			"ALTER TABLE courses RENAME COLUMN kurzId TO programId",
-		);
-	} catch {
-		// Already renamed, or column doesn't exist yet on a fresh database
-	}
 }
 
 export function assertDatabaseIsResettable(databaseUrl: string = url) {
