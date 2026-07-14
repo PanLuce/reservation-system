@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Client, createClient, type InValue } from "@libsql/client";
 import bcrypt from "bcrypt";
+import type { Lesson } from "./lesson.js";
 import { logger } from "./logger.js";
 import { localDateString, toDateString } from "./types.js";
 
@@ -798,7 +799,7 @@ export const LessonDB = {
 		return { changes: result.rowsAffected };
 	},
 
-	async update(id: string, updates: Partial<Record<string, unknown>>) {
+	async update(id: string, updates: Partial<Lesson>) {
 		const fields = Object.keys(updates)
 			.map((key) => `${key} = ?`)
 			.join(", ");

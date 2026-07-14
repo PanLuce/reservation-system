@@ -35,7 +35,7 @@ import {
 import { createEmailService } from "./src/email-factory.js";
 import { isQuickLoginEnabled } from "./src/env-flags.js";
 import { validateParticipantInput } from "./src/input-validation.js";
-import { createLesson } from "./src/lesson.js";
+import { createLesson, pickUpdatableLessonFields } from "./src/lesson.js";
 import { logger } from "./src/logger.js";
 import { parseOdsWorkbook } from "./src/ods-loader.js";
 import { createParticipant } from "./src/participant.js";
@@ -977,7 +977,11 @@ app.put("/api/lessons/:id", requireAdmin, async (req, res) => {
 	if (!lesson) {
 		return res.status(404).json({ error: "Lesson not found" });
 	}
-	await calendar.updateLesson(lessonId, req.body);
+	const updates = pickUpdatableLessonFields(req.body);
+	if (Object.keys(updates).length === 0) {
+		return res.status(400).json({ error: "No updatable fields provided" });
+	}
+	await calendar.updateLesson(lessonId, updates);
 	const updated = await calendar.getLessonById(lessonId);
 	res.json(updated);
 });
