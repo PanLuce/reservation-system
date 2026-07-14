@@ -1107,7 +1107,90 @@ export const RegistrationDB = {
 		});
 		return result.rows;
 	},
+
+	/**
+	 * Atomically reads a lesson's capacity, inserts the registration, and bumps
+	 * enrolledCount if there's room — all inside one write transaction, so two
+	 * concurrent callers racing for the last seat can't both read "not full" and
+	 * both insert as confirmed. Local SQLite write-transactions throw SQLITE_BUSY
+	 * on conflict instead of queueing server-side (unlike Turso's remote HTTP
+	 * client), so callers must go through withWriteRetry.
+	 */
+	async insertWithCapacityCheck(
+		registration: {
+			id: string;
+			lessonId: string;
+			participantId: string;
+			missedLessonId?: string | undefined;
+		},
+		options?: { forceCapacity?: boolean | undefined },
+	): Promise<{ status: "confirmed" | "waitlist"; wasFull: boolean }> {
+		return withWriteRetry(async () => {
+			const tx = await client.transaction("write");
+			try {
+				const lessonRow = await tx.execute({
+					sql: "SELECT enrolledCount, capacity FROM lessons WHERE id = ?",
+					args: [registration.lessonId],
+				});
+				const lesson = lessonRow.rows[0];
+				if (!lesson) {
+					throw new Error(`Lesson ${registration.lessonId} not found`);
+				}
+				const enrolledCount = lesson.enrolledCount as number;
+				const capacity = lesson.capacity as number;
+				const isFull = enrolledCount >= capacity;
+				const confirm = !isFull || options?.forceCapacity;
+				const status: "confirmed" | "waitlist" = confirm
+					? "confirmed"
+					: "waitlist";
+
+				await tx.execute({
+					sql: "INSERT INTO registrations (id, lessonId, participantId, status, missedLessonId) VALUES (?, ?, ?, ?, ?)",
+					args: [
+						registration.id,
+						registration.lessonId,
+						registration.participantId,
+						status,
+						registration.missedLessonId || null,
+					],
+				});
+
+				if (confirm) {
+					await tx.execute({
+						sql: "UPDATE lessons SET enrolledCount = enrolledCount + 1 WHERE id = ?",
+						args: [registration.lessonId],
+					});
+				}
+
+				await tx.commit();
+				return { status, wasFull: isFull };
+			} finally {
+				tx.close();
+			}
+		});
+	},
 };
+
+const WRITE_RETRY_ATTEMPTS = 50;
+
+async function withWriteRetry<T>(fn: () => Promise<T>): Promise<T> {
+	for (let attempt = 0; ; attempt++) {
+		try {
+			return await fn();
+		} catch (error) {
+			const isBusy =
+				error instanceof Error &&
+				"code" in error &&
+				(error as { code?: string }).code === "SQLITE_BUSY";
+			if (!isBusy || attempt >= WRITE_RETRY_ATTEMPTS - 1) {
+				throw error;
+			}
+			await new Promise((resolve) =>
+				setTimeout(resolve, 5 + Math.random() * 15),
+			);
+		}
+	}
+}
 
 // Database operations for Users
 export const UserDB = {

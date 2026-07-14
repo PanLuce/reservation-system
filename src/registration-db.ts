@@ -8,6 +8,46 @@ import { localDateString, type Registration } from "./types.js";
 export class RegistrationManagerDB {
 	constructor(private emailService?: EmailServiceInterface) {}
 
+	/**
+	 * Shared atomic core for every registration flow (self-service, substitution,
+	 * bulk-assign, admin override). Delegates the capacity-check/insert/count-update
+	 * sequence to RegistrationDB.insertWithCapacityCheck, which runs it inside one
+	 * write transaction — closing the overbooking race where two concurrent callers
+	 * both read "not full" and both get confirmed on the last seat.
+	 */
+	private async createAtomicRegistration(params: {
+		lessonId: string;
+		participantId: string;
+		missedLessonId?: string | undefined;
+		forceCapacity?: boolean | undefined;
+	}): Promise<{
+		registration: Registration;
+		status: "confirmed" | "waitlist";
+		wasFull: boolean;
+	}> {
+		const id = this.generateId();
+		const { status, wasFull } = await RegistrationDB.insertWithCapacityCheck(
+			{
+				id,
+				lessonId: params.lessonId,
+				participantId: params.participantId,
+				missedLessonId: params.missedLessonId,
+			},
+			{ forceCapacity: params.forceCapacity },
+		);
+		const registration: Registration = {
+			id,
+			lessonId: params.lessonId,
+			participantId: params.participantId,
+			registeredAt: new Date(),
+			status,
+			...(params.missedLessonId
+				? { missedLessonId: params.missedLessonId }
+				: {}),
+		};
+		return { registration, status, wasFull };
+	}
+
 	async registerParticipant(
 		lessonId: string,
 		participant: Participant,
@@ -26,28 +66,10 @@ export class RegistrationManagerDB {
 			throw new Error(`Lesson ${lessonId} not found`);
 		}
 
-		const enrolledCount = lesson.enrolledCount as number;
-		const capacity = lesson.capacity as number;
-		const isFull = enrolledCount >= capacity;
-		const status = isFull ? "waitlist" : "confirmed";
-
-		const registration: Registration = {
-			id: this.generateId(),
+		const { registration, status } = await this.createAtomicRegistration({
 			lessonId,
 			participantId: participant.id,
-			registeredAt: new Date(),
-			status: status as "confirmed" | "waitlist" | "cancelled",
-		};
-
-		// Save registration
-		await RegistrationDB.insert(registration);
-
-		// Update lesson enrolled count if confirmed
-		if (!isFull) {
-			await LessonDB.update(lessonId, {
-				enrolledCount: enrolledCount + 1,
-			});
-		}
+		});
 
 		// Send emails asynchronously (don't block registration)
 		if (this.emailService) {
@@ -154,29 +176,11 @@ export class RegistrationManagerDB {
 			throw new Error(`Lesson ${lessonId} not found`);
 		}
 
-		const enrolledCount = lesson.enrolledCount as number;
-		const capacity = lesson.capacity as number;
-		const isFull = enrolledCount >= capacity;
-		const status = isFull ? "waitlist" : "confirmed";
-
-		const registration: Registration = {
-			id: this.generateId(),
+		const { registration } = await this.createAtomicRegistration({
 			lessonId,
 			participantId: participant.id,
-			registeredAt: new Date(),
-			status: status as "confirmed" | "waitlist" | "cancelled",
 			missedLessonId,
-		};
-
-		// Save registration
-		await RegistrationDB.insert(registration);
-
-		// Update lesson enrolled count if confirmed
-		if (!isFull) {
-			await LessonDB.update(lessonId, {
-				enrolledCount: enrolledCount + 1,
-			});
-		}
+		});
 
 		return registration;
 	}
@@ -246,7 +250,7 @@ export class RegistrationManagerDB {
 						continue;
 					}
 
-					// Get lesson to check capacity
+					// Get lesson to confirm it exists
 					const lesson = (await LessonDB.getById(lessonId)) as
 						| Record<string, unknown>
 						| undefined;
@@ -259,26 +263,12 @@ export class RegistrationManagerDB {
 						continue;
 					}
 
-					const enrolledCount = lesson.enrolledCount as number;
-					const capacity = lesson.capacity as number;
-					const isFull = enrolledCount >= capacity;
-					const status = isFull ? "waitlist" : "confirmed";
-
-					// Create registration
-					const registration = {
-						id: this.generateId(),
+					const { status } = await this.createAtomicRegistration({
 						lessonId,
 						participantId,
-						status,
-					};
+					});
 
-					await RegistrationDB.insert(registration);
-
-					// Update lesson enrolled count if confirmed
-					if (!isFull) {
-						await LessonDB.update(lessonId, {
-							enrolledCount: enrolledCount + 1,
-						});
+					if (status === "confirmed") {
 						result.successful++;
 					} else {
 						result.waitlisted++;
@@ -643,44 +633,18 @@ export class RegistrationManagerDB {
 			overrideReason = `Age group override: participant is ${participant.ageGroup}, lesson is for ${lesson.ageGroup}`;
 		}
 
-		// Check capacity
-		const enrolledCount = lesson.enrolledCount as number;
-		const capacity = lesson.capacity as number;
-		const isFull = enrolledCount >= capacity;
-
-		let status: "confirmed" | "waitlist" | "cancelled" = "confirmed";
-
-		// Admin can force capacity, otherwise respect capacity limits
-		if (isFull && !options?.forceCapacity) {
-			status = "waitlist";
-		} else if (isFull && options?.forceCapacity) {
-			// Force capacity override
-			if (overrideReason) {
-				overrideReason +=
-					"; Capacity override: lesson is full but admin forced registration";
-			} else {
-				overrideReason =
-					"Capacity override: lesson is full but admin forced registration";
-			}
-		}
-
-		// Create registration
-		const registration: Registration = {
-			id: this.generateId(),
-			lessonId,
-			participantId,
-			registeredAt: new Date(),
-			status,
-		};
-
 		try {
-			await RegistrationDB.insert(registration);
-
-			// Update lesson enrolled count if confirmed
-			if (status === "confirmed") {
-				await LessonDB.update(lessonId, {
-					enrolledCount: enrolledCount + 1,
+			const { registration, status, wasFull } =
+				await this.createAtomicRegistration({
+					lessonId,
+					participantId,
+					forceCapacity: options?.forceCapacity,
 				});
+
+			if (status === "confirmed" && wasFull && options?.forceCapacity) {
+				overrideReason += overrideReason
+					? "; Capacity override: lesson is full but admin forced registration"
+					: "Capacity override: lesson is full but admin forced registration";
 			}
 
 			const result: {
