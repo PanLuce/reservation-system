@@ -11,15 +11,9 @@ import {
 } from "../src/database.js";
 
 import { BASE } from "./helpers/base.js";
+import { today, tomorrow } from "./helpers/dates.js";
 
 const CUTOFF_TOOLTIP = "Nelze se přihlásit jako náhrada po půlnoci před lekcí";
-
-// Mirrors localDateString() in public/app.js — the cutoff compares local
-// calendar dates, so the test must create lessons on the local date too,
-// or it goes flaky between 00:00–02:00 Prague time (UTC offset).
-function localDateString(date = new Date()) {
-	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
 
 async function loginAsParticipant(page: import("@playwright/test").Page) {
 	await page.goto(`${BASE}/login.html`);
@@ -30,14 +24,17 @@ async function loginAsParticipant(page: import("@playwright/test").Page) {
 	await page.waitForSelector("#calendar-grid", { timeout: 10000 });
 }
 
+// Takes a Prague-local YYYY-MM-DD string (from tests/helpers/dates) so calendar
+// navigation matches the Prague-pinned browser timezone — no Node-local Date math.
 async function openDayModalFor(
 	page: import("@playwright/test").Page,
-	date: Date,
+	dateStr: string,
 ) {
-	const today = new Date();
+	const [year, month, day] = dateStr.split("-").map(Number);
+	const [ty, tm] = today().split("-").map(Number);
 	const monthsAhead =
-		(date.getFullYear() - today.getFullYear()) * 12 +
-		(date.getMonth() - today.getMonth());
+		((year as number) - (ty as number)) * 12 +
+		((month as number) - (tm as number));
 	for (let i = 0; i < monthsAhead; i++) {
 		await page.click('button[onclick="calendarNextMonth()"]');
 	}
@@ -45,7 +42,7 @@ async function openDayModalFor(
 		.locator(".calendar-day")
 		.filter({
 			has: page.locator(".calendar-day-number", {
-				hasText: new RegExp(`^${date.getDate()}$`),
+				hasText: new RegExp(`^${day}$`),
 			}),
 		})
 		.click();
@@ -130,11 +127,11 @@ test.describe("REQ: Náhrada button disabled after midnight cutoff (day modal)",
 	test("náhrada button is disabled with cutoff tooltip for a lesson today (past midnight cutoff)", async ({
 		page,
 	}) => {
-		await seedCandidateLesson(localDateString());
+		await seedCandidateLesson(today());
 		await seedActiveCredit();
 
 		await loginAsParticipant(page);
-		await openDayModalFor(page, new Date());
+		await openDayModalFor(page, today());
 
 		const button = nahradaButton(page);
 		await expect(button).toBeDisabled();
@@ -144,13 +141,11 @@ test.describe("REQ: Náhrada button disabled after midnight cutoff (day modal)",
 	test("náhrada button is enabled for a lesson tomorrow (before midnight cutoff, credit available)", async ({
 		page,
 	}) => {
-		const tomorrow = new Date();
-		tomorrow.setDate(tomorrow.getDate() + 1);
-		await seedCandidateLesson(localDateString(tomorrow));
+		await seedCandidateLesson(tomorrow());
 		await seedActiveCredit();
 
 		await loginAsParticipant(page);
-		await openDayModalFor(page, tomorrow);
+		await openDayModalFor(page, tomorrow());
 
 		await expect(nahradaButton(page)).toBeEnabled();
 	});
@@ -158,10 +153,10 @@ test.describe("REQ: Náhrada button disabled after midnight cutoff (day modal)",
 	test("cutoff tooltip takes priority over the zero-credit tooltip for a lesson today", async ({
 		page,
 	}) => {
-		await seedCandidateLesson(localDateString());
+		await seedCandidateLesson(today());
 
 		await loginAsParticipant(page);
-		await openDayModalFor(page, new Date());
+		await openDayModalFor(page, today());
 
 		const button = nahradaButton(page);
 		await expect(button).toBeDisabled();
@@ -183,7 +178,7 @@ test.describe("REQ: Náhrada button disabled after midnight cutoff (candidates l
 	test("list náhrada button is disabled with cutoff tooltip for a lesson today", async ({
 		page,
 	}) => {
-		await seedCandidateLesson(localDateString());
+		await seedCandidateLesson(today());
 		await seedActiveCredit();
 
 		await loginAsParticipant(page);
@@ -197,9 +192,7 @@ test.describe("REQ: Náhrada button disabled after midnight cutoff (candidates l
 	test("list náhrada button is enabled for a lesson tomorrow", async ({
 		page,
 	}) => {
-		const tomorrow = new Date();
-		tomorrow.setDate(tomorrow.getDate() + 1);
-		await seedCandidateLesson(localDateString(tomorrow));
+		await seedCandidateLesson(tomorrow());
 		await seedActiveCredit();
 
 		await loginAsParticipant(page);

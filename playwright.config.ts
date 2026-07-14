@@ -47,6 +47,12 @@ export default defineConfig({
 	// Wipe stale per-slot databases (and their WAL/SHM) once before the run.
 	use: {
 		trace: "on-first-retry",
+		// Centrum Rubáček is a Prague business; the midnight cutoff is Europe/Prague.
+		// Pin the browser timezone so client-side date logic (app.js's local-date
+		// button gating) is deterministic regardless of the machine running the tests
+		// (dev = Prague, CI = UTC). The server side needs no TZ pin — its cutoff uses
+		// Intl with an explicit Europe/Prague zone, correct in any process timezone.
+		timezoneId: "Europe/Prague",
 	},
 	projects: [
 		{

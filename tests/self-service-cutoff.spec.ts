@@ -13,6 +13,7 @@ import {
 import { createParticipant } from "../src/participant.js";
 
 import { BASE } from "./helpers/base.js";
+import { today, tomorrow } from "./helpers/dates.js";
 
 async function loginAs(email: string, password: string): Promise<string> {
 	const res = await fetch(`${BASE}/api/auth/login`, {
@@ -65,9 +66,7 @@ test.describe
 			});
 			await CourseDB.insert(course);
 
-			const tomorrow = new Date();
-			tomorrow.setDate(tomorrow.getDate() + 1);
-			const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+			const tomorrowStr = tomorrow();
 
 			await LessonDB.insert(
 				{
@@ -161,8 +160,7 @@ test.describe
 			await CourseDB.insert(course);
 
 			// Lesson TODAY — past midnight cutoff
-			const today = new Date();
-			const todayStr = today.toISOString().slice(0, 10);
+			const todayStr = today();
 
 			await LessonDB.insert(
 				{
@@ -209,8 +207,7 @@ test.describe
 			});
 			await CourseDB.insert(course);
 
-			const today = new Date();
-			const todayStr = today.toISOString().slice(0, 10);
+			const todayStr = today();
 
 			await LessonDB.insert(
 				{
