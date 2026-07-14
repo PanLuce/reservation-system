@@ -6,22 +6,14 @@ import cors from "cors";
 import express from "express";
 import session from "express-session";
 import helmet from "helmet";
-import { registrationManager, upload } from "./src/app-context.js";
-import {
-	CourseDB,
-	client,
-	initializeDatabase,
-	ParticipantDB,
-	seedSampleData,
-} from "./src/database.js";
+import { client, initializeDatabase, seedSampleData } from "./src/database.js";
 import { logger } from "./src/logger.js";
-import { requireAdmin } from "./src/middleware/auth.js";
-import { parseOdsWorkbook } from "./src/ods-loader.js";
-import { createParticipant } from "./src/participant.js";
 import { adminRouter } from "./src/routes/admin.js";
 import { authRouter } from "./src/routes/auth.js";
 import { coursesRouter } from "./src/routes/courses.js";
+import { createFrontendRouter } from "./src/routes/frontend.js";
 import { healthRouter } from "./src/routes/health.js";
+import { importRouter } from "./src/routes/import.js";
 import { lessonsRouter } from "./src/routes/lessons.js";
 import { participantsRouter } from "./src/routes/participants.js";
 import { registrationsRouter } from "./src/routes/registrations.js";
@@ -202,110 +194,11 @@ app.use(registrationsRouter);
 app.use(adminRouter);
 app.use(substitutionsRouter);
 
-// Import — Step 1: parse file, return flat candidate list (no DB writes)
-app.post(
-	"/api/admin/participants-import/preview",
-	requireAdmin,
-	upload.single("file"),
-	async (req, res) => {
-		if (!req.file) {
-			return res.status(400).json({ error: "No file uploaded" });
-		}
-		try {
-			const buffer = fs.readFileSync(req.file.path);
-			const parsed = parseOdsWorkbook(buffer);
-
-			const sheets = parsed.sheets.map((s) => ({
-				sheetName: s.sheetName,
-				detectedLocation: s.detectedLocation,
-				candidates: s.blocks.flatMap((b) =>
-					b.rows
-						.filter((r) => r.email)
-						.map((r) => ({ kidName: r.name || r.email, parentEmail: r.email })),
-				),
-			}));
-
-			res.json({ sheets });
-		} finally {
-			fs.unlink(req.file.path, () => {});
-		}
-	},
-);
-
-// Import — Step 2: assign selected candidates to an existing skupinka
-app.post(
-	"/api/admin/participants-import/commit",
-	requireAdmin,
-	async (req, res) => {
-		const { courseId, candidates } = req.body as {
-			courseId?: string;
-			candidates?: { kidName: string; parentEmail: string }[];
-		};
-
-		if (!courseId) {
-			return res.status(400).json({ error: "courseId is required" });
-		}
-		if (!Array.isArray(candidates) || candidates.length === 0) {
-			return res
-				.status(400)
-				.json({ error: "candidates must be a non-empty array" });
-		}
-
-		const course = await CourseDB.getById(courseId);
-		if (!course) {
-			return res.status(400).json({ error: "Course not found" });
-		}
-
-		const ageGroup = course.ageGroup as string;
-		let created = 0;
-		let skipped = 0;
-
-		for (const c of candidates) {
-			if (!c.parentEmail) continue;
-			const kidName = c.kidName || c.parentEmail;
-			const existing = await ParticipantDB.getByEmailAndName(
-				c.parentEmail,
-				kidName,
-			);
-
-			if (!existing) {
-				const newP = createParticipant({
-					name: kidName,
-					email: c.parentEmail,
-					phone: "",
-					ageGroup,
-				});
-				await ParticipantDB.insert(newP);
-				await ParticipantDB.linkToCourse(newP.id, courseId);
-				created++;
-			} else {
-				await ParticipantDB.linkToCourse(existing.id as string, courseId);
-				skipped++;
-			}
-		}
-
-		await registrationManager.syncGroupEnrollments(courseId);
-
-		res.json({ processed: candidates.length, created, skipped });
-	},
-);
+// ODS participant import (admin)
+app.use(importRouter);
 
 // Serve frontend
-app.get("/", (req, res) => {
-	// Check if user is authenticated
-	if (!req.session.userId) {
-		return res.redirect("/login.html");
-	}
-	res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-app.get("/login.html", (req, res) => {
-	// Redirect to main page if already logged in
-	if (req.session.userId) {
-		return res.redirect("/");
-	}
-	res.sendFile(path.join(__dirname, "public", "login.html"));
-});
+app.use(createFrontendRouter(path.join(__dirname, "public")));
 
 // Global Error Handling Middleware
 
@@ -395,5 +288,5 @@ process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 // Note: uncaughtException and unhandledRejection handlers are registered
-// at the top of the file (before any code that might crash) using console.error
-// for reliable output in container environments.
+// at the top of the file (before any code that might crash) using
+// process.stderr.write for reliable output in container environments.
