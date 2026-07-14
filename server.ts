@@ -40,6 +40,7 @@ import { createParticipant } from "./src/participant.js";
 import { createProgram } from "./src/program.js";
 import { RegistrationManagerDB } from "./src/registration-db.js";
 import { LibSQLSessionStore } from "./src/session-store.js";
+import { localDateString } from "./src/types.js";
 
 // Extend session data type
 declare module "express-session" {
@@ -921,7 +922,7 @@ app.post(
 			});
 		}
 
-		const today = new Date().toISOString().slice(0, 10);
+		const today = localDateString();
 
 		const remainingInOld = await ParticipantDB.countRemainingLessonsInCourse(
 			participantId,
@@ -1145,7 +1146,7 @@ app.get(
 			participantCourses.map((c) => c.id as string),
 		);
 
-		const today = new Date().toISOString().slice(0, 10);
+		const today = localDateString();
 
 		const existingRegs = await RegistrationDB.getByParticipantId(participantId);
 		const registeredLessonIds = new Set(

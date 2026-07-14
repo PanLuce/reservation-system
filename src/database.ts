@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { type Client, createClient, type InValue } from "@libsql/client";
 import bcrypt from "bcrypt";
 import { logger } from "./logger.js";
-import { toDateString } from "./types.js";
+import { localDateString, toDateString } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1008,7 +1008,7 @@ export const ParticipantDB = {
 		participantId: string,
 		courseId: string,
 	): Promise<number> {
-		const today = new Date().toISOString().slice(0, 10);
+		const today = localDateString();
 		const result = await client.execute({
 			sql: `SELECT COUNT(*) as cnt
 				FROM registrations r

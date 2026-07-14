@@ -329,7 +329,7 @@ function renderMonthCalendar(year, month) {
 	const firstDay = new Date(year, month, 1);
 	const startOffset = (firstDay.getDay() + 6) % 7; // Mon=0
 	const daysInMonth = new Date(year, month + 1, 0).getDate();
-	const todayStr = new Date().toISOString().slice(0, 10);
+	const todayStr = localDateString();
 
 	let html = CZECH_DAYS_SHORT.map(
 		(d) => `<div class="calendar-day-header">${d}</div>`,

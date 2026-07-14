@@ -3,7 +3,7 @@ import { LessonDB, ParticipantDB, RegistrationDB } from "./database.js";
 import type { EmailServiceInterface } from "./email-factory.js";
 import type { Participant } from "./participant.js";
 import { isAfterMidnightCutoff } from "./registration-rules.js";
-import { type Registration, toDateString } from "./types.js";
+import { localDateString, type Registration } from "./types.js";
 
 export class RegistrationManagerDB {
 	constructor(private emailService?: EmailServiceInterface) {}
@@ -557,7 +557,7 @@ export class RegistrationManagerDB {
 		}
 
 		// Get today's date for filtering future lessons
-		const today = toDateString(new Date());
+		const today = localDateString();
 
 		// Get all lessons for participant's age group
 		const allLessons = (await LessonDB.getAll()) as Array<
@@ -579,7 +579,7 @@ export class RegistrationManagerDB {
 		);
 
 		// Filter out lessons participant is already registered for
-		const availableLessons = matchingLessons
+		return matchingLessons
 			.filter((lesson) => !registeredLessonIds.includes(lesson.id as string))
 			.map((lesson) => ({
 				id: lesson.id as string,
@@ -594,8 +594,6 @@ export class RegistrationManagerDB {
 				availableSpots:
 					(lesson.capacity as number) - (lesson.enrolledCount as number),
 			}));
-
-		return availableLessons;
 	}
 
 	// Admin Override Methods
@@ -779,7 +777,7 @@ export class RegistrationManagerDB {
 	async syncGroupEnrollments(
 		courseId: string,
 	): Promise<{ enrolled: number; skipped: number }> {
-		const today = new Date().toISOString().slice(0, 10);
+		const today = localDateString();
 		const [members, lessons] = await Promise.all([
 			ParticipantDB.getByCourse(courseId),
 			LessonDB.getByCourse(courseId),
@@ -822,7 +820,7 @@ export class RegistrationManagerDB {
 		participantId: string,
 		courseId: string,
 	): Promise<void> {
-		const today = new Date().toISOString().slice(0, 10);
+		const today = localDateString();
 		const regs = (await RegistrationDB.getByParticipantId(
 			participantId,
 		)) as Array<Record<string, unknown>>;
@@ -843,7 +841,7 @@ export class RegistrationManagerDB {
 		participantId: string,
 		n: number,
 	): Promise<{ enrolled: number }> {
-		const today = new Date().toISOString().slice(0, 10);
+		const today = localDateString();
 		const participant = (await ParticipantDB.getById(participantId)) as
 			| Record<string, unknown>
 			| undefined;
