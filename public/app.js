@@ -654,6 +654,8 @@ function closeEditLessonModalOnBackdrop(event) {
 }
 
 // Cross-skupinka participant picker
+let lessonPickerParticipantsCache = [];
+
 async function openLessonParticipantPicker(lessonId) {
 	await ensureCoursesCache();
 	let allParticipants;
@@ -673,12 +675,15 @@ async function openLessonParticipantPicker(lessonId) {
 		return;
 	}
 
+	lessonPickerParticipantsCache = allParticipants;
+
 	const listHtml = allParticipants
 		.map((p) => {
-			const skupinky = p.courses.map((c) => c.name).join(", ") || "—";
+			const skupinky =
+				p.courses.map((c) => escapeHtml(c.name)).join(", ") || "—";
 			return `<li style="padding:6px 0;border-bottom:1px solid #f0ebe3;display:flex;justify-content:space-between;align-items:center;">
-				<span><strong>${p.name}</strong> <span style="color:#888;font-size:12px;">${p.email}</span><br><span style="font-size:12px;color:#aaa;">${skupinky}</span></span>
-				<button class="btn btn-secondary" style="font-size:12px;padding:4px 10px;" onclick="confirmAddParticipantToLesson('${p.id}','${lessonId}','${p.name.replace(/'/g, "\\'")}')">Přidat</button>
+				<span><strong>${escapeHtml(p.name)}</strong> <span style="color:#888;font-size:12px;">${escapeHtml(p.email)}</span><br><span style="font-size:12px;color:#aaa;">${skupinky}</span></span>
+				<button class="btn btn-secondary" style="font-size:12px;padding:4px 10px;" onclick="confirmAddParticipantToLesson('${p.id}','${lessonId}')">Přidat</button>
 			</li>`;
 		})
 		.join("");
@@ -690,13 +695,13 @@ async function openLessonParticipantPicker(lessonId) {
 	document.getElementById("info-modal").style.display = "flex";
 }
 
-function confirmAddParticipantToLesson(
-	participantId,
-	lessonId,
-	participantName,
-) {
+function confirmAddParticipantToLesson(participantId, lessonId) {
+	const participant = lessonPickerParticipantsCache.find(
+		(p) => p.id === participantId,
+	);
+	const participantName = participant ? participant.name : "";
 	const body = `
-		<p style="margin-bottom:16px;">Přidat <strong>${participantName}</strong> na tuto lekci?</p>
+		<p style="margin-bottom:16px;">Přidat <strong>${escapeHtml(participantName)}</strong> na tuto lekci?</p>
 		<div style="display:flex;gap:8px;">
 			<button class="btn btn-primary" onclick="addParticipantToLesson('${participantId}','${lessonId}')">Přidat</button>
 			<button class="btn btn-secondary" onclick="openLessonParticipantPicker('${lessonId}')">Zpět</button>
@@ -947,8 +952,8 @@ function renderMemberRow(m, currentCourseId) {
 			? ` · <span style="color:#888;">zbývá ${m.remainingLessons} lekcí</span>`
 			: "";
 	return `<li style="font-size:12px;color:#444;margin-bottom:4px;">
-		<span style="cursor:pointer;text-decoration:underline;color:#534445;" onclick="openParticipantDetail('${m.id}')">${m.name}</span>
-		<span style="color:#999;">${m.email}</span>${remaining}
+		<span style="cursor:pointer;text-decoration:underline;color:#534445;" onclick="openParticipantDetail('${m.id}')">${escapeHtml(m.name)}</span>
+		<span style="color:#999;">${escapeHtml(m.email)}</span>${remaining}
 		${renderTransferDropdown(m.id, currentCourseId)}
 	</li>`;
 }
@@ -1812,8 +1817,8 @@ async function toggleDayLessonMembers(lessonId) {
 		const listHtml = members
 			.map(
 				(m) => `<li style="font-size:12px;color:#444;margin-bottom:2px;">
-					<span style="cursor:pointer;text-decoration:underline;color:#534445;" onclick="openParticipantDetail('${m.id}')">${m.name}</span>
-					<span style="color:#999;">${m.email}</span>
+					<span style="cursor:pointer;text-decoration:underline;color:#534445;" onclick="openParticipantDetail('${m.id}')">${escapeHtml(m.name)}</span>
+					<span style="color:#999;">${escapeHtml(m.email)}</span>
 					${m.remainingLessons !== undefined ? ` · <span style="color:#888;">zbývá ${m.remainingLessons} lekcí</span>` : ""}
 				</li>`,
 			)
@@ -1860,8 +1865,8 @@ function renderParticipantsTable(participants) {
 							.join("")
 					: '<li style="color:#aaa;">—</li>';
 			return `<tr style="border-bottom:1px solid #f0ebe3;cursor:pointer;" onclick="openParticipantDetail('${p.id}')">
-				<td style="padding:10px 8px;font-weight:500;">${p.name}</td>
-				<td style="padding:10px 8px;color:#666;">${p.email}</td>
+				<td style="padding:10px 8px;font-weight:500;">${escapeHtml(p.name)}</td>
+				<td style="padding:10px 8px;color:#666;">${escapeHtml(p.email)}</td>
 				<td style="padding:10px 8px;font-size:13px;"><ul style="list-style:none;padding:0;margin:0;">${courseItems}</ul></td>
 			</tr>`;
 		})
@@ -1941,15 +1946,15 @@ async function openParticipantDetail(participantId) {
 		const courseRows = p.courses
 			.map(
 				(c) =>
-					`<li style="margin-bottom:4px;">${c.name} <span style="color:#888;">(věk: ${c.ageGroup})</span> — zbývá <strong>${c.remainingLessons}</strong> lekcí</li>`,
+					`<li style="margin-bottom:4px;">${escapeHtml(c.name)} <span style="color:#888;">(věk: ${c.ageGroup})</span> — zbývá <strong>${c.remainingLessons}</strong> lekcí</li>`,
 			)
 			.join("");
 
 		document.getElementById("participant-modal-body").innerHTML = `
 			<div style="margin-bottom:12px;">
-				<strong>${p.name}</strong><br>
-				<span style="color:#666;">${p.email}</span>
-				${p.phone ? `<br><span style="color:#888;font-size:13px;">${p.phone}</span>` : ""}
+				<strong>${escapeHtml(p.name)}</strong><br>
+				<span style="color:#666;">${escapeHtml(p.email)}</span>
+				${p.phone ? `<br><span style="color:#888;font-size:13px;">${escapeHtml(p.phone)}</span>` : ""}
 			</div>
 			<div style="margin-bottom:8px;font-size:13px;color:#666;">Věková skupina: ${p.ageGroup}</div>
 			${courseRows.length > 0 ? `<h4 style="margin:12px 0 8px;font-weight:600;">Skupinky</h4><ul style="padding-left:16px;">${courseRows}</ul>` : "<p style='color:#aaa;'>Žádné skupinky.</p>"}
