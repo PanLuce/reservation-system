@@ -121,7 +121,10 @@ function populateProgramSelect(selectEl) {
 	selectEl.innerHTML =
 		'<option value="">-- Bez kurzu --</option>' +
 		programsCache
-			.map((k) => `<option value="${k.id}">${k.name} (${k.ageGroup})</option>`)
+			.map(
+				(k) =>
+					`<option value="${k.id}">${escapeHtml(k.name)} (${k.ageGroup})</option>`,
+			)
 			.join("");
 	selectEl.value = current;
 }
@@ -304,14 +307,17 @@ function getLessonTileIcon(lesson, isParticipant) {
 		return { pill: true, color, tooltip };
 	}
 	if (calendarMyRegisteredIds.has(lesson.id)) {
-		return { icon: "❤️", label: `Moje lekce: ${lesson.title}` };
+		return { icon: "❤️", label: `Moje lekce: ${escapeHtml(lesson.title)}` };
 	}
 	const isFull = lesson.enrolledCount >= lesson.capacity;
 	if (isFull) {
-		return { icon: "🚫", label: `Plná lekce: ${lesson.title}` };
+		return { icon: "🚫", label: `Plná lekce: ${escapeHtml(lesson.title)}` };
 	}
 	if (calendarSubCandidateIds.has(lesson.id)) {
-		return { icon: "✨", label: `Možná náhrada: ${lesson.title}` };
+		return {
+			icon: "✨",
+			label: `Možná náhrada: ${escapeHtml(lesson.title)}`,
+		};
 	}
 	return null;
 }
@@ -451,12 +457,12 @@ function renderDayLessons(lessons, dateStr) {
 			<div class="day-lesson-row">
 				<div class="day-lesson-title">
 					${colorDot}
-					${l.title}
-					${l.courseName ? `<span style="font-size:0.8rem;font-weight:400;color:#888;">(${l.courseName})</span>` : ""}
+					${escapeHtml(l.title)}
+					${l.courseName ? `<span style="font-size:0.8rem;font-weight:400;color:#888;">(${escapeHtml(l.courseName)})</span>` : ""}
 				</div>
 				<div class="day-lesson-meta">
-					<span>🕐 ${l.time}</span>
-					<span>📍 ${l.location}</span>
+					<span>🕐 ${escapeHtml(l.time)}</span>
+					<span>📍 ${escapeHtml(l.location)}</span>
 					<span>👶 ${l.ageGroup}</span>
 					<span>👥 ${l.enrolledCount}/${l.capacity}</span>
 				</div>
@@ -510,7 +516,8 @@ async function populateLessonCourseSelect() {
 			'<option value="">-- Vyberte skupinku --</option>' +
 			courses
 				.map(
-					(c) => `<option value="${c.id}">[${c.ageGroup}] ${c.name}</option>`,
+					(c) =>
+						`<option value="${c.id}">[${c.ageGroup}] ${escapeHtml(c.name)}</option>`,
 				)
 				.join("");
 	} catch (error) {
@@ -841,7 +848,7 @@ function renderProgramSection(program, members, isAdmin) {
 		<section class="program-section" data-program-id="${program.id}">
 			<div class="program-header">
 				<span class="color-swatch" style="background:${program.color}"></span>
-				<h3 style="margin:0">${program.name}</h3>
+				<h3 style="margin:0">${escapeHtml(program.name)}</h3>
 				<span style="color:#888;font-size:13px;">${program.ageGroup}</span>
 				${adminActions}
 			</div>
@@ -865,13 +872,13 @@ function renderCourseCard(course) {
 		<div class="lesson-card" id="course-card-${course.id}">
 			<div class="course-card-header">
 				<span class="color-swatch" style="background:${course.color}"></span>
-				<h3 style="margin:0">${course.name}</h3>
+				<h3 style="margin:0">${escapeHtml(course.name)}</h3>
 			</div>
 			<div class="lesson-info">
 				<div class="lesson-info-item">
 					<strong>👶 Věk:</strong> ${course.ageGroup}
 				</div>
-				${course.location ? `<div class="lesson-info-item"><strong>📍</strong> ${course.location}</div>` : ""}
+				${course.location ? `<div class="lesson-info-item"><strong>📍</strong> ${escapeHtml(course.location)}</div>` : ""}
 			</div>
 			<div class="course-members" id="course-members-${course.id}">
 				<span style="color:#aaa;font-size:13px;">Načítám maminky…</span>
@@ -935,8 +942,8 @@ function renderTransferDropdown(participantId, fromCourseId) {
 	if (!current && others.length === 0) return "";
 	const courseLabel = (c) =>
 		c.location
-			? `${c.name} (${c.ageGroup}, ${c.location})`
-			: `${c.name} (${c.ageGroup})`;
+			? `${escapeHtml(c.name)} (${c.ageGroup}, ${escapeHtml(c.location)})`
+			: `${escapeHtml(c.name)} (${c.ageGroup})`;
 	const currentOpt = current
 		? `<option value="${current.id}" selected>${courseLabel(current)}</option>`
 		: "";
@@ -975,7 +982,7 @@ function initiateTransferWithConfirm(participantId, fromCourseId, selectEl) {
 	const toName =
 		allCoursesCache.find((c) => c.id === toCourseId)?.name ?? toCourseId;
 	const body = `
-		<p style="margin-bottom:16px;">Přesunout dítě ze skupinky <strong>${fromName}</strong> do skupinky <strong>${toName}</strong>?</p>
+		<p style="margin-bottom:16px;">Přesunout dítě ze skupinky <strong>${escapeHtml(fromName)}</strong> do skupinky <strong>${escapeHtml(toName)}</strong>?</p>
 		<div style="display:flex;gap:8px;flex-wrap:wrap;">
 			<button class="btn btn-primary" onclick="hideInfoModal();initiateTransfer('${participantId}','${fromCourseId}',document.querySelector('[data-transfer-select-id=\\'${participantId}-${fromCourseId}\\']'))">Přesunout</button>
 			<button class="btn btn-secondary" onclick="hideInfoModal();document.querySelector('[data-transfer-select-id=\\'${participantId}-${fromCourseId}\\']').value='${fromCourseId}'">Zrušit</button>
@@ -1386,11 +1393,11 @@ async function loadMyLessons(participantId) {
 				const canCancel = r.lessonDate > now;
 				return `
 			<div class="lesson-card">
-				<h3>${r.lessonTitle || "Lekce"}</h3>
+				<h3>${escapeHtml(r.lessonTitle || "Lekce")}</h3>
 				<div class="lesson-info">
 					<div class="lesson-info-item"><strong>📅 Datum:</strong> ${r.lessonDate}</div>
-					<div class="lesson-info-item"><strong>🕐 Čas:</strong> ${r.lessonTime || ""}</div>
-					<div class="lesson-info-item"><strong>📍 Místo:</strong> ${r.lessonLocation || ""}</div>
+					<div class="lesson-info-item"><strong>🕐 Čas:</strong> ${escapeHtml(r.lessonTime || "")}</div>
+					<div class="lesson-info-item"><strong>📍 Místo:</strong> ${escapeHtml(r.lessonLocation || "")}</div>
 					<div class="lesson-info-item"><strong>👥 Obsazeno:</strong> ${r.lessonEnrolledCount}/${r.lessonCapacity}</div>
 				</div>
 				<div class="lesson-actions">
@@ -1459,11 +1466,11 @@ async function loadSubstitutionCandidates(participantId) {
 			.map(
 				(l) => `
 			<div class="lesson-card">
-				<h3>${l.title}</h3>
+				<h3>${escapeHtml(l.title)}</h3>
 				<div class="lesson-info">
 					<div class="lesson-info-item"><strong>📅 Datum:</strong> ${l.date}</div>
-					<div class="lesson-info-item"><strong>🕐 Čas:</strong> ${l.time}</div>
-					<div class="lesson-info-item"><strong>📍 Místo:</strong> ${l.location}</div>
+					<div class="lesson-info-item"><strong>🕐 Čas:</strong> ${escapeHtml(l.time)}</div>
+					<div class="lesson-info-item"><strong>📍 Místo:</strong> ${escapeHtml(l.location)}</div>
 					<div class="lesson-info-item"><strong>👥 Volná místa:</strong> ${l.capacity - l.enrolledCount}</div>
 				</div>
 				<div class="lesson-actions">
@@ -1527,12 +1534,14 @@ function renderOdsSheetPicker() {
 	const list = document.getElementById("ods-sheet-list");
 	list.innerHTML = odsParsed.sheets
 		.map((s, i) => {
-			const location = s.detectedLocation ? ` — ${s.detectedLocation}` : "";
+			const location = s.detectedLocation
+				? ` — ${escapeHtml(s.detectedLocation)}`
+				: "";
 			const count = s.candidates.length;
 			return `<button type="button" class="btn btn-secondary" data-sheet-index="${i}"
 				style="display:block;margin-bottom:8px;text-align:left;width:100%;"
 				onclick="selectOdsSheet(${i})">
-				${s.sheetName}${location}
+				${escapeHtml(s.sheetName)}${location}
 				<span style="font-size:12px;color:#888;margin-left:8px;">(${count} kandidát${count === 1 ? "" : "i/ů"})</span>
 			</button>`;
 		})
@@ -1561,7 +1570,10 @@ async function renderOdsPreview() {
 	} catch {}
 
 	const courseOptions = courses
-		.map((c) => `<option value="${c.id}">[${c.ageGroup}] ${c.name}</option>`)
+		.map(
+			(c) =>
+				`<option value="${c.id}">[${c.ageGroup}] ${escapeHtml(c.name)}</option>`,
+		)
 		.join("");
 
 	if (candidates.length === 0) {
@@ -1574,8 +1586,8 @@ async function renderOdsPreview() {
 			(c, i) => `
 		<tr>
 			<td style="padding:6px 4px;"><input type="checkbox" id="ods-candidate-${i}" checked></td>
-			<td style="padding:6px 4px;"><input type="text" id="ods-kidname-${i}" value="${c.kidName}" style="font-size:13px;width:100%;border:1px solid #ddd;border-radius:4px;padding:2px 6px;"></td>
-			<td style="padding:6px 4px;"><input type="email" id="ods-email-${i}" value="${c.parentEmail}" style="font-size:13px;width:100%;border:1px solid #ddd;border-radius:4px;padding:2px 6px;"></td>
+			<td style="padding:6px 4px;"><input type="text" id="ods-kidname-${i}" value="${escapeHtml(c.kidName)}" style="font-size:13px;width:100%;border:1px solid #ddd;border-radius:4px;padding:2px 6px;"></td>
+			<td style="padding:6px 4px;"><input type="email" id="ods-email-${i}" value="${escapeHtml(c.parentEmail)}" style="font-size:13px;width:100%;border:1px solid #ddd;border-radius:4px;padding:2px 6px;"></td>
 		</tr>`,
 		)
 		.join("");
