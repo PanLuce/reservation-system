@@ -7,24 +7,14 @@ import express from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
 import helmet from "helmet";
-import multer from "multer";
-import {
-	AGE_GROUPS,
-	ageGroupToColor,
-	isValidAgeGroup,
-} from "./src/age-groups.js";
-import { AuthService } from "./src/auth.js";
-import { LessonCalendarDB } from "./src/calendar-db.js";
+import { ageGroupToColor, isValidAgeGroup } from "./src/age-groups.js";
+import { calendar, registrationManager, upload } from "./src/app-context.js";
 import { createCourse } from "./src/course.js";
 import { issueCredit } from "./src/credit.js";
 import {
 	CourseDB,
 	CreditDB,
 	client,
-	DEFAULT_ADMIN_EMAIL,
-	DEFAULT_ADMIN_PASSWORD,
-	DEFAULT_PARTICIPANT_EMAIL,
-	DEFAULT_PARTICIPANT_PASSWORD,
 	initializeDatabase,
 	LessonDB,
 	ParticipantDB,
@@ -32,33 +22,22 @@ import {
 	RegistrationDB,
 	seedSampleData,
 } from "./src/database.js";
-import { createEmailService } from "./src/email-factory.js";
-import { isQuickLoginEnabled } from "./src/env-flags.js";
 import { validateParticipantInput } from "./src/input-validation.js";
-import { createLesson, pickUpdatableLessonFields } from "./src/lesson.js";
 import { logger } from "./src/logger.js";
+import {
+	requireAdmin,
+	requireAuth,
+	requireParticipantScope,
+} from "./src/middleware/auth.js";
 import { parseOdsWorkbook } from "./src/ods-loader.js";
 import { createParticipant } from "./src/participant.js";
 import { createProgram } from "./src/program.js";
-import { RegistrationManagerDB } from "./src/registration-db.js";
+import { authRouter } from "./src/routes/auth.js";
+import { healthRouter } from "./src/routes/health.js";
+import { lessonsRouter } from "./src/routes/lessons.js";
 import { LibSQLSessionStore } from "./src/session-store.js";
+import "./src/types-express.js";
 import { localDateString } from "./src/types.js";
-
-// Extend session data type
-declare module "express-session" {
-	interface SessionData {
-		userId?: string;
-	}
-}
-
-// Extend Express Request type for correlation ID
-declare global {
-	namespace Express {
-		interface Request {
-			correlationId?: string;
-		}
-	}
-}
 
 // Register global error handlers FIRST — before any code that might crash
 process.on("uncaughtException", (error: Error) => {
@@ -220,277 +199,14 @@ app.use(
 );
 app.use(express.static(path.join(__dirname, "public")));
 
-// File upload setup
-const upload = multer({ dest: "uploads/" });
-
-// Initialize email service
-const emailService = createEmailService();
-
-// Initialize data stores with database
-const calendar = new LessonCalendarDB();
-const registrationManager = new RegistrationManagerDB(emailService);
-const authService = new AuthService();
-
-// Track server start time for uptime
-const serverStartTime = Date.now();
-
 // Health Check Endpoints
-
-// Basic health check - just confirms server is running
-app.get("/health", (_req, res) => {
-	res.json({
-		status: "ok",
-		timestamp: new Date().toISOString(),
-		uptime: Math.floor((Date.now() - serverStartTime) / 1000), // in seconds
-	});
-});
-
-// Readiness check - verifies dependencies (database) are available
-app.get("/ready", async (_req, res) => {
-	try {
-		// Test database connectivity with a simple query
-		await client.execute("SELECT 1");
-
-		res.json({
-			status: "ready",
-			database: "connected",
-			timestamp: new Date().toISOString(),
-		});
-	} catch (error) {
-		logger.error("Readiness check failed", {
-			error: error instanceof Error ? error.message : String(error),
-		});
-
-		res.status(503).json({
-			status: "not_ready",
-			database: "disconnected",
-			error: error instanceof Error ? error.message : "Unknown error",
-			timestamp: new Date().toISOString(),
-		});
-	}
-});
-
-// Authentication middleware
-function requireAuth(
-	req: express.Request,
-	res: express.Response,
-	next: express.NextFunction,
-) {
-	if (!req.session.userId) {
-		return res.status(401).json({ error: "Authentication required" });
-	}
-	next();
-}
-
-async function requireAdmin(
-	req: express.Request,
-	res: express.Response,
-	next: express.NextFunction,
-) {
-	if (!req.session.userId) {
-		return res.status(401).json({ error: "Authentication required" });
-	}
-
-	const user = await authService.verifyToken(req.session.userId);
-	if (!user || user.role !== "admin") {
-		return res.status(403).json({ error: "Admin access required" });
-	}
-
-	next();
-}
-
-// Middleware: allows access only if user is admin OR their participantId matches the :participantId param
-async function requireParticipantScope(
-	req: express.Request,
-	res: express.Response,
-	next: express.NextFunction,
-) {
-	if (!req.session.userId) {
-		return res.status(401).json({ error: "Authentication required" });
-	}
-	const user = await authService.verifyToken(req.session.userId);
-	if (!user) {
-		return res.status(401).json({ error: "Authentication required" });
-	}
-	if (user.role === "admin") {
-		return next();
-	}
-	if (user.participantId === req.params.participantId) {
-		return next();
-	}
-	return res.status(403).json({ error: "Access denied" });
-}
+app.use(healthRouter);
 
 // API Routes
+app.use(authRouter);
 
-// Test accounts quick-login — opt-in, served only when ENABLE_QUICK_LOGIN=true
-app.get("/api/test-accounts", (_req, res) => {
-	if (!isQuickLoginEnabled(process.env.ENABLE_QUICK_LOGIN)) {
-		return res.status(404).json({ error: "Not available" });
-	}
-	const accounts: {
-		label: string;
-		email: string;
-		password: string;
-		role: string;
-	}[] = [
-		{
-			label: "Přihlásit jako admin",
-			email: process.env.ADMIN_EMAIL_SEED ?? DEFAULT_ADMIN_EMAIL,
-			password: process.env.ADMIN_PASSWORD_SEED ?? DEFAULT_ADMIN_PASSWORD,
-			role: "admin",
-		},
-		{
-			label: "Přihlásit jako rodič",
-			email: process.env.PARTICIPANT_EMAIL_SEED ?? DEFAULT_PARTICIPANT_EMAIL,
-			password:
-				process.env.PARTICIPANT_PASSWORD_SEED ?? DEFAULT_PARTICIPANT_PASSWORD,
-			role: "participant",
-		},
-	];
-	return res.json({ accounts });
-});
-
-// Authentication
-app.post("/api/auth/login", async (req, res) => {
-	const { email, password } = req.body;
-
-	if (!email || !password) {
-		return res.status(400).json({ error: "Email and password required" });
-	}
-
-	const result = await authService.login(email, password);
-
-	if (!result.success) {
-		return res.status(401).json({ error: result.error });
-	}
-
-	req.session.userId = result.user.id;
-	res.json({ user: result.user });
-});
-
-app.post("/api/auth/register", async (req, res) => {
-	const { email, password, name } = req.body;
-
-	if (!email || !password || !name) {
-		return res
-			.status(400)
-			.json({ error: "Email, password, and name required" });
-	}
-
-	// participantId is intentionally NOT read from the request body: binding a
-	// user to a participant must happen server-side (seed/admin invite), never
-	// from client input, or any caller could claim another participant's data.
-	const result = await authService.register(
-		email,
-		password,
-		name,
-		"participant",
-	);
-
-	if (!result.success) {
-		return res.status(400).json({ error: result.error });
-	}
-
-	req.session.userId = result.user.id;
-	res.status(201).json({ user: result.user });
-});
-
-app.get("/api/auth/me", requireAuth, async (req, res) => {
-	const userId = req.session.userId;
-	if (!userId) {
-		return res.status(401).json({ error: "Authentication required" });
-	}
-	const user = await authService.verifyToken(userId);
-
-	if (!user) {
-		return res.status(401).json({ error: "Invalid session" });
-	}
-
-	res.json({ user });
-});
-
-app.post("/api/auth/logout", (req, res) => {
-	req.session.destroy((err) => {
-		if (err) {
-			return res.status(500).json({ error: "Logout failed" });
-		}
-		res.json({ message: "Logged out successfully" });
-	});
-});
-
-// API Routes
-
-// Lessons (public read, admin write)
-app.get("/api/lessons", async (_req, res) => {
-	const lessons = await calendar.getAllLessons();
-	const courses = await CourseDB.getAll();
-	const courseMap = new Map(courses.map((c) => [c.id as string, c]));
-	const enriched = lessons.map((l) => {
-		const course = l.courseId ? courseMap.get(l.courseId as string) : undefined;
-		return {
-			...l,
-			courseColor: course?.color ?? null,
-			courseName: course?.name ?? null,
-		};
-	});
-	res.json(enriched);
-});
-
-app.get("/api/lessons/:id", async (req, res) => {
-	const lesson = await calendar.getLessonById(req.params.id as string);
-	if (!lesson) {
-		return res.status(404).json({ error: "Lesson not found" });
-	}
-	res.json(lesson);
-});
-
-app.post("/api/lessons", requireAdmin, async (req, res) => {
-	const lessonData = req.body;
-	const requiredFields = [
-		"title",
-		"date",
-		"dayOfWeek",
-		"time",
-		"ageGroup",
-		"capacity",
-		"courseId",
-	] as const;
-	for (const field of requiredFields) {
-		if (!lessonData[field] && lessonData[field] !== 0) {
-			return res.status(400).json({ error: `${field} is required` });
-		}
-	}
-	const courseExists = await CourseDB.getById(lessonData.courseId as string);
-	if (!courseExists) {
-		return res.status(400).json({ error: "Course not found" });
-	}
-	try {
-		const lesson = createLesson({
-			title: lessonData.title,
-			date: lessonData.date,
-			dayOfWeek: lessonData.dayOfWeek,
-			time: lessonData.time,
-			ageGroup: lessonData.ageGroup,
-			capacity: Number(lessonData.capacity),
-			courseId: lessonData.courseId as string,
-		});
-		await calendar.addLesson(lesson);
-		await registrationManager.syncGroupEnrollments(
-			lessonData.courseId as string,
-		);
-		res.status(201).json(lesson);
-	} catch (error) {
-		res.status(500).json({
-			error: error instanceof Error ? error.message : "Failed to create lesson",
-		});
-	}
-});
-
-// Age groups list (for populating dropdowns)
-app.get("/api/age-groups", requireAuth, (_req, res) => {
-	res.json(AGE_GROUPS);
-});
+// Lessons (public read, admin write) + age groups
+app.use(lessonsRouter);
 
 // Courses (skupinky) — CRUD
 app.get("/api/courses", requireAuth, async (_req, res) => {
@@ -933,36 +649,6 @@ app.post(
 		res.json({ success: true, enrolled });
 	},
 );
-
-app.put("/api/lessons/:id", requireAdmin, async (req, res) => {
-	const lessonId = req.params.id as string;
-	if (!lessonId) {
-		return res.status(400).json({ error: "Lesson ID is required" });
-	}
-	const lesson = await calendar.getLessonById(lessonId);
-	if (!lesson) {
-		return res.status(404).json({ error: "Lesson not found" });
-	}
-	const updates = pickUpdatableLessonFields(req.body);
-	if (Object.keys(updates).length === 0) {
-		return res.status(400).json({ error: "No updatable fields provided" });
-	}
-	await calendar.updateLesson(lessonId, updates);
-	const updated = await calendar.getLessonById(lessonId);
-	res.json(updated);
-});
-
-app.delete("/api/lessons/:id", requireAdmin, async (req, res) => {
-	const lessonId = req.params.id as string;
-	if (!lessonId) {
-		return res.status(400).json({ error: "Lesson ID is required" });
-	}
-	const count = await calendar.bulkDeleteLessons({ id: lessonId });
-	if (count === 0) {
-		return res.status(404).json({ error: "Lesson not found" });
-	}
-	res.json({ message: "Lesson deleted" });
-});
 
 // Registrations
 app.post("/api/registrations", publicWriteRateLimit, async (req, res) => {
