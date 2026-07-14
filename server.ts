@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import cors from "cors";
 import express from "express";
+import { rateLimit } from "express-rate-limit";
 import session from "express-session";
 import helmet from "helmet";
 import multer from "multer";
@@ -33,6 +34,7 @@ import {
 } from "./src/database.js";
 import { createEmailService } from "./src/email-factory.js";
 import { isQuickLoginEnabled } from "./src/env-flags.js";
+import { validateParticipantInput } from "./src/input-validation.js";
 import { createLesson } from "./src/lesson.js";
 import { logger } from "./src/logger.js";
 import { parseOdsWorkbook } from "./src/ods-loader.js";
@@ -191,6 +193,15 @@ app.use(
 		credentials: true,
 	}),
 );
+
+// Rate limit for the unauthenticated public write endpoints (registrations,
+// substitutions) — these are the entry point for spam/malformed-payload abuse.
+const publicWriteRateLimit = rateLimit({
+	windowMs: 10 * 60 * 1000,
+	limit: 10,
+	standardHeaders: true,
+	legacyHeaders: false,
+});
 
 app.use(express.json());
 app.use(
@@ -984,8 +995,13 @@ app.delete("/api/lessons/:id", requireAdmin, async (req, res) => {
 });
 
 // Registrations
-app.post("/api/registrations", async (req, res) => {
+app.post("/api/registrations", publicWriteRateLimit, async (req, res) => {
 	const { lessonId, participant } = req.body;
+
+	const validationError = validateParticipantInput(participant ?? {});
+	if (validationError) {
+		return res.status(400).json({ error: validationError });
+	}
 
 	const newParticipant = createParticipant({
 		name: participant.name,
@@ -1304,8 +1320,13 @@ app.get("/api/substitutions/:ageGroup", async (req, res) => {
 	res.json(availableLessons);
 });
 
-app.post("/api/substitutions", async (req, res) => {
+app.post("/api/substitutions", publicWriteRateLimit, async (req, res) => {
 	const { lessonId, participant, missedLessonId } = req.body;
+
+	const validationError = validateParticipantInput(participant ?? {});
+	if (validationError) {
+		return res.status(400).json({ error: validationError });
+	}
 
 	const newParticipant = createParticipant({
 		name: participant.name,
