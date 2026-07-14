@@ -748,6 +748,12 @@ export class RegistrationManagerDB {
 		]);
 
 		const futureLesson = lessons.filter((l) => (l.date as string) >= today);
+		const futureLessonIds = futureLesson.map((l) => l.id as string);
+
+		// One batch query instead of one getByParticipantAndLesson round-trip per
+		// (member, lesson) pair — the N×M existence check was the actual hotspot.
+		const existingPairs =
+			await RegistrationDB.getExistingPairs(futureLessonIds);
 
 		let enrolled = 0;
 		let skipped = 0;
@@ -762,13 +768,8 @@ export class RegistrationManagerDB {
 				ageGroup: member.ageGroup as string,
 			};
 
-			for (const lesson of futureLesson) {
-				const lessonId = lesson.id as string;
-				const existing = await RegistrationDB.getByParticipantAndLesson(
-					participantId,
-					lessonId,
-				);
-				if (existing) {
+			for (const lessonId of futureLessonIds) {
+				if (existingPairs.has(`${participantId}:${lessonId}`)) {
 					skipped++;
 					continue;
 				}

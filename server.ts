@@ -832,16 +832,8 @@ app.get(
 			return res.status(400).json({ error: "Course ID is required" });
 		}
 
-		const participants = await ParticipantDB.getByCourse(courseId);
-		const withCounts = await Promise.all(
-			participants.map(async (p) => ({
-				...p,
-				remainingLessons: await ParticipantDB.countRemainingLessonsInCourse(
-					p.id as string,
-					courseId,
-				),
-			})),
-		);
+		const withCounts =
+			await ParticipantDB.getByCourseWithRemainingLessons(courseId);
 		res.json(withCounts);
 	},
 );
@@ -886,33 +878,7 @@ app.get(
 );
 
 app.get("/api/admin/participants", requireAdmin, async (_req, res) => {
-	const allParticipants = await ParticipantDB.getAll();
-	const enriched = await Promise.all(
-		allParticipants.map(async (p) => {
-			const courses = await ParticipantDB.getCoursesForParticipant(
-				p.id as string,
-			);
-			const coursesWithCounts = await Promise.all(
-				courses.map(async (c) => ({
-					id: c.id,
-					name: c.name,
-					ageGroup: c.ageGroup,
-					remainingLessons: await ParticipantDB.countRemainingLessonsInCourse(
-						p.id as string,
-						c.id as string,
-					),
-				})),
-			);
-			return {
-				id: p.id,
-				name: p.name,
-				email: p.email,
-				phone: p.phone,
-				ageGroup: p.ageGroup,
-				courses: coursesWithCounts,
-			};
-		}),
-	);
+	const enriched = await ParticipantDB.getAllWithCourseSummaries();
 	res.json(enriched);
 });
 

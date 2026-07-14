@@ -977,6 +977,82 @@ export const ParticipantDB = {
 		return result.rows;
 	},
 
+	/**
+	 * Batched replacement for the admin participants list's former N+1 pattern
+	 * (one getCoursesForParticipant + one countRemainingLessonsInCourse per
+	 * course, per participant). One query returns every participant's courses
+	 * with remaining-lesson counts already computed via a correlated subquery.
+	 */
+	async getAllWithCourseSummaries(): Promise<
+		Array<{
+			id: unknown;
+			name: unknown;
+			email: unknown;
+			phone: unknown;
+			ageGroup: unknown;
+			courses: Array<{
+				id: unknown;
+				name: unknown;
+				ageGroup: unknown;
+				remainingLessons: number;
+			}>;
+		}>
+	> {
+		const today = localDateString();
+		const [participantRows, courseRows] = await Promise.all([
+			client.execute({ sql: "SELECT * FROM participants", args: [] }),
+			client.execute({
+				sql: `SELECT
+						cp.participantId,
+						c.id AS courseId,
+						c.name AS courseName,
+						c.ageGroup AS courseAgeGroup,
+						(
+							SELECT COUNT(*)
+							FROM registrations r
+							INNER JOIN lessons l ON r.lessonId = l.id
+							WHERE r.participantId = cp.participantId
+							  AND l.courseId = c.id
+							  AND l.date >= ?
+							  AND r.status != 'cancelled'
+						) AS remainingLessons
+					FROM course_participants cp
+					INNER JOIN courses c ON c.id = cp.courseId`,
+				args: [today],
+			}),
+		]);
+
+		const coursesByParticipant = new Map<
+			string,
+			Array<{
+				id: unknown;
+				name: unknown;
+				ageGroup: unknown;
+				remainingLessons: number;
+			}>
+		>();
+		for (const row of courseRows.rows) {
+			const participantId = row.participantId as string;
+			const list = coursesByParticipant.get(participantId) ?? [];
+			list.push({
+				id: row.courseId,
+				name: row.courseName,
+				ageGroup: row.courseAgeGroup,
+				remainingLessons: Number(row.remainingLessons),
+			});
+			coursesByParticipant.set(participantId, list);
+		}
+
+		return participantRows.rows.map((p) => ({
+			id: p.id,
+			name: p.name,
+			email: p.email,
+			phone: p.phone,
+			ageGroup: p.ageGroup,
+			courses: coursesByParticipant.get(p.id as string) ?? [],
+		}));
+	},
+
 	async linkToCourse(participantId: string, courseId: string) {
 		const result = await client.execute({
 			sql: "INSERT OR IGNORE INTO course_participants (courseId, participantId) VALUES (?, ?)",
@@ -993,6 +1069,37 @@ export const ParticipantDB = {
 			args: [courseId],
 		});
 		return result.rows;
+	},
+
+	/**
+	 * Batched replacement for the courses-members endpoint's former N+1 pattern
+	 * (one countRemainingLessonsInCourse call per participant in the course).
+	 */
+	async getByCourseWithRemainingLessons(
+		courseId: string,
+	): Promise<Array<Record<string, unknown> & { remainingLessons: number }>> {
+		const today = localDateString();
+		const result = await client.execute({
+			sql: `SELECT
+					p.*,
+					(
+						SELECT COUNT(*)
+						FROM registrations r
+						INNER JOIN lessons l ON r.lessonId = l.id
+						WHERE r.participantId = p.id
+						  AND l.courseId = ?
+						  AND l.date >= ?
+						  AND r.status != 'cancelled'
+					) AS remainingLessons
+				FROM participants p
+				INNER JOIN course_participants cp ON p.id = cp.participantId
+				WHERE cp.courseId = ?`,
+			args: [courseId, today, courseId],
+		});
+		return result.rows.map((r) => ({
+			...r,
+			remainingLessons: Number(r.remainingLessons),
+		}));
 	},
 
 	async getCoursesForParticipant(participantId: string) {
@@ -1090,6 +1197,23 @@ export const RegistrationDB = {
 			args: [participantId, lessonId],
 		});
 		return result.rows[0];
+	},
+
+	/**
+	 * Batch existence check for (participantId, lessonId) pairs — avoids the N×M
+	 * getByParticipantAndLesson round-trips syncGroupEnrollments used to make (one
+	 * query per member per future lesson). Returns just the pairs that already
+	 * have a non-cancelled registration.
+	 */
+	async getExistingPairs(lessonIds: string[]): Promise<Set<string>> {
+		if (lessonIds.length === 0) return new Set();
+		const placeholders = lessonIds.map(() => "?").join(", ");
+		const result = await client.execute({
+			sql: `SELECT participantId, lessonId FROM registrations
+				WHERE lessonId IN (${placeholders}) AND status != 'cancelled'`,
+			args: lessonIds,
+		});
+		return new Set(result.rows.map((r) => `${r.participantId}:${r.lessonId}`));
 	},
 
 	async getByParticipantId(participantId: string) {
