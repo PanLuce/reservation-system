@@ -1,3 +1,4 @@
+import { rateLimit } from "express-rate-limit";
 import multer from "multer";
 import { AuthService } from "./auth.js";
 import { LessonCalendarDB } from "./calendar-db.js";
@@ -12,3 +13,12 @@ export const emailService = createEmailService();
 export const registrationManager = new RegistrationManagerDB(emailService);
 export const authService = new AuthService();
 export const upload = multer({ dest: "uploads/" });
+
+// Rate limit for the unauthenticated public write endpoints (registrations,
+// substitutions) — these are the entry point for spam/malformed-payload abuse.
+export const publicWriteRateLimit = rateLimit({
+	windowMs: 10 * 60 * 1000,
+	limit: 10,
+	standardHeaders: true,
+	legacyHeaders: false,
+});
