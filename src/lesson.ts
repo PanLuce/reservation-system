@@ -1,3 +1,5 @@
+import { num, type Row, str } from "./db-row.js";
+
 export type Lesson = {
 	id: string;
 	title: string;
@@ -10,6 +12,21 @@ export type Lesson = {
 	enrolledCount: number;
 	courseId?: string;
 };
+
+export function rowToLesson(row: Row): Lesson {
+	return {
+		id: str(row.id),
+		title: str(row.title),
+		date: str(row.date),
+		dayOfWeek: str(row.dayOfWeek),
+		time: str(row.time),
+		location: str(row.location),
+		ageGroup: str(row.ageGroup),
+		capacity: num(row.capacity),
+		enrolledCount: num(row.enrolledCount),
+		...(row.courseId != null && { courseId: str(row.courseId) }),
+	};
+}
 
 export type LessonInput = Omit<Lesson, "id" | "enrolledCount">;
 
