@@ -269,7 +269,7 @@ test.describe
 
 			const lesson = await LessonDB.getById("lesson_cascade_test");
 			expect(lesson).toBeDefined();
-			expect(lesson!.courseId).toBeNull();
+			expect(lesson!.courseId).toBeUndefined();
 		});
 
 		test("GET /api/courses/age-group/:ageGroup returns filtered courses", async () => {

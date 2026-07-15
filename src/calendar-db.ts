@@ -8,15 +8,15 @@ export class LessonCalendarDB {
 	}
 
 	async getAllLessons(): Promise<Lesson[]> {
-		return (await LessonDB.getAll()) as unknown as Lesson[];
+		return LessonDB.getAll();
 	}
 
 	async getLessonsByDay(day: string): Promise<Lesson[]> {
-		return (await LessonDB.getByDay(day)) as unknown as Lesson[];
+		return LessonDB.getByDay(day);
 	}
 
 	async getLessonById(id: string): Promise<Lesson | undefined> {
-		return (await LessonDB.getById(id)) as Lesson | undefined;
+		return LessonDB.getById(id);
 	}
 
 	async updateLesson(id: string, updates: Partial<Lesson>): Promise<void> {
@@ -163,6 +163,6 @@ export class LessonCalendarDB {
 	}
 
 	async getLessonsByCourse(courseId: string): Promise<Lesson[]> {
-		return (await LessonDB.getByCourse(courseId)) as unknown as Lesson[];
+		return LessonDB.getByCourse(courseId);
 	}
 }

@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Client, createClient, type InValue } from "@libsql/client";
 import bcrypt from "bcrypt";
-import type { Lesson } from "./lesson.js";
+import { type Lesson, rowToLesson } from "./lesson.js";
 import { logger } from "./logger.js";
 import { localDateString, toDateString } from "./types.js";
 
@@ -741,10 +741,10 @@ export const LessonDB = {
 				ORDER BY l.dayOfWeek, l.time`,
 			args: [],
 		});
-		return result.rows;
+		return result.rows.map(rowToLesson);
 	},
 
-	async getById(id: string) {
+	async getById(id: string): Promise<Lesson | undefined> {
 		const result = await client.execute({
 			sql: `SELECT l.*, COALESCE(c.location, '') AS location
 				FROM lessons l
@@ -752,7 +752,8 @@ export const LessonDB = {
 				WHERE l.id = ?`,
 			args: [id],
 		});
-		return result.rows[0];
+		const row = result.rows[0];
+		return row ? rowToLesson(row) : undefined;
 	},
 
 	async getByDay(dayOfWeek: string) {
@@ -763,7 +764,7 @@ export const LessonDB = {
 				WHERE l.dayOfWeek = ?`,
 			args: [dayOfWeek],
 		});
-		return result.rows;
+		return result.rows.map(rowToLesson);
 	},
 
 	async insert(
@@ -889,7 +890,7 @@ export const LessonDB = {
 				ORDER BY l.date, l.time`,
 			args: [courseId],
 		});
-		return result.rows;
+		return result.rows.map(rowToLesson);
 	},
 };
 

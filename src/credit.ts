@@ -17,9 +17,9 @@ async function computeExpiry(
 	if (lessons.length === 0) return threeMonths.toISOString();
 
 	const latestLesson = lessons.reduce((max, l) =>
-		(l.date as string) > (max.date as string) ? l : max,
+		l.date > max.date ? l : max,
 	);
-	const courseEnd = new Date(latestLesson.date as string);
+	const courseEnd = new Date(latestLesson.date);
 
 	return (courseEnd < threeMonths ? courseEnd : threeMonths).toISOString();
 }
