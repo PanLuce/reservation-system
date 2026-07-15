@@ -4,6 +4,47 @@ function localDateString(date = new Date()) {
 	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
+// ─── Event delegation dispatcher ───────────────────────────────────────────────
+// Replaces inline onclick=/onchange=/onsubmit= attributes so the CSP can drop
+// script-src-attr 'unsafe-inline'. Elements opt in via data-action/data-change/
+// data-submit; handlers receive (el, event) where el is the matched element.
+const clickActions = {};
+const changeActions = {};
+const submitActions = {};
+
+function registerActions(kind, map) {
+	Object.assign(
+		{ click: clickActions, change: changeActions, submit: submitActions }[kind],
+		map,
+	);
+}
+
+document.addEventListener("click", (event) => {
+	const el = event.target.closest("[data-action]");
+	if (!el) return;
+	const fn = clickActions[el.dataset.action];
+	if (fn) fn(el, event);
+	else if (el.dataset.action !== "none") {
+		console.error(`Unregistered action: ${el.dataset.action}`);
+	}
+});
+
+document.addEventListener("change", (event) => {
+	const el = event.target.closest("[data-change]");
+	if (!el) return;
+	const fn = changeActions[el.dataset.change];
+	if (fn) fn(el, event);
+	else console.error(`Unregistered change action: ${el.dataset.change}`);
+});
+
+document.addEventListener("submit", (event) => {
+	const form = event.target.closest("form[data-submit]");
+	if (!form) return;
+	const fn = submitActions[form.dataset.submit];
+	if (fn) fn(form, event);
+	else console.error(`Unregistered submit action: ${form.dataset.submit}`);
+});
+
 // Current user state
 let currentUser = null;
 
@@ -173,8 +214,8 @@ function hideInfoModal() {
 	document.getElementById("info-modal").style.display = "none";
 }
 
-function closeInfoModalOnBackdrop(event) {
-	if (event.target === event.currentTarget) {
+function closeInfoModalOnBackdrop(el, event) {
+	if (event.target === el) {
 		hideInfoModal();
 	}
 }
@@ -478,8 +519,8 @@ function renderDayLessons(lessons, dateStr) {
 		.join("");
 }
 
-function closeDayModal(event) {
-	if (event.target === document.getElementById("day-modal")) {
+function closeDayModal(el, event) {
+	if (event.target === el) {
 		document.getElementById("day-modal").style.display = "none";
 	}
 }
@@ -656,8 +697,8 @@ function closeEditLessonModal() {
 	document.getElementById("edit-lesson-modal").style.display = "none";
 }
 
-function closeEditLessonModalOnBackdrop(event) {
-	if (event.target === event.currentTarget) closeEditLessonModal();
+function closeEditLessonModalOnBackdrop(el, event) {
+	if (event.target === el) closeEditLessonModal();
 }
 
 // Cross-skupinka participant picker
@@ -1714,8 +1755,8 @@ function showAddMomModal(courseId) {
 	document.getElementById("add-mom-modal").style.display = "flex";
 }
 
-function closeAddMomModal(event) {
-	if (event.target === document.getElementById("add-mom-modal")) {
+function closeAddMomModal(el, event) {
+	if (event.target === el) {
 		document.getElementById("add-mom-modal").style.display = "none";
 	}
 }
@@ -1982,8 +2023,42 @@ function closeParticipantModal() {
 	document.getElementById("participant-modal").style.display = "none";
 }
 
-function closeParticipantModalOnBackdrop(event) {
-	if (event.target === event.currentTarget) {
+function closeParticipantModalOnBackdrop(el, event) {
+	if (event.target === el) {
 		closeParticipantModal();
 	}
 }
+
+// ─── Static action registrations (public/index.html) ──────────────────────────
+registerActions("click", {
+	logout: handleLogout,
+	"show-add-lesson-form": showAddLessonForm,
+	"hide-add-lesson-form": hideAddLessonForm,
+	"calendar-prev-month": calendarPrevMonth,
+	"calendar-next-month": calendarNextMonth,
+	"close-add-mom-modal-backdrop": closeAddMomModal,
+	"close-add-mom-modal": closeAddMomModalDirect,
+	"close-day-modal-backdrop": closeDayModal,
+	"close-day-modal": closeDayModalDirect,
+	"show-add-program-form": showAddProgramForm,
+	"show-add-course-form": showAddCourseForm,
+	"hide-add-program-form": hideAddProgramForm,
+	"hide-add-course-form": hideAddCourseForm,
+	"reset-ods-import": resetOdsImport,
+	"submit-ods-import": submitOdsImport,
+	"close-participant-modal-backdrop": closeParticipantModalOnBackdrop,
+	"close-participant-modal": closeParticipantModal,
+	"close-edit-lesson-modal-backdrop": closeEditLessonModalOnBackdrop,
+	"close-edit-lesson-modal": closeEditLessonModal,
+	"close-info-modal-backdrop": closeInfoModalOnBackdrop,
+	"hide-info-modal": hideInfoModal,
+});
+
+registerActions("submit", {
+	"add-lesson": (_form, event) => addLesson(event),
+	"add-mom": (_form, event) => submitAddMom(event),
+	"submit-program-form": (_form, event) => submitProgramForm(event),
+	"submit-course-form": (_form, event) => submitCourseForm(event),
+	"upload-ods-preview": (_form, event) => uploadOdsForPreview(event),
+	"submit-edit-lesson": (_form, event) => submitEditLesson(event),
+});

@@ -90,7 +90,7 @@ test.describe("REQ-3: Import summary modal", () => {
 		await courseSelect.selectOption({ index: 1 });
 
 		// Submit import
-		await page.click('button[onclick="submitOdsImport(this)"]');
+		await page.click('button[data-action="submit-ods-import"]');
 
 		// Assert: modal is visible with import summary
 		await expect(page.locator("#info-modal")).toBeVisible({ timeout: 8000 });

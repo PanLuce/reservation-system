@@ -40,7 +40,7 @@ test.describe("REQ-1: Hide calendar while create-lekce form is open", () => {
 		await loginAsAdmin(page);
 
 		// Act: open the create-lekce form
-		await page.click('button[onclick="showAddLessonForm()"]');
+		await page.click('button[data-action="show-add-lesson-form"]');
 		await expect(page.locator("#add-lesson-form")).toBeVisible();
 
 		// Assert: calendar block is hidden
@@ -50,11 +50,11 @@ test.describe("REQ-1: Hide calendar while create-lekce form is open", () => {
 	test("calendar is restored after clicking Zrušit", async ({ page }) => {
 		await loginAsAdmin(page);
 
-		await page.click('button[onclick="showAddLessonForm()"]');
+		await page.click('button[data-action="show-add-lesson-form"]');
 		await expect(page.locator("#add-lesson-form")).toBeVisible();
 
 		// Act: cancel the form
-		await page.click('button[onclick="hideAddLessonForm()"]');
+		await page.click('button[data-action="hide-add-lesson-form"]');
 
 		// Assert: calendar is back
 		await expect(page.locator("#lessons-calendar-block")).toBeVisible();

@@ -36,7 +36,7 @@ async function openDayModalFor(
 		((year as number) - (ty as number)) * 12 +
 		((month as number) - (tm as number));
 	for (let i = 0; i < monthsAhead; i++) {
-		await page.click('button[onclick="calendarNextMonth()"]');
+		await page.click('button[data-action="calendar-next-month"]');
 	}
 	await page
 		.locator(".calendar-day")

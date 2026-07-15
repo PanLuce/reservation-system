@@ -51,9 +51,9 @@ async function navigateToMonth(
 			today.getFullYear() < targetYear ||
 			(today.getFullYear() === targetYear && today.getMonth() + 1 < targetMonth)
 		) {
-			await page.click('button[onclick="calendarNextMonth()"]');
+			await page.click('button[data-action="calendar-next-month"]');
 		} else {
-			await page.click('button[onclick="calendarPrevMonth()"]');
+			await page.click('button[data-action="calendar-prev-month"]');
 		}
 		// Wait for the label to change rather than guessing a fixed delay.
 		await expect(page.locator("#calendar-month-label")).not.toHaveText(

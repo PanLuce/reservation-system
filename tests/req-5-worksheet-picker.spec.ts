@@ -151,7 +151,7 @@ test.describe("REQ-5: Worksheet picker step in import flow", () => {
 		await expect(courseSelect).toBeVisible();
 		await courseSelect.selectOption({ index: 1 });
 
-		await page.click('button[onclick="submitOdsImport(this)"]');
+		await page.click('button[data-action="submit-ods-import"]');
 
 		await expect(page.locator("#info-modal")).toBeVisible({ timeout: 8000 });
 		await expect(page.locator("#info-modal-body")).toContainText("Importováno");

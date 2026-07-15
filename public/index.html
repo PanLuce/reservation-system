@@ -17,7 +17,9 @@
             <div class="user-info" style="text-align: right;">
                 <span id="user-name" style="margin-right: 10px; font-weight: bold;"></span>
                 <span id="user-role" class="role-badge"></span>
-                <button type="button" class="btn btn-secondary" onclick="handleLogout()" style="font-size: 14px;">Odhlásit se</button>
+                <button class="btn btn-secondary" data-action="logout" style="font-size: 14px;" type="button">Odhlásit
+                    se
+                </button>
             </div>
         </header>
 
@@ -33,12 +35,14 @@
         <div class="tab-content active" id="lessons">
             <div class="section-header">
                 <h2>Kalendář Lekcí</h2>
-                <button type="button" class="btn btn-primary admin-only" onclick="showAddLessonForm()">+ Přidat Lekci</button>
+                <button class="btn btn-primary admin-only" data-action="show-add-lesson-form" type="button">+ Přidat
+                    Lekci
+                </button>
             </div>
 
             <div id="add-lesson-form" class="form-card" style="display: none;">
                 <h3>Nová Lekce</h3>
-                <form onsubmit="addLesson(event)">
+                <form data-submit="add-lesson">
                     <div class="form-group">
                         <label>Název lekce:</label>
                         <input type="text" name="title" required>
@@ -81,7 +85,8 @@
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Uložit</button>
-                        <button type="button" class="btn btn-secondary" onclick="hideAddLessonForm()">Zrušit</button>
+                        <button class="btn btn-secondary" data-action="hide-add-lesson-form" type="button">Zrušit
+                        </button>
                     </div>
                 </form>
             </div>
@@ -89,9 +94,13 @@
             <!-- Month Calendar -->
             <div id="lessons-calendar-block">
                 <div class="calendar-nav">
-                    <button type="button" class="btn btn-secondary calendar-nav-btn" onclick="calendarPrevMonth()">‹</button>
+                    <button class="btn btn-secondary calendar-nav-btn" data-action="calendar-prev-month" type="button">
+                        ‹
+                    </button>
                     <span id="calendar-month-label" class="calendar-month-label"></span>
-                    <button type="button" class="btn btn-secondary calendar-nav-btn" onclick="calendarNextMonth()">›</button>
+                    <button class="btn btn-secondary calendar-nav-btn" data-action="calendar-next-month" type="button">
+                        ›
+                    </button>
                 </div>
                 <div class="calendar-legend admin-only">
                     <span>Lekce</span>
@@ -106,14 +115,15 @@
         </div>
 
         <!-- Add Mom Modal -->
-        <div id="add-mom-modal" class="day-modal-overlay" onclick="closeAddMomModal(event)" style="display:none;">
+        <div class="day-modal-overlay" data-action="close-add-mom-modal-backdrop" id="add-mom-modal"
+             style="display:none;">
             <div class="day-modal">
                 <div class="day-modal-header">
                     <h3>Přidat dítě do skupinky</h3>
-                    <button type="button" class="day-modal-close" onclick="closeAddMomModalDirect()">✕</button>
+                    <button class="day-modal-close" data-action="close-add-mom-modal" type="button">✕</button>
                 </div>
                 <div class="day-modal-body">
-                    <form id="add-mom-form" onsubmit="submitAddMom(event)">
+                    <form data-submit="add-mom" id="add-mom-form">
                         <input type="hidden" id="add-mom-course-id">
                         <div class="form-group">
                             <label>Jméno:</label>
@@ -129,7 +139,8 @@
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Přidat</button>
-                            <button type="button" class="btn btn-secondary" onclick="closeAddMomModalDirect()">Zrušit</button>
+                            <button class="btn btn-secondary" data-action="close-add-mom-modal" type="button">Zrušit
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -137,11 +148,11 @@
         </div>
 
         <!-- Day Detail Modal -->
-        <div id="day-modal" class="day-modal-overlay" onclick="closeDayModal(event)" style="display:none;">
+        <div class="day-modal-overlay" data-action="close-day-modal-backdrop" id="day-modal" style="display:none;">
             <div class="day-modal">
                 <div class="day-modal-header">
                     <h3 id="day-modal-title"></h3>
-                    <button type="button" class="day-modal-close" onclick="closeDayModalDirect()">✕</button>
+                    <button class="day-modal-close" data-action="close-day-modal" type="button">✕</button>
                 </div>
                 <div id="day-modal-body" class="day-modal-body"></div>
             </div>
@@ -152,10 +163,11 @@
             <div class="section-header">
                 <h2>Skupinky (Kurzy)</h2>
                 <div>
-                    <button type="button" class="btn btn-secondary admin-only" onclick="showAddProgramForm()">+ Přidat
+                    <button class="btn btn-secondary admin-only" data-action="show-add-program-form" type="button">+
+                        Přidat
                         kurz
                     </button>
-                    <button type="button" class="btn btn-primary admin-only" onclick="showAddCourseForm()">+ Přidat
+                    <button class="btn btn-primary admin-only" data-action="show-add-course-form" type="button">+ Přidat
                         skupinku
                     </button>
                 </div>
@@ -163,7 +175,7 @@
 
             <div id="add-program-form" class="form-card" style="display: none;">
                 <h3 id="program-form-title">Nový kurz</h3>
-                <form onsubmit="submitProgramForm(event)">
+                <form data-submit="submit-program-form">
                     <input type="hidden" id="program-edit-id">
                     <div class="form-group">
                         <label>Název kurzu:</label>
@@ -179,14 +191,15 @@
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Uložit</button>
-                        <button type="button" class="btn btn-secondary" onclick="hideAddProgramForm()">Zrušit</button>
+                        <button class="btn btn-secondary" data-action="hide-add-program-form" type="button">Zrušit
+                        </button>
                     </div>
                 </form>
             </div>
 
             <div id="add-course-form" class="form-card" style="display: none;">
                 <h3 id="course-form-title">Nová skupinka</h3>
-                <form onsubmit="submitCourseForm(event)">
+                <form data-submit="submit-course-form">
                     <input type="hidden" id="course-edit-id">
                     <div class="form-group">
                         <label>Název skupinky:</label>
@@ -214,7 +227,8 @@
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Uložit</button>
-                        <button type="button" class="btn btn-secondary" onclick="hideAddCourseForm()">Zrušit</button>
+                        <button class="btn btn-secondary" data-action="hide-add-course-form" type="button">Zrušit
+                        </button>
                     </div>
                 </form>
             </div>
@@ -249,7 +263,7 @@
                     <p>Podporované formáty: <strong>.ods, .xlsx, .xls</strong></p>
                     <p style="color: #666; font-size: 13px;">Systém načte jméno dítěte a email rodiče. Ve druhém kroku vyberete list, ve třetím koho přidat a do které skupinky.</p>
                 </div>
-                <form onsubmit="uploadOdsForPreview(event)">
+                <form data-submit="upload-ods-preview">
                     <div class="form-group">
                         <label>Soubor přihlášení:</label>
                         <input type="file" id="ods-file-input" accept=".ods,.xlsx,.xls" required>
@@ -263,7 +277,9 @@
                 <h3>📋 Krok 2 — Vyberte list</h3>
                 <p style="color: #666; font-size: 13px; margin-bottom: 16px;">Soubor obsahuje více listů. Vyberte, ze kterého chcete importovat.</p>
                 <div id="ods-sheet-list"></div>
-                <button type="button" class="btn btn-secondary" onclick="resetOdsImport()" style="margin-top: 12px;">Zrušit</button>
+                <button class="btn btn-secondary" data-action="reset-ods-import" style="margin-top: 12px;"
+                        type="button">Zrušit
+                </button>
             </div>
 
             <!-- Step 3: candidate selection + skupinka dropdown (hidden until sheet chosen) -->
@@ -273,8 +289,12 @@
                     <p style="color: #666; font-size: 13px; margin-bottom: 16px;">Zaškrtněte kdo má být přidán, upravte jméno/email pokud je potřeba, a vyberte skupinku ze seznamu.</p>
                     <div id="ods-blocks-container"></div>
                     <div style="margin-top: 16px;">
-                        <button type="button" class="btn btn-primary" onclick="submitOdsImport(this)">Importovat označené</button>
-                        <button type="button" class="btn btn-secondary" onclick="resetOdsImport()" style="margin-left: 8px;">Zrušit</button>
+                        <button class="btn btn-primary" data-action="submit-ods-import" type="button">Importovat
+                            označené
+                        </button>
+                        <button class="btn btn-secondary" data-action="reset-ods-import" style="margin-left: 8px;"
+                                type="button">Zrušit
+                        </button>
                     </div>
                 </div>
                 <div id="ods-commit-results"></div>
@@ -290,25 +310,27 @@
     </div>
 
     <!-- Participant Detail Modal -->
-    <div id="participant-modal" class="day-modal-overlay" onclick="closeParticipantModalOnBackdrop(event)" style="display:none;">
+    <div class="day-modal-overlay" data-action="close-participant-modal-backdrop" id="participant-modal"
+         style="display:none;">
         <div class="day-modal">
             <div class="day-modal-header">
                 <h3 id="participant-modal-title">Detail dítěte</h3>
-                <button type="button" class="day-modal-close" onclick="closeParticipantModal()">✕</button>
+                <button class="day-modal-close" data-action="close-participant-modal" type="button">✕</button>
             </div>
             <div id="participant-modal-body" class="day-modal-body"></div>
         </div>
     </div>
 
     <!-- Edit Lesson Modal -->
-    <div id="edit-lesson-modal" class="day-modal-overlay" onclick="closeEditLessonModalOnBackdrop(event)" style="display:none;">
+    <div class="day-modal-overlay" data-action="close-edit-lesson-modal-backdrop" id="edit-lesson-modal"
+         style="display:none;">
         <div class="day-modal">
             <div class="day-modal-header">
                 <h3>Upravit lekci</h3>
-                <button type="button" class="day-modal-close" onclick="closeEditLessonModal()">✕</button>
+                <button class="day-modal-close" data-action="close-edit-lesson-modal" type="button">✕</button>
             </div>
             <div class="day-modal-body">
-                <form id="edit-lesson-form" onsubmit="submitEditLesson(event)">
+                <form data-submit="submit-edit-lesson" id="edit-lesson-form">
                     <input type="hidden" id="edit-lesson-id">
                     <div class="form-group">
                         <label>Název lekce:</label>
@@ -326,7 +348,8 @@
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Uložit</button>
-                        <button type="button" class="btn btn-secondary" onclick="closeEditLessonModal()">Zrušit</button>
+                        <button class="btn btn-secondary" data-action="close-edit-lesson-modal" type="button">Zrušit
+                        </button>
                     </div>
                 </form>
             </div>
@@ -334,15 +357,16 @@
     </div>
 
     <!-- Info Modal (reusable single-action modal) -->
-    <div id="info-modal" class="day-modal-overlay" onclick="closeInfoModalOnBackdrop(event)" style="display:none;">
+    <div class="day-modal-overlay" data-action="close-info-modal-backdrop" id="info-modal" style="display:none;">
         <div class="day-modal">
             <div class="day-modal-header">
                 <h3 id="info-modal-title"></h3>
-                <button type="button" class="day-modal-close" id="info-modal-close" onclick="hideInfoModal()">✕</button>
+                <button class="day-modal-close" data-action="hide-info-modal" id="info-modal-close" type="button">✕
+                </button>
             </div>
             <div id="info-modal-body" class="day-modal-body"></div>
             <div style="padding: 0 20px 20px; text-align: right;">
-                <button type="button" class="btn btn-primary" onclick="hideInfoModal()">OK</button>
+                <button class="btn btn-primary" data-action="hide-info-modal" type="button">OK</button>
             </div>
         </div>
     </div>
