@@ -40,9 +40,11 @@ test.describe("CSS File Loading - Direct Check", () => {
 		expect(text).toContain(".container"); // Should have container class
 	});
 
-	test("app.js should return 200 OK as a JS module", async ({ request }) => {
+	test("js/main.js should return 200 OK as a JS module", async ({
+		request,
+	}) => {
 		// Act: Fetch JS file directly
-		const response = await request.get(`${BASE}/app.js`);
+		const response = await request.get(`${BASE}/js/main.js`);
 
 		// Assert: Returns 200
 		expect(response.status()).toBe(200);
@@ -54,6 +56,32 @@ test.describe("CSS File Loading - Direct Check", () => {
 		// Assert: File has content
 		const text = await response.text();
 		expect(text.length).toBeGreaterThan(1000);
+	});
+
+	test("every public/js module returns 200 OK with a JS MIME type", async ({
+		request,
+	}) => {
+		const modules = [
+			"actions",
+			"auth",
+			"calendar",
+			"courses",
+			"lessons",
+			"main",
+			"ods-import",
+			"participants",
+			"reservations",
+			"state",
+			"utils",
+		];
+		for (const name of modules) {
+			const response = await request.get(`${BASE}/js/${name}.js`);
+			expect(response.status(), `${name}.js status`).toBe(200);
+			expect(
+				response.headers()["content-type"],
+				`${name}.js content-type`,
+			).toMatch(/javascript|ecmascript/);
+		}
 	});
 });
 
@@ -118,9 +146,9 @@ test.describe("Static Assets - No 404 Errors", () => {
 		await page.goto(`${BASE}/`);
 		await page.waitForLoadState("networkidle");
 
-		// Assert: No 404s for styles.css or app.js
+		// Assert: No 404s for styles.css or the main module entry point
 		const cssJs404 = failed404.filter(
-			(url) => url.includes("styles.css") || url.includes("app.js"),
+			(url) => url.includes("styles.css") || url.includes("main.js"),
 		);
 
 		if (cssJs404.length > 0) {
@@ -132,7 +160,7 @@ test.describe("Static Assets - No 404 Errors", () => {
 });
 
 // ─── Wiring invariant ──────────────────────────────────────────────────────────
-// app.js dispatches all interactivity through data-action/data-change/data-submit
+// public/js/* dispatches all interactivity through data-action/data-change/data-submit
 // attributes rather than inline onclick=/onchange=/onsubmit=. The dispatcher
 // console.errors whenever an element carries an unregistered action, and a module
 // script that fails to load/parse throws a pageerror — either failure mode is
