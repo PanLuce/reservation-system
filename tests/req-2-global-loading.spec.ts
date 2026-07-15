@@ -58,10 +58,8 @@ test.describe("REQ-2: Global loading feedback", () => {
 				}),
 		);
 
-		// Trigger a calendar reload (calls fetch internally)
-		await page.evaluate(() =>
-			(window as unknown as { loadCalendar: () => void }).loadCalendar(),
-		);
+		// Trigger a calendar reload by re-clicking the Lekce tab (calls fetch internally)
+		await page.click('button[data-tab="lessons"]');
 
 		expect(await busyObserved).toBe(true);
 	});

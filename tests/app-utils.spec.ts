@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// withLoading is defined inline in app.js (browser-only).
+// withLoading is defined in public/js/utils.js (browser-only).
 // We reproduce the contract here to test the logic independently.
 async function withLoading(
 	triggerEl: { disabled: boolean; innerHTML: string } | null,

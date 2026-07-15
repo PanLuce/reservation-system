@@ -28,6 +28,7 @@ playwright/.cache/
 # But keep config files
 !playwright.config.ts
 !public/*.js
+!public/js/*.js
 
 # Uploads
 uploads/

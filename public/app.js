@@ -1,52 +1,14 @@
-const API_URL = `${window.location.origin}/api`;
-
-function localDateString(date = new Date()) {
-	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-// ─── Event delegation dispatcher ───────────────────────────────────────────────
-// Replaces inline onclick=/onchange=/onsubmit= attributes so the CSP can drop
-// script-src-attr 'unsafe-inline'. Elements opt in via data-action/data-change/
-// data-submit; handlers receive (el, event) where el is the matched element.
-const clickActions = {};
-const changeActions = {};
-const submitActions = {};
-
-function registerActions(kind, map) {
-	Object.assign(
-		{ click: clickActions, change: changeActions, submit: submitActions }[kind],
-		map,
-	);
-}
-
-document.addEventListener("click", (event) => {
-	const el = event.target.closest("[data-action]");
-	if (!el) return;
-	const fn = clickActions[el.dataset.action];
-	if (fn) fn(el, event);
-	else if (el.dataset.action !== "none") {
-		console.error(`Unregistered action: ${el.dataset.action}`);
-	}
-});
-
-document.addEventListener("change", (event) => {
-	const el = event.target.closest("[data-change]");
-	if (!el) return;
-	const fn = changeActions[el.dataset.change];
-	if (fn) fn(el, event);
-	else console.error(`Unregistered change action: ${el.dataset.change}`);
-});
-
-document.addEventListener("submit", (event) => {
-	const form = event.target.closest("form[data-submit]");
-	if (!form) return;
-	const fn = submitActions[form.dataset.submit];
-	if (fn) fn(form, event);
-	else console.error(`Unregistered submit action: ${form.dataset.submit}`);
-});
-
-// Current user state
-let currentUser = null;
+import { registerActions } from "./js/actions.js";
+import { state } from "./js/state.js";
+import {
+	API_URL,
+	escapeHtml,
+	hideInfoModal,
+	localDateString,
+	showInfoModal,
+	showNotification,
+	withLoading,
+} from "./js/utils.js";
 
 // Load current user on page load
 async function loadCurrentUser() {
@@ -61,16 +23,16 @@ async function loadCurrentUser() {
 		}
 
 		const data = await response.json();
-		currentUser = data.user;
+		state.currentUser = data.user;
 
 		// Update UI with user info
-		document.getElementById("user-name").textContent = currentUser.name;
+		document.getElementById("user-name").textContent = state.currentUser.name;
 		const roleEl = document.getElementById("user-role");
 		roleEl.textContent =
-			currentUser.role === "admin" ? "👑 Admin" : "👤 Účastník";
-		roleEl.className = `role-badge role-badge--${currentUser.role === "admin" ? "admin" : "participant"}`;
+			state.currentUser.role === "admin" ? "👑 Admin" : "👤 Účastník";
+		roleEl.className = `role-badge role-badge--${state.currentUser.role === "admin" ? "admin" : "participant"}`;
 
-		if (currentUser.role !== "admin") {
+		if (state.currentUser.role !== "admin") {
 			hideAdminFeatures();
 		} else {
 			hideParticipantFeatures();
@@ -114,29 +76,12 @@ async function handleLogout() {
 	}
 }
 
-// Disable button + show spinner for the duration of an async operation.
-async function withLoading(triggerEl, asyncFn) {
-	if (!triggerEl) return asyncFn();
-	const originalText = triggerEl.innerHTML;
-	triggerEl.disabled = true;
-	triggerEl.innerHTML = `${originalText}<span class="spinner"></span>`;
-	try {
-		return await asyncFn();
-	} finally {
-		triggerEl.disabled = false;
-		triggerEl.innerHTML = originalText;
-	}
-}
-
-// Age groups cache
-let ageGroups = [];
-
 async function loadAgeGroups() {
 	try {
 		const res = await fetch(`${API_URL}/age-groups`, {
 			credentials: "include",
 		});
-		ageGroups = await res.json();
+		state.ageGroups = await res.json();
 		populateAgeGroupSelect(document.getElementById("course-age-group"));
 		populateAgeGroupSelect(document.getElementById("lesson-age-group"));
 		populateAgeGroupSelect(document.getElementById("program-age-group"));
@@ -150,7 +95,7 @@ function populateAgeGroupSelect(selectEl) {
 	const current = selectEl.value;
 	selectEl.innerHTML =
 		'<option value="">-- Věková skupina --</option>' +
-		ageGroups
+		state.ageGroups
 			.map((g) => `<option value="${g.name}">${g.name}</option>`)
 			.join("");
 	if (current) selectEl.value = current;
@@ -161,7 +106,7 @@ function populateProgramSelect(selectEl) {
 	const current = selectEl.value;
 	selectEl.innerHTML =
 		'<option value="">-- Bez kurzu --</option>' +
-		programsCache
+		state.programsCache
 			.map(
 				(k) =>
 					`<option value="${k.id}">${escapeHtml(k.name)} (${k.ageGroup})</option>`,
@@ -202,33 +147,10 @@ document.querySelectorAll(".tab").forEach((tab) => {
 	});
 });
 
-// ─── Info Modal ───────────────────────────────────────────────────────────────
-
-function showInfoModal(title, htmlBody) {
-	document.getElementById("info-modal-title").textContent = title;
-	document.getElementById("info-modal-body").innerHTML = htmlBody;
-	document.getElementById("info-modal").style.display = "flex";
-}
-
-function hideInfoModal() {
-	document.getElementById("info-modal").style.display = "none";
-}
-
 function closeInfoModalOnBackdrop(el, event) {
 	if (event.target === el) {
 		hideInfoModal();
 	}
-}
-
-// Show notification
-function showNotification(message, type = "success") {
-	const notification = document.getElementById("notification");
-	notification.textContent = message;
-	notification.className = `notification ${type} show`;
-
-	setTimeout(() => {
-		notification.classList.remove("show");
-	}, 3000);
 }
 
 // ─── Calendar state ───────────────────────────────────────────────────────────
@@ -262,7 +184,7 @@ async function loadCalendar() {
 			credentials: "include",
 		}).then((r) => r.json());
 
-		const pId = currentUser?.participantId;
+		const pId = state.currentUser?.participantId;
 		const subPromise = pId
 			? fetch(`${API_URL}/participants/${pId}/substitution-candidates`, {
 					credentials: "include",
@@ -326,14 +248,6 @@ function calendarNextMonth() {
 	renderMonthCalendar(calendarYear, calendarMonth);
 }
 
-function escapeHtml(str) {
-	return String(str ?? "")
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
-}
-
 function lessonPillTooltip(lesson) {
 	const name = lesson.courseName || lesson.title;
 	const time = lesson.time || "";
@@ -392,7 +306,8 @@ function renderMonthCalendar(year, month) {
 		const lessons = byDate[dateStr] || [];
 
 		const MAX_ICONS = 4;
-		const isParticipant = currentUser && currentUser.role !== "admin";
+		const isParticipant =
+			state.currentUser && state.currentUser.role !== "admin";
 		const hasMine =
 			isParticipant && lessons.some((l) => calendarMyRegisteredIds.has(l.id));
 		const hasSub =
@@ -452,7 +367,7 @@ function renderDayLessons(lessons, dateStr) {
 	if (lessons.length === 0) {
 		return '<p style="color:#999;text-align:center;padding:20px;">Žádné lekce tento den.</p>';
 	}
-	const isAdmin = currentUser && currentUser.role === "admin";
+	const isAdmin = state.currentUser && state.currentUser.role === "admin";
 	const todayStr = localDateString();
 	const canCancel = dateStr > todayStr;
 
@@ -806,7 +721,7 @@ async function addParticipantToLesson(participantId, lessonId) {
 	}
 }
 
-// Initialize — load user first so calendar has currentUser.participantId for substitution fetch
+// Initialize — load user first so calendar has state.currentUser.participantId for substitution fetch
 document.addEventListener("DOMContentLoaded", async () => {
 	await loadCurrentUser();
 	loadCalendar();
@@ -815,18 +730,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // ─── Skupinky (Courses) ───────────────────────────────────────────────────────
 
-// Cache of all programs (populated in loadPrograms; used for grouping + the course form select)
-let programsCache = [];
-
 async function loadPrograms() {
 	try {
 		const res = await fetch(`${API_URL}/programs`, { credentials: "include" });
 		if (!res.ok) throw new Error(`Failed to load programs: ${res.status}`);
 		const programs = await res.json();
 		if (!Array.isArray(programs)) throw new Error("Invalid programs response");
-		programsCache = programs;
+		state.programsCache = programs;
 	} catch (error) {
-		programsCache = [];
+		state.programsCache = [];
 		console.error(error);
 	}
 }
@@ -838,11 +750,11 @@ async function loadCourses() {
 		if (!res.ok) throw new Error(`Failed to load courses: ${res.status}`);
 		const courses = await res.json();
 		if (!Array.isArray(courses)) throw new Error("Invalid courses response");
-		allCoursesCache = courses;
+		state.allCoursesCache = courses;
 		populateProgramSelect(document.getElementById("course-program"));
 		const container = document.getElementById("courses-list");
 
-		if (courses.length === 0 && programsCache.length === 0) {
+		if (courses.length === 0 && state.programsCache.length === 0) {
 			container.innerHTML =
 				'<p style="text-align:center;color:#999;padding:40px;">Žádné skupinky. Přidejte první skupinku!</p>';
 			return;
@@ -859,14 +771,15 @@ async function loadCourses() {
 }
 
 function renderCoursesGroupedByProgram(courses) {
-	const isAdmin = currentUser && currentUser.role === "admin";
-	const sections = programsCache.map((program) => {
+	const isAdmin = state.currentUser && state.currentUser.role === "admin";
+	const sections = state.programsCache.map((program) => {
 		const members = courses.filter((c) => c.programId === program.id);
 		return renderProgramSection(program, members, isAdmin);
 	});
 
 	const unassigned = courses.filter(
-		(c) => !c.programId || !programsCache.some((k) => k.id === c.programId),
+		(c) =>
+			!c.programId || !state.programsCache.some((k) => k.id === c.programId),
 	);
 	if (unassigned.length > 0) {
 		sections.push(renderUnassignedSection(unassigned));
@@ -908,7 +821,7 @@ function renderUnassignedSection(courses) {
 }
 
 function renderCourseCard(course) {
-	const isAdmin = currentUser && currentUser.role === "admin";
+	const isAdmin = state.currentUser && state.currentUser.role === "admin";
 	return `
 		<div class="lesson-card" id="course-card-${course.id}">
 			<div class="course-card-header">
@@ -937,16 +850,13 @@ function renderCourseCard(course) {
 		</div>`;
 }
 
-// Cache of all courses (populated in loadCourses; used for transfer dropdowns)
-let allCoursesCache = [];
-
 async function ensureCoursesCache() {
-	if (allCoursesCache.length > 0) return;
+	if (state.allCoursesCache.length > 0) return;
 	try {
 		const res = await fetch(`${API_URL}/courses`, { credentials: "include" });
 		if (res.ok) {
 			const courses = await res.json();
-			if (Array.isArray(courses)) allCoursesCache = courses;
+			if (Array.isArray(courses)) state.allCoursesCache = courses;
 		}
 	} catch {
 		// Cache stays empty; dropdowns will have no options
@@ -978,8 +888,8 @@ async function loadCourseMembers(courseId) {
 }
 
 function renderTransferDropdown(participantId, fromCourseId) {
-	const current = allCoursesCache.find((c) => c.id === fromCourseId);
-	const others = allCoursesCache.filter((c) => c.id !== fromCourseId);
+	const current = state.allCoursesCache.find((c) => c.id === fromCourseId);
+	const others = state.allCoursesCache.filter((c) => c.id !== fromCourseId);
 	if (!current && others.length === 0) return "";
 	const courseLabel = (c) =>
 		c.location
@@ -1027,9 +937,10 @@ function initiateTransferWithConfirm(selectEl) {
 	}
 	pendingTransfer = { participantId, fromCourseId, toCourseId, selectEl };
 	const fromName =
-		allCoursesCache.find((c) => c.id === fromCourseId)?.name ?? fromCourseId;
+		state.allCoursesCache.find((c) => c.id === fromCourseId)?.name ??
+		fromCourseId;
 	const toName =
-		allCoursesCache.find((c) => c.id === toCourseId)?.name ?? toCourseId;
+		state.allCoursesCache.find((c) => c.id === toCourseId)?.name ?? toCourseId;
 	const body = `
 		<p style="margin-bottom:16px;">Přesunout dítě ze skupinky <strong>${escapeHtml(fromName)}</strong> do skupinky <strong>${escapeHtml(toName)}</strong>?</p>
 		<div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -1399,8 +1310,8 @@ async function deleteProgram(id, triggerEl) {
 // ─── Moje rezervace (Participant self-service) ────────────────────────────────
 
 async function loadMyReservations() {
-	if (!currentUser?.participantId) return;
-	const pId = currentUser.participantId;
+	if (!state.currentUser?.participantId) return;
+	const pId = state.currentUser.participantId;
 
 	await Promise.all([
 		loadMyLessons(pId),
@@ -1478,10 +1389,10 @@ async function loadMyLessons(participantId) {
 }
 
 async function selfCancel(registrationId, triggerEl) {
-	if (!currentUser?.participantId) return;
+	if (!state.currentUser?.participantId) return;
 	if (!confirm("Odhlásit se z této lekce?")) return;
 
-	const pId = currentUser.participantId;
+	const pId = state.currentUser.participantId;
 	await withLoading(triggerEl, async () => {
 		try {
 			const res = await fetch(
@@ -1824,8 +1735,8 @@ async function submitAddMom(event) {
 }
 
 async function selfRegister(lessonId, triggerEl) {
-	if (!currentUser?.participantId) return;
-	const pId = currentUser.participantId;
+	if (!state.currentUser?.participantId) return;
+	const pId = state.currentUser.participantId;
 
 	await withLoading(triggerEl, async () => {
 		try {

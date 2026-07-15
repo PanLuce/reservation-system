@@ -1,5 +1,18 @@
 import { expect, test } from "@playwright/test";
+import {
+	initializeDatabase,
+	resetDatabaseForTests,
+} from "../../src/database.js";
 import { BASE } from "../helpers/base.js";
+
+async function loginAsAdmin(page: import("@playwright/test").Page) {
+	await page.goto(`${BASE}/login.html`);
+	await page.fill("#login-email", "admin@centrumrubacek.cz");
+	await page.fill("#login-password", "admin123");
+	await page.click('button[type="submit"]');
+	await page.waitForURL(`${BASE}/`, { timeout: 10000 });
+	await page.waitForSelector("#calendar-grid", { timeout: 10000 });
+}
 
 /**
  * Test Suite: CSS File Loading Verification
@@ -27,22 +40,20 @@ test.describe("CSS File Loading - Direct Check", () => {
 		expect(text).toContain(".container"); // Should have container class
 	});
 
-	test("app.js should return 200 OK", async ({ request }) => {
+	test("app.js should return 200 OK as a JS module", async ({ request }) => {
 		// Act: Fetch JS file directly
 		const response = await request.get(`${BASE}/app.js`);
 
 		// Assert: Returns 200
 		expect(response.status()).toBe(200);
 
-		// Assert: Content type is JavaScript
+		// Assert: Content type is JavaScript (modules refuse to execute on a wrong MIME type)
 		const contentType = response.headers()["content-type"];
 		expect(contentType).toMatch(/javascript|ecmascript/);
 
-		// Assert: File has content and correct function names (no underscores)
+		// Assert: File has content
 		const text = await response.text();
-		expect(text).toContain("function handleLogout");
-		expect(text).toContain("function showAddLessonForm");
-		expect(text).not.toContain("function _handleLogout"); // Should NOT have underscores
+		expect(text.length).toBeGreaterThan(1000);
 	});
 });
 
@@ -120,55 +131,56 @@ test.describe("Static Assets - No 404 Errors", () => {
 	});
 });
 
-test.describe("Interactive Elements - Function Names Fixed", () => {
-	test("app.js should define functions without underscore prefix", async ({
-		request,
-	}) => {
-		// Act: Fetch app.js source code
-		const response = await request.get(`${BASE}/app.js`);
-		const source = await response.text();
-
-		// Assert: core functions are defined with correct names (no underscores)
-		expect(source).toContain("async function handleLogout()");
-		expect(source).toContain("function showAddLessonForm()");
-		expect(source).toContain("async function addLesson(event)");
-		expect(source).toContain("async function deleteLesson(lessonId");
-		expect(source).toContain("async function loadCourses()");
-		expect(source).toContain("async function populateLessonCourseSelect()");
-
-		// Assert: Old underscore versions should NOT exist
-		expect(source).not.toContain("function _handleLogout()");
-		expect(source).not.toContain("function _showAddLessonForm()");
-		expect(source).not.toContain("function _addLesson(event)");
-		expect(source).not.toContain("function _deleteLesson(lessonId)");
+// ─── Wiring invariant ──────────────────────────────────────────────────────────
+// app.js dispatches all interactivity through data-action/data-change/data-submit
+// attributes rather than inline onclick=/onchange=/onsubmit=. The dispatcher
+// console.errors whenever an element carries an unregistered action, and a module
+// script that fails to load/parse throws a pageerror — either failure mode is
+// caught here by driving the real UI and asserting the console/page stayed clean.
+test.describe("Interactive Elements - Action Wiring", () => {
+	test.beforeEach(async () => {
+		process.env.ADMIN_EMAIL_SEED = "admin@centrumrubacek.cz";
+		process.env.ADMIN_PASSWORD_SEED = "admin123";
+		await initializeDatabase();
+		await resetDatabaseForTests();
 	});
 
-	test("HTML onclick handlers match function names in app.js", async ({
-		request,
+	test("clicking through every tab produces no console errors or page errors", async ({
+		page,
 	}) => {
-		// Arrange: Fetch both files
-		const [htmlResponse, jsResponse] = await Promise.all([
-			request.get(`${BASE}/index.html`),
-			request.get(`${BASE}/app.js`),
-		]);
+		const consoleErrors: string[] = [];
+		const pageErrors: string[] = [];
+		page.on("console", (msg) => {
+			if (msg.type() === "error") consoleErrors.push(msg.text());
+		});
+		page.on("pageerror", (error) => pageErrors.push(error.message));
 
-		const htmlSource = await htmlResponse.text();
-		const jsSource = await jsResponse.text();
+		await loginAsAdmin(page);
 
-		// Extract onclick handlers from HTML
-		const onclickPattern = /onclick="(\w+)\(/g;
-		const matches = Array.from(htmlSource.matchAll(onclickPattern));
-		const htmlFunctions = matches.map((m) => m[1]);
-
-		// Assert: Every onclick function exists in app.js
-		for (const funcName of htmlFunctions) {
-			const functionExists = jsSource.includes(`function ${funcName}(`);
-			if (!functionExists) {
-				throw new Error(
-					`Function "${funcName}" called in HTML but not found in app.js`,
-				);
-			}
-			expect(functionExists).toBe(true);
+		for (const tab of ["courses", "excel", "participants", "lessons"]) {
+			await page.click(`button[data-tab="${tab}"]`);
+			await page.waitForSelector(`#${tab}.tab-content.active`);
 		}
+
+		expect(pageErrors).toHaveLength(0);
+		expect(consoleErrors).toHaveLength(0);
+	});
+
+	test("opening and closing the add-lesson form produces no console errors", async ({
+		page,
+	}) => {
+		const consoleErrors: string[] = [];
+		page.on("console", (msg) => {
+			if (msg.type() === "error") consoleErrors.push(msg.text());
+		});
+
+		await loginAsAdmin(page);
+
+		await page.click('button[data-action="show-add-lesson-form"]');
+		await page.waitForSelector("#add-lesson-form", { state: "visible" });
+		await page.click('button[data-action="hide-add-lesson-form"]');
+		await page.waitForSelector("#add-lesson-form", { state: "hidden" });
+
+		expect(consoleErrors).toHaveLength(0);
 	});
 });
