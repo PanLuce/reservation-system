@@ -1,5 +1,19 @@
-import { closeDayModalDirect, loadCalendar, openDayModal } from "./calendar.js";
-import { API_URL, escapeHtml, showNotification, withLoading } from "./utils.js";
+import { registerActions } from "./actions.js";
+import {
+	closeDayModalDirect,
+	loadCalendar,
+	openDayModal,
+	toggleDayLessonMembers,
+} from "./calendar.js";
+import { ensureCoursesCache } from "./courses.js";
+import {
+	API_URL,
+	escapeHtml,
+	hideInfoModal,
+	showInfoModal,
+	showNotification,
+	withLoading,
+} from "./utils.js";
 
 export async function showAddLessonForm() {
 	await populateLessonCourseSelect();
@@ -157,3 +171,127 @@ export function closeEditLessonModal() {
 export function closeEditLessonModalOnBackdrop(el, event) {
 	if (event.target === el) closeEditLessonModal();
 }
+
+// Cross-skupinka participant picker
+let lessonPickerParticipantsCache = [];
+
+export async function openLessonParticipantPicker(lessonId) {
+	await ensureCoursesCache();
+	let allParticipants;
+	try {
+		const res = await fetch(`${API_URL}/admin/participants`, {
+			credentials: "include",
+		});
+		if (!res.ok) throw new Error();
+		allParticipants = await res.json();
+	} catch {
+		showNotification("Nepodařilo se načíst účastníky", "error");
+		return;
+	}
+
+	if (allParticipants.length === 0) {
+		showInfoModal("Přidat dítě", "<p>Žádní účastníci k dispozici.</p>");
+		return;
+	}
+
+	lessonPickerParticipantsCache = allParticipants;
+
+	const listHtml = allParticipants
+		.map((p) => {
+			const skupinky =
+				p.courses.map((c) => escapeHtml(c.name)).join(", ") || "—";
+			return `<li style="padding:6px 0;border-bottom:1px solid #f0ebe3;display:flex;justify-content:space-between;align-items:center;">
+				<span><strong>${escapeHtml(p.name)}</strong> <span style="color:#888;font-size:12px;">${escapeHtml(p.email)}</span><br><span style="font-size:12px;color:#aaa;">${skupinky}</span></span>
+				<button class="btn btn-secondary" style="font-size:12px;padding:4px 10px;" data-action="confirm-add-participant-to-lesson" data-participant-id="${p.id}" data-lesson-id="${lessonId}">Přidat</button>
+			</li>`;
+		})
+		.join("");
+
+	document.getElementById("info-modal-title").textContent =
+		"Přidat dítě na lekci";
+	document.getElementById("info-modal-body").innerHTML =
+		`<ul style="list-style:none;padding:0;margin:0;max-height:300px;overflow-y:auto;">${listHtml}</ul>`;
+	document.getElementById("info-modal").style.display = "flex";
+}
+
+export function confirmAddParticipantToLesson(participantId, lessonId) {
+	const participant = lessonPickerParticipantsCache.find(
+		(p) => p.id === participantId,
+	);
+	const participantName = participant ? participant.name : "";
+	const body = `
+		<p style="margin-bottom:16px;">Přidat <strong>${escapeHtml(participantName)}</strong> na tuto lekci?</p>
+		<div style="display:flex;gap:8px;">
+			<button class="btn btn-primary" data-action="add-participant-to-lesson" data-participant-id="${participantId}" data-lesson-id="${lessonId}">Přidat</button>
+			<button class="btn btn-secondary" data-action="open-lesson-participant-picker" data-id="${lessonId}">Zpět</button>
+		</div>`;
+	document.getElementById("info-modal-title").textContent = "Potvrdit přidání";
+	document.getElementById("info-modal-body").innerHTML = body;
+}
+
+export async function addParticipantToLesson(participantId, lessonId) {
+	hideInfoModal();
+	try {
+		const pRes = await fetch(`${API_URL}/admin/participants`, {
+			credentials: "include",
+		});
+		const all = await pRes.json();
+		const p = all.find((x) => x.id === participantId);
+		if (!p) {
+			showNotification("Účastník nenalezen", "error");
+			return;
+		}
+		const res = await fetch(`${API_URL}/registrations`, {
+			method: "POST",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				lessonId,
+				participant: {
+					id: p.id,
+					name: p.name,
+					email: p.email,
+					phone: p.phone ?? "",
+					ageGroup: p.ageGroup,
+				},
+			}),
+		});
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			showNotification(err.error || "Chyba při přidávání", "error");
+			return;
+		}
+		showNotification("Dítě přidáno na lekci");
+		const membersContainer = document.getElementById(
+			`day-lesson-members-${lessonId}`,
+		);
+		if (membersContainer) {
+			const list = membersContainer.querySelector("ul");
+			if (list) list.remove();
+			membersContainer.querySelector("span").textContent =
+				"👶 Načíst účastníky ▾";
+			toggleDayLessonMembers(lessonId);
+		}
+	} catch {
+		showNotification("Chyba při přidávání", "error");
+	}
+}
+
+registerActions("click", {
+	"edit-lesson": (el) => editLesson(el.dataset.id),
+	"delete-lesson": (el) => deleteLesson(el.dataset.id, el),
+	"open-lesson-participant-picker": (el) =>
+		openLessonParticipantPicker(el.dataset.id),
+	"confirm-add-participant-to-lesson": (el) =>
+		confirmAddParticipantToLesson(
+			el.dataset.participantId,
+			el.dataset.lessonId,
+		),
+	"add-participant-to-lesson": (el) =>
+		addParticipantToLesson(el.dataset.participantId, el.dataset.lessonId),
+});
+
+registerActions("submit", {
+	"add-lesson": (_form, event) => addLesson(event),
+	"submit-edit-lesson": (_form, event) => submitEditLesson(event),
+});
