@@ -306,7 +306,7 @@ test.describe("REQ-3: Remaining-lesson count in Skupinky member list", () => {
 
 		// Click to expand members on Skupinka Alfa
 		const alfaCard = page.locator(`#course-card-${courseAlpha.id}`);
-		await alfaCard.locator('[onclick*="toggleMembersList"]').click();
+		await alfaCard.locator('[data-action="toggle-members-list"]').click();
 
 		// Should show remaining count
 		await expect(alfaCard).toContainText("zbývá");
@@ -379,7 +379,7 @@ test.describe("REQ-5/6: Transfer participant between skupinky", () => {
 		await page.waitForSelector(".lesson-card");
 
 		const alfaCard = page.locator(`#course-card-${courseAlpha.id}`);
-		await alfaCard.locator('[onclick*="toggleMembersList"]').click();
+		await alfaCard.locator('[data-action="toggle-members-list"]').click();
 
 		// Transfer dropdown should exist for the member
 		const transferSelect = alfaCard.locator("select.transfer-select");
@@ -398,7 +398,7 @@ test.describe("REQ-5/6: Transfer participant between skupinky", () => {
 		await page.waitForSelector(".lesson-card");
 
 		const alfaCard = page.locator(`#course-card-${courseAlpha.id}`);
-		await alfaCard.locator('[onclick*="toggleMembersList"]').click();
+		await alfaCard.locator('[data-action="toggle-members-list"]').click();
 
 		// Select Beta in transfer dropdown → confirmation dialog first
 		const transferSelect = alfaCard.locator("select.transfer-select");
@@ -436,7 +436,7 @@ test.describe("REQ-5/6: Transfer participant between skupinky", () => {
 		await page.waitForSelector(".lesson-card");
 
 		const alfaCard = page.locator(`#course-card-${courseAlpha.id}`);
-		await alfaCard.locator('[onclick*="toggleMembersList"]').click();
+		await alfaCard.locator('[data-action="toggle-members-list"]').click();
 
 		const transferSelect = alfaCard.locator("select.transfer-select");
 		await transferSelect.selectOption({ value: courseBeta.id });
@@ -533,7 +533,7 @@ test.describe("REQ-5/6: Transfer participant between skupinky", () => {
 		await page.waitForSelector(".lesson-card");
 
 		const c1Card = page.locator(`#course-card-${c1.id}`);
-		await c1Card.locator('[onclick*="toggleMembersList"]').click();
+		await c1Card.locator('[data-action="toggle-members-list"]').click();
 
 		const transferSelect = c1Card.locator("select.transfer-select");
 		await transferSelect.selectOption({ value: c2.id });

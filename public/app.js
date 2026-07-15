@@ -421,7 +421,7 @@ function renderMonthCalendar(year, month) {
 				: "";
 
 		html += `
-			<div class="calendar-day${isToday ? " today" : ""}${hasSub ? " has-substitution" : ""}" onclick="openDayModal('${dateStr}')">
+			<div class="calendar-day${isToday ? " today" : ""}${hasSub ? " has-substitution" : ""}" data-action="open-day-modal" data-date="${dateStr}">
 				<div class="calendar-day-number">${day}</div>
 				<div class="calendar-icons">${icons}${overflow}</div>
 			</div>`;
@@ -466,8 +466,8 @@ function renderDayLessons(lessons, dateStr) {
 
 			let actions;
 			if (isAdmin) {
-				actions = `<button class="btn btn-secondary" onclick="editLesson('${l.id}')">Upravit</button>
-				<button class="btn btn-danger" onclick="deleteLesson('${l.id}', this)">Smazat</button>`;
+				actions = `<button class="btn btn-secondary" data-action="edit-lesson" data-id="${l.id}">Upravit</button>
+				<button class="btn btn-danger" data-action="delete-lesson" data-id="${l.id}">Smazat</button>`;
 			} else if (calendarSubCandidateIds.has(l.id)) {
 				const noCredit = calendarCreditCount <= 0;
 				let subDisabled = "";
@@ -476,12 +476,12 @@ function renderDayLessons(lessons, dateStr) {
 				} else if (noCredit) {
 					subDisabled = `disabled title="Potřebujete náhradu (aktuálně 0 kreditů)"`;
 				}
-				actions = `<button class="btn btn-primary" onclick="selfRegister('${l.id}', this)"
+				actions = `<button class="btn btn-primary" data-action="self-register" data-id="${l.id}"
 				${subDisabled}>
 				Přihlásit jako náhrada
 			</button>`;
 			} else {
-				actions = `<button class="btn btn-danger" onclick="selfCancel('${l.id}', this)"
+				actions = `<button class="btn btn-danger" data-action="self-cancel" data-id="${l.id}"
 				${canCancel ? "" : "disabled title='Nelze odhlásit po půlnoci před lekcí'"}>
 				Odhlásit
 			</button>`;
@@ -489,8 +489,8 @@ function renderDayLessons(lessons, dateStr) {
 
 			const participantsBlock = isAdmin
 				? `<div id="day-lesson-members-${l.id}" style="margin:6px 0 2px;">
-					<span style="font-size:13px;cursor:pointer;color:#555;" onclick="toggleDayLessonMembers('${l.id}')">👶 Načíst účastníky ▾</span>
-					<button class="btn btn-secondary" style="font-size:11px;padding:3px 8px;margin-left:8px;" onclick="openLessonParticipantPicker('${l.id}')">+ Přidat dítě</button>
+					<span style="font-size:13px;cursor:pointer;color:#555;" data-action="toggle-day-lesson-members" data-id="${l.id}">👶 Načíst účastníky ▾</span>
+					<button class="btn btn-secondary" style="font-size:11px;padding:3px 8px;margin-left:8px;" data-action="open-lesson-participant-picker" data-id="${l.id}">+ Přidat dítě</button>
 				</div>`
 				: "";
 
@@ -731,7 +731,7 @@ async function openLessonParticipantPicker(lessonId) {
 				p.courses.map((c) => escapeHtml(c.name)).join(", ") || "—";
 			return `<li style="padding:6px 0;border-bottom:1px solid #f0ebe3;display:flex;justify-content:space-between;align-items:center;">
 				<span><strong>${escapeHtml(p.name)}</strong> <span style="color:#888;font-size:12px;">${escapeHtml(p.email)}</span><br><span style="font-size:12px;color:#aaa;">${skupinky}</span></span>
-				<button class="btn btn-secondary" style="font-size:12px;padding:4px 10px;" onclick="confirmAddParticipantToLesson('${p.id}','${lessonId}')">Přidat</button>
+				<button class="btn btn-secondary" style="font-size:12px;padding:4px 10px;" data-action="confirm-add-participant-to-lesson" data-participant-id="${p.id}" data-lesson-id="${lessonId}">Přidat</button>
 			</li>`;
 		})
 		.join("");
@@ -751,8 +751,8 @@ function confirmAddParticipantToLesson(participantId, lessonId) {
 	const body = `
 		<p style="margin-bottom:16px;">Přidat <strong>${escapeHtml(participantName)}</strong> na tuto lekci?</p>
 		<div style="display:flex;gap:8px;">
-			<button class="btn btn-primary" onclick="addParticipantToLesson('${participantId}','${lessonId}')">Přidat</button>
-			<button class="btn btn-secondary" onclick="openLessonParticipantPicker('${lessonId}')">Zpět</button>
+			<button class="btn btn-primary" data-action="add-participant-to-lesson" data-participant-id="${participantId}" data-lesson-id="${lessonId}">Přidat</button>
+			<button class="btn btn-secondary" data-action="open-lesson-participant-picker" data-id="${lessonId}">Zpět</button>
 		</div>`;
 	document.getElementById("info-modal-title").textContent = "Potvrdit přidání";
 	document.getElementById("info-modal-body").innerHTML = body;
@@ -881,8 +881,8 @@ function renderProgramSection(program, members, isAdmin) {
 		: '<p style="color:#aaa;font-size:13px;padding:8px 0;">Zatím žádné skupinky v tomto kurzu.</p>';
 	const adminActions = isAdmin
 		? `<span class="program-actions">
-				<button class="btn btn-secondary" onclick="editProgram('${program.id}')">Upravit kurz</button>
-				<button class="btn btn-danger" onclick="deleteProgram('${program.id}', this)">Smazat kurz</button>
+				<button class="btn btn-secondary" data-action="edit-program" data-id="${program.id}">Upravit kurz</button>
+				<button class="btn btn-danger" data-action="delete-program" data-id="${program.id}">Smazat kurz</button>
 			</span>`
 		: "";
 	return `
@@ -928,9 +928,9 @@ function renderCourseCard(course) {
 				isAdmin
 					? `
 			<div class="lesson-actions">
-				<button class="btn btn-primary" onclick="showAddMomModal('${course.id}')">+ Přidat dítě</button>
-				<button class="btn btn-secondary" onclick="editCourse('${course.id}')">Upravit</button>
-				<button class="btn btn-danger" onclick="deleteCourse('${course.id}', this)">Smazat</button>
+				<button class="btn btn-primary" data-action="show-add-mom-modal" data-id="${course.id}">+ Přidat dítě</button>
+				<button class="btn btn-secondary" data-action="edit-course" data-id="${course.id}">Upravit</button>
+				<button class="btn btn-danger" data-action="delete-course" data-id="${course.id}">Smazat</button>
 			</div>`
 					: ""
 			}
@@ -969,7 +969,7 @@ async function loadCourseMembers(courseId) {
 		}
 		const count = members.length;
 		const suffix = count === 1 ? "a" : count < 5 ? "y" : "";
-		const summary = `<span style="font-size:13px;cursor:pointer;color:#555;" onclick="toggleMembersList('${courseId}')">👩 ${count} mamink${suffix} ▾</span>`;
+		const summary = `<span style="font-size:13px;cursor:pointer;color:#555;" data-action="toggle-members-list" data-id="${courseId}">👩 ${count} mamink${suffix} ▾</span>`;
 		const listItems = members.map((m) => renderMemberRow(m, courseId)).join("");
 		container.innerHTML = `${summary}<ul id="course-members-list-${courseId}" style="display:none;margin:4px 0 0 0;padding-left:16px;list-style:disc;">${listItems}</ul>`;
 	} catch {
@@ -991,7 +991,7 @@ function renderTransferDropdown(participantId, fromCourseId) {
 	const otherOpts = others
 		.map((c) => `<option value="${c.id}">${courseLabel(c)}</option>`)
 		.join("");
-	return `<select class="transfer-select" onclick="event.stopPropagation()" onchange="initiateTransferWithConfirm('${participantId}', '${fromCourseId}', this)">${currentOpt}${otherOpts}</select>`;
+	return `<select class="transfer-select" data-action="none" data-change="transfer-select" data-participant-id="${participantId}" data-from-course-id="${fromCourseId}">${currentOpt}${otherOpts}</select>`;
 }
 
 function renderMemberRow(m, currentCourseId) {
@@ -1000,7 +1000,7 @@ function renderMemberRow(m, currentCourseId) {
 			? ` · <span style="color:#888;">zbývá ${m.remainingLessons} lekcí</span>`
 			: "";
 	return `<li style="font-size:12px;color:#444;margin-bottom:4px;">
-		<span style="cursor:pointer;text-decoration:underline;color:#534445;" onclick="openParticipantDetail('${m.id}')">${escapeHtml(m.name)}</span>
+		<span style="cursor:pointer;text-decoration:underline;color:#534445;" data-action="open-participant-detail" data-id="${m.id}">${escapeHtml(m.name)}</span>
 		<span style="color:#999;">${escapeHtml(m.email)}</span>${remaining}
 		${renderTransferDropdown(m.id, currentCourseId)}
 	</li>`;
@@ -1012,12 +1012,20 @@ function toggleMembersList(courseId) {
 		list.style.display = list.style.display === "none" ? "block" : "none";
 }
 
-function initiateTransferWithConfirm(participantId, fromCourseId, selectEl) {
+// Holds the in-flight transfer's context between the confirm modal, the
+// mismatch modal, and the eventual API call — replaces the old approach of
+// stashing state as data-attributes on the <select> and re-querying for it.
+let pendingTransfer = null;
+
+function initiateTransferWithConfirm(selectEl) {
+	const participantId = selectEl.dataset.participantId;
+	const fromCourseId = selectEl.dataset.fromCourseId;
 	const toCourseId = selectEl.value;
 	if (!toCourseId || toCourseId === fromCourseId) {
 		selectEl.value = fromCourseId;
 		return;
 	}
+	pendingTransfer = { participantId, fromCourseId, toCourseId, selectEl };
 	const fromName =
 		allCoursesCache.find((c) => c.id === fromCourseId)?.name ?? fromCourseId;
 	const toName =
@@ -1025,25 +1033,37 @@ function initiateTransferWithConfirm(participantId, fromCourseId, selectEl) {
 	const body = `
 		<p style="margin-bottom:16px;">Přesunout dítě ze skupinky <strong>${escapeHtml(fromName)}</strong> do skupinky <strong>${escapeHtml(toName)}</strong>?</p>
 		<div style="display:flex;gap:8px;flex-wrap:wrap;">
-			<button class="btn btn-primary" onclick="hideInfoModal();initiateTransfer('${participantId}','${fromCourseId}',document.querySelector('[data-transfer-select-id=\\'${participantId}-${fromCourseId}\\']'))">Přesunout</button>
-			<button class="btn btn-secondary" onclick="hideInfoModal();document.querySelector('[data-transfer-select-id=\\'${participantId}-${fromCourseId}\\']').value='${fromCourseId}'">Zrušit</button>
+			<button class="btn btn-primary" data-action="transfer-confirm">Přesunout</button>
+			<button class="btn btn-secondary" data-action="transfer-abort">Zrušit</button>
 		</div>`;
-	selectEl.setAttribute(
-		"data-transfer-select-id",
-		`${participantId}-${fromCourseId}`,
-	);
-	selectEl.dataset.pendingToCourseId = toCourseId;
 	document.getElementById("info-modal-title").textContent = "Přesunout dítě";
 	document.getElementById("info-modal-body").innerHTML = body;
 	document.getElementById("info-modal").style.display = "flex";
 }
 
-async function initiateTransfer(participantId, fromCourseId, selectEl) {
-	const toCourseId = selectEl
-		? selectEl.dataset.pendingToCourseId || selectEl.value
-		: null;
+function abortPendingTransfer() {
+	hideInfoModal();
+	if (pendingTransfer?.selectEl) {
+		pendingTransfer.selectEl.value = pendingTransfer.fromCourseId;
+	}
+	pendingTransfer = null;
+}
+
+async function confirmPendingTransfer() {
+	hideInfoModal();
+	if (!pendingTransfer) return;
+	const { participantId, fromCourseId, toCourseId, selectEl } = pendingTransfer;
+	await initiateTransfer(participantId, fromCourseId, toCourseId, selectEl);
+}
+
+async function initiateTransfer(
+	participantId,
+	fromCourseId,
+	toCourseId,
+	selectEl,
+) {
 	if (!toCourseId) return;
-	selectEl.value = "";
+	if (selectEl) selectEl.value = "";
 
 	try {
 		const res = await fetch(
@@ -1090,18 +1110,19 @@ function showTransferMismatchModal(
 	remainingInOld,
 	futureInNew,
 ) {
+	pendingTransfer = { participantId, fromCourseId, toCourseId };
 	const body = `
 		<p style="margin-bottom:16px;">Dítě má <strong>${remainingInOld}</strong> zbývajících lekcí v aktuální skupince,
 		ale nová skupinka má <strong>${futureInNew}</strong> budoucích lekcí.</p>
 		<p style="margin-bottom:20px;color:#666;font-size:13px;">Na kolik lekcí nové skupinky ji chcete zaregistrovat?</p>
 		<div style="display:flex;gap:8px;flex-wrap:wrap;">
-			<button class="btn btn-primary" onclick="confirmTransfer('${participantId}','${fromCourseId}','${toCourseId}',${remainingInOld})">
+			<button class="btn btn-primary" data-action="transfer-mismatch-confirm" data-count="${remainingInOld}">
 				Registrovat na prvních ${remainingInOld}
 			</button>
-			<button class="btn btn-secondary" onclick="confirmTransfer('${participantId}','${fromCourseId}','${toCourseId}',${futureInNew})">
+			<button class="btn btn-secondary" data-action="transfer-mismatch-confirm" data-count="${futureInNew}">
 				Registrovat na všech ${futureInNew}
 			</button>
-			<button class="btn btn-danger" onclick="hideInfoModal()">Zrušit</button>
+			<button class="btn btn-danger" data-action="hide-info-modal">Zrušit</button>
 		</div>`;
 	document.getElementById("info-modal-title").textContent =
 		"Nesoulad počtu lekcí";
@@ -1442,7 +1463,7 @@ async function loadMyLessons(participantId) {
 					<div class="lesson-info-item"><strong>👥 Obsazeno:</strong> ${r.lessonEnrolledCount}/${r.lessonCapacity}</div>
 				</div>
 				<div class="lesson-actions">
-					<button class="btn btn-danger" onclick="selfCancel('${r.id}', this)"
+					<button class="btn btn-danger" data-action="self-cancel" data-id="${r.id}"
 						${canCancel ? "" : "disabled title='Nelze odhlásit po půlnoci před lekcí'"}>
 						Odhlásit
 					</button>
@@ -1515,7 +1536,7 @@ async function loadSubstitutionCandidates(participantId) {
 					<div class="lesson-info-item"><strong>👥 Volná místa:</strong> ${l.capacity - l.enrolledCount}</div>
 				</div>
 				<div class="lesson-actions">
-					<button class="btn btn-primary" onclick="selfRegister('${l.id}', this)"
+					<button class="btn btn-primary" data-action="self-register" data-id="${l.id}"
 						${l.date > todayStr ? "" : "disabled title='Nelze se přihlásit jako náhrada po půlnoci před lekcí'"}>
 						Přihlásit jako náhrada
 					</button>
@@ -1579,9 +1600,8 @@ function renderOdsSheetPicker() {
 				? ` — ${escapeHtml(s.detectedLocation)}`
 				: "";
 			const count = s.candidates.length;
-			return `<button type="button" class="btn btn-secondary" data-sheet-index="${i}"
-				style="display:block;margin-bottom:8px;text-align:left;width:100%;"
-				onclick="selectOdsSheet(${i})">
+			return `<button type="button" class="btn btn-secondary" data-action="select-ods-sheet" data-sheet-index="${i}"
+				style="display:block;margin-bottom:8px;text-align:left;width:100%;">
 				${escapeHtml(s.sheetName)}${location}
 				<span style="font-size:12px;color:#888;margin-left:8px;">(${count} kandidát${count === 1 ? "" : "i/ů"})</span>
 			</button>`;
@@ -1642,7 +1662,7 @@ async function renderOdsPreview() {
 			</select>
 		</div>
 		<div style="margin-bottom:8px;font-size:13px;color:#555;">
-			<label><input type="checkbox" id="ods-select-all" checked onchange="toggleAllCandidates(this.checked)"> Vybrat vše</label>
+			<label><input type="checkbox" id="ods-select-all" checked data-change="toggle-all-candidates"> Vybrat vše</label>
 		</div>
 		<div style="overflow-x:auto;">
 			<table style="width:100%;border-collapse:collapse;font-size:13px;">
@@ -1866,11 +1886,11 @@ async function toggleDayLessonMembers(lessonId) {
 		}
 
 		const count = members.length;
-		const summary = `<span style="font-size:13px;cursor:pointer;color:#555;" onclick="toggleDayLessonMembers('${lessonId}')">👩 ${count} účastník${count === 1 ? "" : "ů"} ▾</span>`;
+		const summary = `<span style="font-size:13px;cursor:pointer;color:#555;" data-action="toggle-day-lesson-members" data-id="${lessonId}">👩 ${count} účastník${count === 1 ? "" : "ů"} ▾</span>`;
 		const listHtml = members
 			.map(
 				(m) => `<li style="font-size:12px;color:#444;margin-bottom:2px;">
-					<span style="cursor:pointer;text-decoration:underline;color:#534445;" onclick="openParticipantDetail('${m.id}')">${escapeHtml(m.name)}</span>
+					<span style="cursor:pointer;text-decoration:underline;color:#534445;" data-action="open-participant-detail" data-id="${m.id}">${escapeHtml(m.name)}</span>
 					<span style="color:#999;">${escapeHtml(m.email)}</span>
 					${m.remainingLessons !== undefined ? ` · <span style="color:#888;">zbývá ${m.remainingLessons} lekcí</span>` : ""}
 				</li>`,
@@ -1917,7 +1937,7 @@ function renderParticipantsTable(participants) {
 							)
 							.join("")
 					: '<li style="color:#aaa;">—</li>';
-			return `<tr style="border-bottom:1px solid #f0ebe3;cursor:pointer;" onclick="openParticipantDetail('${p.id}')">
+			return `<tr style="border-bottom:1px solid #f0ebe3;cursor:pointer;" data-action="open-participant-detail" data-id="${p.id}">
 				<td style="padding:10px 8px;font-weight:500;">${escapeHtml(p.name)}</td>
 				<td style="padding:10px 8px;color:#666;">${escapeHtml(p.email)}</td>
 				<td style="padding:10px 8px;font-size:13px;"><ul style="list-style:none;padding:0;margin:0;">${courseItems}</ul></td>
@@ -1935,8 +1955,8 @@ function renderParticipantsTable(participants) {
 	container.innerHTML = `<table style="width:100%;border-collapse:collapse;">
 		<thead>
 			<tr style="background:#faf7f4;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:#666;">
-				<th style="padding:8px;text-align:left;cursor:pointer;user-select:none;" onclick="sortParticipants('name')">Jméno${indicator("name")}</th>
-				<th style="padding:8px;text-align:left;cursor:pointer;user-select:none;" onclick="sortParticipants('email')">Email${indicator("email")}</th>
+				<th style="padding:8px;text-align:left;cursor:pointer;user-select:none;" data-action="sort-participants" data-key="name">Jméno${indicator("name")}</th>
+				<th style="padding:8px;text-align:left;cursor:pointer;user-select:none;" data-action="sort-participants" data-key="email">Email${indicator("email")}</th>
 				<th style="padding:8px;text-align:left;">Skupinky</th>
 			</tr>
 		</thead>
@@ -2061,4 +2081,60 @@ registerActions("submit", {
 	"submit-course-form": (_form, event) => submitCourseForm(event),
 	"upload-ods-preview": (_form, event) => uploadOdsForPreview(event),
 	"submit-edit-lesson": (_form, event) => submitEditLesson(event),
+});
+
+// ─── Calendar / day modal / reservations action registrations ─────────────────
+registerActions("click", {
+	"open-day-modal": (el) => openDayModal(el.dataset.date),
+	"edit-lesson": (el) => editLesson(el.dataset.id),
+	"delete-lesson": (el) => deleteLesson(el.dataset.id, el),
+	"self-register": (el) => selfRegister(el.dataset.id, el),
+	"self-cancel": (el) => selfCancel(el.dataset.id, el),
+	"toggle-day-lesson-members": (el) => toggleDayLessonMembers(el.dataset.id),
+	"open-lesson-participant-picker": (el) =>
+		openLessonParticipantPicker(el.dataset.id),
+	"open-participant-detail": (el) => openParticipantDetail(el.dataset.id),
+});
+
+// ─── Courses / programs / transfer action registrations ───────────────────────
+registerActions("click", {
+	"edit-program": (el) => editProgram(el.dataset.id),
+	"delete-program": (el) => deleteProgram(el.dataset.id, el),
+	"show-add-mom-modal": (el) => showAddMomModal(el.dataset.id),
+	"edit-course": (el) => editCourse(el.dataset.id),
+	"delete-course": (el) => deleteCourse(el.dataset.id, el),
+	"toggle-members-list": (el) => toggleMembersList(el.dataset.id),
+	"transfer-confirm": confirmPendingTransfer,
+	"transfer-abort": abortPendingTransfer,
+	"transfer-mismatch-confirm": (el) => {
+		if (!pendingTransfer) return;
+		const { participantId, fromCourseId, toCourseId } = pendingTransfer;
+		confirmTransfer(
+			participantId,
+			fromCourseId,
+			toCourseId,
+			Number(el.dataset.count),
+		);
+	},
+});
+
+registerActions("change", {
+	"transfer-select": (el) => initiateTransferWithConfirm(el),
+});
+
+// ─── Lesson picker / ODS import / participants action registrations ───────────
+registerActions("click", {
+	"confirm-add-participant-to-lesson": (el) =>
+		confirmAddParticipantToLesson(
+			el.dataset.participantId,
+			el.dataset.lessonId,
+		),
+	"add-participant-to-lesson": (el) =>
+		addParticipantToLesson(el.dataset.participantId, el.dataset.lessonId),
+	"select-ods-sheet": (el) => selectOdsSheet(Number(el.dataset.sheetIndex)),
+	"sort-participants": (el) => sortParticipants(el.dataset.key),
+});
+
+registerActions("change", {
+	"toggle-all-candidates": (el) => toggleAllCandidates(el.checked),
 });
