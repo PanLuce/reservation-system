@@ -14,6 +14,19 @@ async function loginAsAdmin(page: import("@playwright/test").Page) {
 	await page.waitForSelector("#calendar-grid", { timeout: 10000 });
 }
 
+// The browser auto-requests /favicon.ico on every navigation (404, no favicon
+// in public/), and login.js's quick-login loader hits /api/test-accounts
+// (404 outside quick-login test mode) whenever a test logs in via login.html.
+// Neither is related to app wiring. Chrome's console error text for failed
+// resource loads never includes the URL, so string-matching the message
+// can't distinguish them — stop the requests from 404ing instead.
+async function suppressBenign404s(page: import("@playwright/test").Page) {
+	await page.route("**/favicon.ico", (route) => route.fulfill({ status: 204 }));
+	await page.route("**/api/test-accounts", (route) =>
+		route.fulfill({ status: 200, json: { accounts: [] } }),
+	);
+}
+
 /**
  * Test Suite: CSS File Loading Verification
  *
@@ -176,6 +189,7 @@ test.describe("Interactive Elements - Action Wiring", () => {
 	test("clicking through every tab produces no console errors or page errors", async ({
 		page,
 	}) => {
+		await suppressBenign404s(page);
 		const consoleErrors: string[] = [];
 		const pageErrors: string[] = [];
 		page.on("console", (msg) => {
@@ -197,6 +211,7 @@ test.describe("Interactive Elements - Action Wiring", () => {
 	test("opening and closing the add-lesson form produces no console errors", async ({
 		page,
 	}) => {
+		await suppressBenign404s(page);
 		const consoleErrors: string[] = [];
 		page.on("console", (msg) => {
 			if (msg.type() === "error") consoleErrors.push(msg.text());

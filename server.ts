@@ -124,8 +124,8 @@ app.use(
 			directives: {
 				defaultSrc: ["'self'"],
 				styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-				scriptSrc: ["'self'", "'unsafe-inline'"],
-				scriptSrcAttr: ["'unsafe-inline'"],
+				scriptSrc: ["'self'"],
+				scriptSrcAttr: ["'none'"],
 				imgSrc: ["'self'", "data:", "https:"],
 				connectSrc: ["'self'"],
 				fontSrc: ["'self'", "https://fonts.gstatic.com"],
