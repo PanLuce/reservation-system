@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// getLessonTileIcon is defined inline in app.js (browser-only).
+// getLessonTileIcon is defined in public/js/calendar.js (browser-only).
 // We reproduce the contract here to test the logic independently.
 
 type TileIconResult = {
