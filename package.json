@@ -6,7 +6,7 @@
 	"scripts": {
 		"prepare": "husky",
 		"start": "node --import tsx/esm start.mjs",
-		"dev": "node --watch --import tsx/esm start.mjs",
+		"dev": "ENABLE_QUICK_LOGIN=true node --watch --import tsx/esm start.mjs",
 		"test": "./node_modules/.bin/playwright test",
 		"test:ui": "./node_modules/.bin/playwright test --ui",
 		"test:headed": "./node_modules/.bin/playwright test --headed",
