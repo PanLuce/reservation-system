@@ -1,3 +1,4 @@
+import { renderParticipantSelector } from "./reservations.js";
 import { state } from "./state.js";
 import { API_URL } from "./utils.js";
 
@@ -14,6 +15,9 @@ export async function loadCurrentUser() {
 
 		const data = await response.json();
 		state.currentUser = data.user;
+		state.selectedParticipantId =
+			data.user.participants?.[0]?.id ?? data.user.participantId ?? null;
+		renderParticipantSelector();
 
 		// Update UI with user info
 		document.getElementById("user-name").textContent = state.currentUser.name;

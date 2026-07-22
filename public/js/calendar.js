@@ -1,4 +1,4 @@
-import { state } from "./state.js";
+import { getActiveParticipantId, state } from "./state.js";
 import {
 	API_URL,
 	escapeHtml,
@@ -35,7 +35,7 @@ export async function loadCalendar() {
 			credentials: "include",
 		}).then((r) => r.json());
 
-		const pId = state.currentUser?.participantId;
+		const pId = getActiveParticipantId();
 		const subPromise = pId
 			? fetch(`${API_URL}/participants/${pId}/substitution-candidates`, {
 					credentials: "include",

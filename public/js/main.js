@@ -35,6 +35,7 @@ import {
 import { loadParticipants } from "./participants.js";
 import {
 	loadMyReservations,
+	selectParticipant,
 	selfCancel,
 	selfRegister,
 } from "./reservations.js";
@@ -119,4 +120,8 @@ registerActions("click", {
 	"self-register": (el) => selfRegister(el.dataset.id, el),
 	"self-cancel": (el) => selfCancel(el.dataset.id, el),
 	"toggle-day-lesson-members": (el) => toggleDayLessonMembers(el.dataset.id),
+});
+
+registerActions("change", {
+	"select-participant": (el) => selectParticipant(el),
 });

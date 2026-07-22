@@ -1,5 +1,5 @@
 import { closeDayModalDirect, loadCalendar } from "./calendar.js";
-import { state } from "./state.js";
+import { getActiveParticipantId, state } from "./state.js";
 import {
 	API_URL,
 	escapeHtml,
@@ -8,9 +8,33 @@ import {
 	withLoading,
 } from "./utils.js";
 
+export function renderParticipantSelector() {
+	const wrap = document.getElementById("participant-selector-wrap");
+	const select = document.getElementById("participant-selector");
+	if (!wrap || !select) return;
+
+	const participants = state.currentUser?.participants ?? [];
+	if (participants.length <= 1) {
+		wrap.style.display = "none";
+		return;
+	}
+
+	select.innerHTML = participants
+		.map((p) => `<option value="${p.id}">${escapeHtml(p.name)}</option>`)
+		.join("");
+	select.value = state.selectedParticipantId ?? participants[0].id;
+	wrap.style.display = "block";
+}
+
+export function selectParticipant(el) {
+	state.selectedParticipantId = el.value;
+	loadMyReservations();
+	loadCalendar();
+}
+
 export async function loadMyReservations() {
-	if (!state.currentUser?.participantId) return;
-	const pId = state.currentUser.participantId;
+	const pId = getActiveParticipantId();
+	if (!pId) return;
 
 	await Promise.all([
 		loadMyLessons(pId),
@@ -88,10 +112,10 @@ export async function loadMyLessons(participantId) {
 }
 
 export async function selfCancel(registrationId, triggerEl) {
-	if (!state.currentUser?.participantId) return;
+	const pId = getActiveParticipantId();
+	if (!pId) return;
 	if (!confirm("Odhlásit se z této lekce?")) return;
 
-	const pId = state.currentUser.participantId;
 	await withLoading(triggerEl, async () => {
 		try {
 			const res = await fetch(
@@ -161,8 +185,8 @@ export async function loadSubstitutionCandidates(participantId) {
 }
 
 export async function selfRegister(lessonId, triggerEl) {
-	if (!state.currentUser?.participantId) return;
-	const pId = state.currentUser.participantId;
+	const pId = getActiveParticipantId();
+	if (!pId) return;
 
 	await withLoading(triggerEl, async () => {
 		try {
