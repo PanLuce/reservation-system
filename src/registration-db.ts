@@ -52,6 +52,7 @@ export class RegistrationManagerDB {
 	async registerParticipant(
 		lessonId: string,
 		participant: Participant,
+		options?: { sendEmails?: boolean },
 	): Promise<Registration> {
 		// Save participant first (only if doesn't exist)
 		const existingParticipant = await ParticipantDB.getById(participant.id);
@@ -71,7 +72,7 @@ export class RegistrationManagerDB {
 		});
 
 		// Send emails asynchronously (don't block registration)
-		if (this.emailService) {
+		if (this.emailService && (options?.sendEmails ?? true)) {
 			const updatedLesson = await LessonDB.getById(lessonId);
 			if (updatedLesson) {
 				this.sendRegistrationEmails(participant, updatedLesson, status).catch(
@@ -593,10 +594,14 @@ export class RegistrationManagerDB {
 	/**
 	 * Idempotent. Ensures every participant linked to courseId is registered
 	 * on every future lesson of that course. Skips past lessons and existing
-	 * registrations. Overflow → waitlist.
+	 * registrations. Overflow → waitlist. Pass { sendEmails: false } to
+	 * reconcile silently — used when this is triggered by lesson creation,
+	 * where notifying parents once per newly-created lesson would mean up to
+	 * (roster size × new lessons) emails in a single admin action.
 	 */
 	async syncGroupEnrollments(
 		courseId: string,
+		options?: { sendEmails?: boolean },
 	): Promise<{ enrolled: number; skipped: number }> {
 		const today = localDateString();
 		const [members, lessons] = await Promise.all([
@@ -630,7 +635,7 @@ export class RegistrationManagerDB {
 					skipped++;
 					continue;
 				}
-				await this.registerParticipant(lessonId, participant);
+				await this.registerParticipant(lessonId, participant, options);
 				enrolled++;
 			}
 		}

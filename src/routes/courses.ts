@@ -1,6 +1,6 @@
 import express from "express";
 import { ageGroupToColor, isValidAgeGroup } from "../age-groups.js";
-import { calendar } from "../app-context.js";
+import { calendar, registrationManager } from "../app-context.js";
 import { createCourse } from "../course.js";
 import { CourseDB, ProgramDB } from "../database.js";
 import { requireAdmin, requireAuth } from "../middleware/auth.js";
@@ -212,9 +212,19 @@ coursesRouter.post(
 				});
 			}
 
+			// Silent: notifying parents once per newly-created lesson would mean
+			// up to (roster size × new lessons) emails from a single admin click.
+			// Participant-add and ODS-import keep emailing as before — this is
+			// the only sync trigger that opts out.
+			const sync = await registrationManager.syncGroupEnrollments(courseId, {
+				sendEmails: false,
+			});
+
 			res.status(201).json({
 				message: `Created ${lessons.length} lessons`,
 				lessons,
+				enrolled: sync.enrolled,
+				skipped: sync.skipped,
 			});
 		} catch (error) {
 			res.status(400).json({

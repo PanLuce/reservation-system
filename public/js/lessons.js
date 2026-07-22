@@ -75,7 +75,12 @@ export async function addLesson(event) {
 
 			if (response.ok) {
 				const data = await response.json();
-				showNotification(`Vytvořeno ${data.lessons.length} lekcí`);
+				const enrolledSuffix = data.enrolled
+					? `, přihlášeno ${data.enrolled} dětí`
+					: "";
+				showNotification(
+					`Vytvořeno ${data.lessons.length} lekcí${enrolledSuffix}`,
+				);
 				hideAddLessonForm();
 				loadCalendar();
 			} else {
