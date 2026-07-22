@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { UserDB } from "./database.js";
+import { ParticipantDB, UserDB } from "./database.js";
 
 export type User = {
 	id: string;
@@ -7,6 +7,7 @@ export type User = {
 	name: string;
 	role: "admin" | "participant";
 	participantId?: string;
+	participants?: { id: string; name: string }[];
 };
 
 export type LoginResult =
@@ -98,13 +99,23 @@ export class AuthService {
 			return null;
 		}
 
-		const participantId = user.participantId as string | undefined;
+		const siblings = (await ParticipantDB.getAllByEmail(
+			user.email as string,
+		)) as Record<string, unknown>[];
+		const participants = siblings.map((p) => ({
+			id: p.id as string,
+			name: p.name as string,
+		}));
+
+		const participantId =
+			(user.participantId as string | undefined) ?? participants[0]?.id;
 		return {
 			id: user.id as string,
 			email: user.email as string,
 			name: user.name as string,
 			role: user.role as "admin" | "participant",
 			...(participantId !== undefined && { participantId }),
+			participants,
 		};
 	}
 }
