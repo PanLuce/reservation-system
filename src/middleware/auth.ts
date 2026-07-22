@@ -30,7 +30,8 @@ export async function requireAdmin(
 	next();
 }
 
-// Allows access only if user is admin OR their participantId matches the :participantId param
+// Allows access only if user is admin OR the :participantId param is one of the
+// participants sharing the user's email (siblings included, see AuthService.verifyToken)
 export async function requireParticipantScope(
 	req: express.Request,
 	res: express.Response,
@@ -46,7 +47,7 @@ export async function requireParticipantScope(
 	if (user.role === "admin") {
 		return next();
 	}
-	if (user.participantId === req.params.participantId) {
+	if (user.participants?.some((p) => p.id === req.params.participantId)) {
 		return next();
 	}
 	return res.status(403).json({ error: "Access denied" });
