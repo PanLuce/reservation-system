@@ -6,6 +6,7 @@ import {
 	escapeHtml,
 	hideInfoModal,
 	localDateString,
+	showInfoModal,
 	showNotification,
 	withLoading,
 } from "./utils.js";
@@ -739,6 +740,69 @@ export function closeBulkAssignModal(el, event) {
 export function closeBulkAssignModalDirect() {
 	document.getElementById("bulk-assign-modal").style.display = "none";
 }
+
+// One-time listener on the static form — its two checklist containers are
+// re-populated per open, but the form element itself is never recreated.
+document.getElementById("bulk-assign-form")?.addEventListener("change", () => {
+	const hasParticipant = document.querySelector(
+		".bulk-assign-participant:checked",
+	);
+	const hasLesson = document.querySelector(".bulk-assign-lesson:checked");
+	const submitBtn = document.getElementById("bulk-assign-submit");
+	if (submitBtn) submitBtn.disabled = !(hasParticipant && hasLesson);
+});
+
+export async function submitBulkAssign(event) {
+	event.preventDefault();
+	const courseId = document.getElementById("bulk-assign-course-id").value;
+	const participantIds = Array.from(
+		document.querySelectorAll(".bulk-assign-participant:checked"),
+	).map((el) => el.value);
+	const lessonIds = Array.from(
+		document.querySelectorAll(".bulk-assign-lesson:checked"),
+	).map((el) => el.value);
+
+	if (participantIds.length === 0 || lessonIds.length === 0) {
+		showNotification("Vyberte alespoň jedno dítě a jednu lekci", "error");
+		return;
+	}
+
+	await withLoading(event.submitter, async () => {
+		try {
+			const res = await fetch(`${API_URL}/courses/${courseId}/bulk-register`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ participantIds, lessonIds }),
+			});
+			if (res.ok) {
+				const data = await res.json();
+				closeBulkAssignModalDirect();
+				loadCourseMembers(courseId);
+				showInfoModal(
+					"Výsledek hromadného přiřazení",
+					`<p>Přiřazeno: <strong>${data.successful}</strong></p>
+					<p>Přeskočeno (již přihlášeno): <strong>${data.skipped}</strong></p>
+					<p>Náhradníci (plná kapacita): <strong>${data.waitlisted}</strong></p>
+					${data.errors.length ? `<p style="color:#c0392b;">Chyby: <strong>${data.errors.length}</strong></p>` : ""}`,
+				);
+			} else {
+				const data = await res.json().catch(() => ({}));
+				showNotification(
+					data.error || "Chyba při hromadném přiřazování",
+					"error",
+				);
+			}
+		} catch (error) {
+			showNotification("Chyba při hromadném přiřazování", "error");
+			console.error(error);
+		}
+	});
+}
+
+registerActions("submit", {
+	"bulk-assign": (_form, event) => submitBulkAssign(event),
+});
 
 registerActions("click", {
 	"edit-program": (el) => editProgram(el.dataset.id),

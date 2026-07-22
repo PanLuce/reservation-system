@@ -156,19 +156,23 @@
                     <button class="day-modal-close" data-action="close-bulk-assign-modal" type="button">✕</button>
                 </div>
                 <div class="day-modal-body">
-                    <input id="bulk-assign-course-id" type="hidden">
-                    <div class="form-group">
-                        <label>Děti:</label>
-                        <div id="bulk-assign-participants"></div>
-                    </div>
-                    <div class="form-group">
-                        <label>Budoucí lekce:</label>
-                        <div id="bulk-assign-lessons"></div>
-                    </div>
-                    <div class="form-actions">
-                        <button class="btn btn-secondary" data-action="close-bulk-assign-modal" type="button">Zrušit
-                        </button>
-                    </div>
+                    <form data-submit="bulk-assign" id="bulk-assign-form">
+                        <input id="bulk-assign-course-id" type="hidden">
+                        <div class="form-group">
+                            <label>Děti:</label>
+                            <div id="bulk-assign-participants"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Budoucí lekce:</label>
+                            <div id="bulk-assign-lessons"></div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" disabled id="bulk-assign-submit" type="submit">Přiřadit
+                            </button>
+                            <button class="btn btn-secondary" data-action="close-bulk-assign-modal" type="button">Zrušit
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
