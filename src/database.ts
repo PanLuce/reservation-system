@@ -948,6 +948,18 @@ export const ParticipantDB = {
 		return result.rows[0];
 	},
 
+	// One parent email can cover several kids (siblings) — this returns all of
+	// them, unlike getByEmail's single-row lookup. Case-insensitive so a
+	// parent's login email and a contact email that differ only in case still
+	// resolve to the same family.
+	async getAllByEmail(email: string) {
+		const result = await client.execute({
+			sql: "SELECT * FROM participants WHERE email = ? COLLATE NOCASE ORDER BY name",
+			args: [email],
+		});
+		return result.rows;
+	},
+
 	async getRegistrationsByParticipantId(participantId: string) {
 		const result = await client.execute({
 			sql: "SELECT * FROM registrations WHERE participantId = ? ORDER BY id DESC",

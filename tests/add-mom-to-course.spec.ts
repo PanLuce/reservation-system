@@ -138,6 +138,44 @@ test.describe
 			expect(matching).toHaveLength(1);
 		});
 
+		test("second child with the same email but a different name creates a distinct sibling", async () => {
+			const cookie = adminCookie;
+
+			const res1 = await fetch(`${BASE}/api/courses/${courseId}/participants`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json", Cookie: cookie },
+				body: JSON.stringify({ name: "Anežka", email: "sourozenci@test.cz" }),
+			});
+			expect(res1.status).toBe(201);
+			const data1 = (await res1.json()) as { participant: { id: string } };
+
+			const res2 = await fetch(`${BASE}/api/courses/${courseId}/participants`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json", Cookie: cookie },
+				body: JSON.stringify({ name: "Bětka", email: "sourozenci@test.cz" }),
+			});
+			expect(res2.status).toBe(201);
+			const data2 = (await res2.json()) as {
+				participant: { id: string };
+				created: boolean;
+			};
+			expect(data2.created).toBe(true);
+			expect(data2.participant.id).not.toBe(data1.participant.id);
+
+			// Two distinct participants under the shared email, both linked to the course
+			const siblings = await ParticipantDB.getAllByEmail("sourozenci@test.cz");
+			expect(siblings).toHaveLength(2);
+			const names = siblings.map((p) => (p as Record<string, unknown>).name);
+			expect(names.sort()).toEqual(["Anežka", "Bětka"]);
+
+			for (const id of [data1.participant.id, data2.participant.id]) {
+				const courses = await ParticipantDB.getCoursesForParticipant(id);
+				expect(
+					courses.some((c) => (c as Record<string, unknown>).id === courseId),
+				).toBe(true);
+			}
+		});
+
 		test("duplicate link (already in course) returns 200 idempotent — no duplicate registrations", async () => {
 			const cookie = adminCookie;
 

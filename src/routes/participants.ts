@@ -27,10 +27,13 @@ participantsRouter.post(
 			return res.status(404).json({ error: "Course not found" });
 		}
 
-		// Upsert participant by email
-		let existingParticipant = (await ParticipantDB.getByEmail(email)) as
-			| Record<string, unknown>
-			| undefined;
+		// Upsert by email + name, not email alone — siblings share a parent email,
+		// so matching on email alone would collapse the second kid into the first
+		// (see ODS importer, which already upserts the same way for this reason).
+		let existingParticipant = (await ParticipantDB.getByEmailAndName(
+			email,
+			name,
+		)) as Record<string, unknown> | undefined;
 		let created = false;
 
 		if (!existingParticipant) {
