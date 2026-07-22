@@ -300,7 +300,12 @@ header p {
 
 .lesson-actions {
 	display: flex;
+    flex-wrap: wrap;
 	gap: 10px;
+}
+
+.lesson-actions .btn {
+    flex: 1 1 auto;
 }
 
 .info-box {
