@@ -11,7 +11,7 @@
 
 ### Tier 4 — Lower (maintainability, no direct exploit)
 
-16. Introduce typed row mappers at the DB boundary: DAOs return untyped libSQL rows and consumers re-cast
+17. Introduce typed row mappers at the DB boundary: DAOs return untyped libSQL rows and consumers re-cast
     field-by-field (~145 `as` casts confirmed across server.ts and registration-db.ts, some of which are unrelated
     param/const casts), so strict TypeScript is effectively disabled at the data layer and column renames break nothing
     at compile time. Large multi-day refactor.
