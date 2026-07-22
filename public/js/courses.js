@@ -135,6 +135,7 @@ function renderCourseCard(course) {
 					? `
 			<div class="lesson-actions">
 				<button class="btn btn-primary" data-action="show-add-mom-modal" data-id="${course.id}">+ Přidat dítě</button>
+				<button class="btn btn-secondary" data-action="sync-course-enrollments" data-id="${course.id}">🔄 Přihlásit skupinku</button>
 				<button class="btn btn-secondary" data-action="edit-course" data-id="${course.id}">Upravit</button>
 				<button class="btn btn-danger" data-action="delete-course" data-id="${course.id}">Smazat</button>
 			</div>`
@@ -654,10 +655,37 @@ export async function submitAddMom(event) {
 	});
 }
 
+export async function syncCourseEnrollments(courseId, triggerEl) {
+	await withLoading(triggerEl, async () => {
+		try {
+			const res = await fetch(
+				`${API_URL}/courses/${courseId}/sync-enrollments`,
+				{
+					method: "POST",
+					credentials: "include",
+				},
+			);
+			if (res.ok) {
+				const data = await res.json();
+				showNotification(
+					`Přihlášeno: ${data.enrolled}, přeskočeno: ${data.skipped}`,
+				);
+				loadCourseMembers(courseId);
+			} else {
+				showNotification("Chyba při hromadném přihlašování", "error");
+			}
+		} catch (error) {
+			showNotification("Chyba při hromadném přihlašování", "error");
+			console.error(error);
+		}
+	});
+}
+
 registerActions("click", {
 	"edit-program": (el) => editProgram(el.dataset.id),
 	"delete-program": (el) => deleteProgram(el.dataset.id, el),
 	"show-add-mom-modal": (el) => showAddMomModal(el.dataset.id),
+	"sync-course-enrollments": (el) => syncCourseEnrollments(el.dataset.id, el),
 	"edit-course": (el) => editCourse(el.dataset.id),
 	"delete-course": (el) => deleteCourse(el.dataset.id, el),
 	"toggle-members-list": (el) => toggleMembersList(el.dataset.id),
