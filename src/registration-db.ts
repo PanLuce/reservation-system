@@ -95,8 +95,8 @@ export class RegistrationManagerDB {
 		}
 
 		const status = registration.status as string;
+		const regLessonId = registration.lessonId as string;
 		if (status === "confirmed") {
-			const regLessonId = registration.lessonId as string;
 			const lesson = await LessonDB.getById(regLessonId);
 			if (lesson) {
 				await LessonDB.update(regLessonId, {
@@ -106,6 +106,34 @@ export class RegistrationManagerDB {
 		}
 
 		await RegistrationDB.update(registrationId, { status: "cancelled" });
+
+		// Only a confirmed cancellation actually frees a seat — cancelling an
+		// already-waitlisted registration changes nothing for anyone else.
+		if (status === "confirmed") {
+			await this.promoteWaitlistForLesson(regLessonId);
+		}
+	}
+
+	/**
+	 * Fills every seat a lesson currently has open by promoting waitlisted
+	 * registrations one at a time, longest-waiting first. Called after a seat
+	 * frees (cancellation) or a lesson's capacity is raised — either can open
+	 * more than one seat, so this loops rather than promoting a single kid.
+	 */
+	async promoteWaitlistForLesson(lessonId: string): Promise<Registration[]> {
+		const promoted: Registration[] = [];
+		for (;;) {
+			const result = await RegistrationDB.promoteFirstWaitlisted(lessonId);
+			if (!result) break;
+			promoted.push({
+				id: result.id,
+				lessonId: result.lessonId,
+				participantId: result.participantId,
+				registeredAt: new Date(),
+				status: "confirmed",
+			});
+		}
+		return promoted;
 	}
 
 	async bulkRegisterParticipants(

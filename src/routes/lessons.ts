@@ -87,6 +87,11 @@ lessonsRouter.put("/api/lessons/:id", requireAdmin, async (req, res) => {
 		return res.status(400).json({ error: "No updatable fields provided" });
 	}
 	await calendar.updateLesson(lessonId, updates);
+	// A capacity increase can open more than one seat at once (e.g. 10 -> 15),
+	// so promotion must run here too, not just on cancellation.
+	if (updates.capacity !== undefined && updates.capacity > lesson.capacity) {
+		await registrationManager.promoteWaitlistForLesson(lessonId);
+	}
 	const updated = await calendar.getLessonById(lessonId);
 	res.json(updated);
 });

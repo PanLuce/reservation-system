@@ -1306,6 +1306,71 @@ export const RegistrationDB = {
 			}
 		});
 	},
+
+	/**
+	 * Promotes the longest-waiting waitlisted registration for a lesson into the
+	 * first available seat, if one exists. Mirrors insertWithCapacityCheck's
+	 * transactional read-then-write shape so a promotion racing a fresh
+	 * registration can't double-book the same seat. registeredAt only has
+	 * second resolution, so rowid (SQLite's implicit insertion-order column)
+	 * breaks ties for registrations created within the same second.
+	 */
+	async promoteFirstWaitlisted(lessonId: string): Promise<{
+		id: string;
+		lessonId: string;
+		participantId: string;
+	} | null> {
+		return withWriteRetry(async () => {
+			const tx = await client.transaction("write");
+			try {
+				const lessonRow = await tx.execute({
+					sql: "SELECT enrolledCount, capacity FROM lessons WHERE id = ?",
+					args: [lessonId],
+				});
+				const lesson = lessonRow.rows[0];
+				if (!lesson) {
+					throw new Error(`Lesson ${lessonId} not found`);
+				}
+				const enrolledCount = lesson.enrolledCount as number;
+				const capacity = lesson.capacity as number;
+				if (enrolledCount >= capacity) {
+					await tx.commit();
+					return null;
+				}
+
+				const candidateRow = await tx.execute({
+					sql: `SELECT id, participantId FROM registrations
+						WHERE lessonId = ? AND status = 'waitlist'
+						ORDER BY registeredAt ASC, rowid ASC LIMIT 1`,
+					args: [lessonId],
+				});
+				const candidate = candidateRow.rows[0];
+				if (!candidate) {
+					await tx.commit();
+					return null;
+				}
+				const candidateId = candidate.id as string;
+
+				await tx.execute({
+					sql: "UPDATE registrations SET status = 'confirmed' WHERE id = ?",
+					args: [candidateId],
+				});
+				await tx.execute({
+					sql: "UPDATE lessons SET enrolledCount = enrolledCount + 1 WHERE id = ?",
+					args: [lessonId],
+				});
+
+				await tx.commit();
+				return {
+					id: candidateId,
+					lessonId,
+					participantId: candidate.participantId as string,
+				};
+			} finally {
+				tx.close();
+			}
+		});
+	},
 };
 
 const WRITE_RETRY_ATTEMPTS = 50;
