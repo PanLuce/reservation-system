@@ -127,6 +127,49 @@ participantsRouter.post(
 	},
 );
 
+participantsRouter.post(
+	"/api/courses/:courseId/resolve-lesson-overflow",
+	requireAdmin,
+	async (req, res) => {
+		const courseId = req.params.courseId as string;
+		if (!courseId) {
+			return res.status(400).json({ error: "Course ID is required" });
+		}
+
+		const { lessonIds, confirmedParticipantIds } = req.body;
+
+		if (!lessonIds || !Array.isArray(lessonIds) || lessonIds.length === 0) {
+			return res.status(400).json({ error: "lessonIds array is required" });
+		}
+
+		if (!Array.isArray(confirmedParticipantIds)) {
+			return res
+				.status(400)
+				.json({ error: "confirmedParticipantIds array is required" });
+		}
+
+		try {
+			const result = await registrationManager.resolveGroupOverflow({
+				courseId,
+				lessonIds,
+				confirmedParticipantIds,
+			});
+
+			res.status(201).json({
+				message: "Overflow resolved",
+				...result,
+			});
+		} catch (error) {
+			res.status(500).json({
+				error:
+					error instanceof Error
+						? error.message
+						: "Failed to resolve lesson overflow",
+			});
+		}
+	},
+);
+
 participantsRouter.get(
 	"/api/courses/:courseId/participants",
 	requireAdmin,

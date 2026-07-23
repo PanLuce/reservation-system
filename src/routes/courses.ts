@@ -2,7 +2,7 @@ import express from "express";
 import { ageGroupToColor, isValidAgeGroup } from "../age-groups.js";
 import { calendar, registrationManager } from "../app-context.js";
 import { createCourse } from "../course.js";
-import { CourseDB, ProgramDB } from "../database.js";
+import { CourseDB, ParticipantDB, ProgramDB } from "../database.js";
 import { requireAdmin, requireAuth } from "../middleware/auth.js";
 import { createProgram } from "../program.js";
 
@@ -209,6 +209,24 @@ coursesRouter.post(
 				return res.status(400).json({
 					error:
 						"Either dates array, (startDate + endDate), or (startDate + weeksCount) is required",
+				});
+			}
+
+			// If the roster is bigger than what these lessons can hold, defer
+			// enrollment to an explicit admin choice instead of silently
+			// waitlisting the overflow — see resolve-lesson-overflow below.
+			const roster = await ParticipantDB.getByCourse(courseId);
+			const numericCapacity = Number(capacity);
+			if (roster.length > numericCapacity) {
+				return res.status(201).json({
+					message: `Created ${lessons.length} lessons`,
+					lessons,
+					needsResolution: true,
+					capacity: numericCapacity,
+					roster: roster.map((member) => ({
+						id: member.id as string,
+						name: member.name as string,
+					})),
 				});
 			}
 

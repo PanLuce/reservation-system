@@ -242,6 +242,40 @@ export class RegistrationManagerDB {
 		return result;
 	}
 
+	/**
+	 * Resolves a course roster that doesn't fit a lesson's capacity: the admin's
+	 * chosen confirmedParticipantIds are registered first (so they win the
+	 * available seats), the rest of the roster is registered after (so they
+	 * land on the waitlist) — bulkAssignGroupToLessons already confirms-or-
+	 * waitlists based on array order, so no separate capacity primitive is
+	 * needed here.
+	 */
+	async resolveGroupOverflow(config: {
+		courseId: string;
+		lessonIds: string[];
+		confirmedParticipantIds: string[];
+	}): Promise<{
+		totalRegistrations: number;
+		successful: number;
+		skipped: number;
+		waitlisted: number;
+		errors: Array<{ participantId: string; lessonId: string; error: string }>;
+	}> {
+		const roster = await ParticipantDB.getByCourse(config.courseId);
+		const confirmedSet = new Set(config.confirmedParticipantIds);
+		const orderedParticipantIds = [
+			...config.confirmedParticipantIds,
+			...roster
+				.map((member) => member.id as string)
+				.filter((id) => !confirmedSet.has(id)),
+		];
+
+		return this.bulkAssignGroupToLessons({
+			participantIds: orderedParticipantIds,
+			lessonIds: config.lessonIds,
+		});
+	}
+
 	async participantCancelRegistration(
 		registrationId: string,
 		participantId: string,
