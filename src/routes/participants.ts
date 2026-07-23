@@ -57,11 +57,12 @@ participantsRouter.post(
 		await ParticipantDB.linkToCourse(participantId, courseId);
 
 		// Auto-enroll in all future lessons
-		await registrationManager.syncGroupEnrollments(courseId);
+		const sync = await registrationManager.syncGroupEnrollments(courseId);
 
 		res.status(created ? 201 : 200).json({
 			participant: existingParticipant,
 			created,
+			waitlisted: sync.waitlisted,
 		});
 	},
 );

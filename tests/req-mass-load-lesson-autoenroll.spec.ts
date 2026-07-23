@@ -95,6 +95,66 @@ test.describe
 		});
 	});
 
+test.describe("syncGroupEnrollments — waitlisted count", () => {
+	test.beforeEach(async () => {
+		process.env.ADMIN_EMAIL_SEED = "admin@centrumrubacek.cz";
+		process.env.ADMIN_PASSWORD_SEED = "admin123";
+		await initializeDatabase();
+		await resetDatabaseForTests();
+	});
+
+	test("roster bigger than capacity: confirmed up to capacity, rest reported as waitlisted", async () => {
+		const course = createCourse({
+			name: "Overflow Skupinka",
+			ageGroup: "1 - 2 roky",
+			color: "#998877",
+		});
+		await CourseDB.insert(course);
+
+		const names = ["Iva", "Jarda", "Kuba"];
+		const participantIds: string[] = [];
+		for (const name of names) {
+			const p = createParticipant({
+				name,
+				email: `${name.toLowerCase()}@t.cz`,
+				phone: "",
+				ageGroup: "1 - 2 roky",
+			});
+			await ParticipantDB.insert(p);
+			await ParticipantDB.linkToCourse(p.id, course.id);
+			participantIds.push(p.id);
+		}
+
+		await LessonDB.insertWithCourse(
+			{
+				id: "overflow_lesson_1",
+				title: "Overflow Lesson",
+				date: "2027-11-01",
+				dayOfWeek: "Monday",
+				time: "10:00",
+				location: "Studio",
+				ageGroup: "1 - 2 roky",
+				capacity: 2,
+				enrolledCount: 0,
+			},
+			course.id,
+		);
+
+		const manager = new RegistrationManagerDB();
+		const result = await manager.syncGroupEnrollments(course.id);
+
+		expect(result.enrolled).toBe(3);
+		expect(result.skipped).toBe(0);
+		expect(result.waitlisted).toBe(1);
+
+		const regs = await RegistrationDB.getByLessonId("overflow_lesson_1");
+		const confirmedCount = regs.filter((r) => r.status === "confirmed").length;
+		const waitlistCount = regs.filter((r) => r.status === "waitlist").length;
+		expect(confirmedCount).toBe(2);
+		expect(waitlistCount).toBe(1);
+	});
+});
+
 test.describe("syncGroupEnrollments — sendEmails option", () => {
 	test.beforeEach(async () => {
 		process.env.ADMIN_EMAIL_SEED = "admin@centrumrubacek.cz";

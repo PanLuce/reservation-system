@@ -638,12 +638,13 @@ export async function submitAddMom(event) {
 
 			if (res.ok) {
 				const data = await res.json();
-				showNotification(
-					data.created
-						? "Dítě přidáno a přihlášeno na lekce"
-						: "Dítě již existuje — přihlášeno na lekce",
-					"success",
-				);
+				const base = data.created
+					? "Dítě přidáno a přihlášeno na lekce"
+					: "Dítě již existuje — přihlášeno na lekce";
+				const waitlistSuffix = data.waitlisted
+					? ` (${data.waitlisted}× náhradník — lekce plná)`
+					: "";
+				showNotification(`${base}${waitlistSuffix}`, "success");
 				closeAddMomModalDirect();
 				loadCourses();
 				loadCalendar();

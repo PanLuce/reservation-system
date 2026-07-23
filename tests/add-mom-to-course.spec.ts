@@ -11,6 +11,7 @@ import {
 	UserDB,
 } from "../src/database.js";
 import { createLesson } from "../src/lesson.js";
+import { createParticipant } from "../src/participant.js";
 
 import { BASE } from "./helpers/base.js";
 
@@ -222,6 +223,49 @@ test.describe
 				body: JSON.stringify({ name: "Bez emailu" }),
 			});
 			expect(res.status).toBe(400);
+		});
+
+		test("adding a child when the course's future lesson is already full reports waitlisted count", async () => {
+			const cookie = adminCookie;
+
+			// Fill the lesson's one seat before adding the new child.
+			const filler = createParticipant({
+				name: "Plnicí Dítě",
+				email: "plnici@test.cz",
+				phone: "",
+				ageGroup: "1 - 2 roky",
+			});
+			await ParticipantDB.insert(filler);
+			await ParticipantDB.linkToCourse(filler.id, courseId);
+			await fetch(`${BASE}/api/courses/${courseId}/sync-enrollments`, {
+				method: "POST",
+				headers: { Cookie: cookie },
+			});
+
+			// Shrink both future lessons to capacity 1 (already fully taken by filler).
+			for (const lesson of await LessonDB.getByCourse(courseId)) {
+				await LessonDB.update(lesson.id as string, { capacity: 1 });
+			}
+
+			const res = await fetch(`${BASE}/api/courses/${courseId}/participants`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json", Cookie: cookie },
+				body: JSON.stringify({
+					name: "Náhradník",
+					email: "nahradnik@test.cz",
+				}),
+			});
+
+			expect(res.status).toBe(201);
+			const data = (await res.json()) as {
+				participant: { id: string };
+				waitlisted: number;
+			};
+			expect(data.waitlisted).toBe(2);
+
+			const regs = await RegistrationDB.getByParticipantId(data.participant.id);
+			expect(regs.filter((r) => r.status === "waitlist")).toHaveLength(2);
+			expect(regs.filter((r) => r.status === "confirmed")).toHaveLength(0);
 		});
 
 		test("nonexistent course returns 404", async () => {

@@ -602,7 +602,7 @@ export class RegistrationManagerDB {
 	async syncGroupEnrollments(
 		courseId: string,
 		options?: { sendEmails?: boolean },
-	): Promise<{ enrolled: number; skipped: number }> {
+	): Promise<{ enrolled: number; skipped: number; waitlisted: number }> {
 		const today = localDateString();
 		const [members, lessons] = await Promise.all([
 			ParticipantDB.getByCourse(courseId),
@@ -619,6 +619,7 @@ export class RegistrationManagerDB {
 
 		let enrolled = 0;
 		let skipped = 0;
+		let waitlisted = 0;
 
 		for (const member of members) {
 			const participantId = member.id as string;
@@ -635,12 +636,19 @@ export class RegistrationManagerDB {
 					skipped++;
 					continue;
 				}
-				await this.registerParticipant(lessonId, participant, options);
+				const registration = await this.registerParticipant(
+					lessonId,
+					participant,
+					options,
+				);
+				if (registration.status === "waitlist") {
+					waitlisted++;
+				}
 				enrolled++;
 			}
 		}
 
-		return { enrolled, skipped };
+		return { enrolled, skipped, waitlisted };
 	}
 
 	async adminCancelRegistration(
