@@ -5,6 +5,9 @@ though I navigate to different tab. Ask for a screenshot once tackling this.~~
 2. Waitlisting participant - whenever participant is waitlisted, and subsequently the space is emptied, the first
    participant should be placed there to fill the space AND email is sent to him informing about it, leaving an option
    to decline the assignment to the lesson.
+3. add participants is not working properly: when I look at the lesson it shows 12/15 capacity, however when I look at
+   the lesson detail it lists NO kids there. Furthermore, when I add 1 kid, he is listed but the counter still shows
+   12/15 and the others are not listed still. Ask for screenshots for this issue.
 
 ## Backlog from repository health check (2026-07-03)
 

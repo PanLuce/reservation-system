@@ -33,6 +33,7 @@ Always use existing npm scripts. If a script fails, fix the script — do not wo
 
 ## Conventions
 
+- Feature backlog lives in docs/REQUIREMENTS.md Work items are tackled top-down.
 - No comments unless the *why* is non-obvious (a hidden constraint, a workaround, a subtle invariant). Self-documenting names preferred over comments.
 - No commented-out code.
 - No `any` types.
