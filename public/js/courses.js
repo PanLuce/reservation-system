@@ -375,6 +375,7 @@ async function executeTransfer(
 }
 
 export function showAddCourseForm() {
+	hideAddProgramForm();
 	document.getElementById("course-form-title").textContent = "Nová skupinka";
 	document.getElementById("course-edit-id").value = "";
 	document.getElementById("course-name").value = "";
@@ -397,6 +398,7 @@ export async function editCourse(id) {
 			credentials: "include",
 		});
 		const course = await res.json();
+		hideAddProgramForm();
 		document.getElementById("course-form-title").textContent =
 			"Upravit skupinku";
 		document.getElementById("course-edit-id").value = course.id;
@@ -496,6 +498,7 @@ function clearCourseErrors() {
 }
 
 export function showAddProgramForm() {
+	hideAddCourseForm();
 	document.getElementById("program-form-title").textContent = "Nový kurz";
 	document.getElementById("program-edit-id").value = "";
 	document.getElementById("program-name").value = "";
@@ -515,6 +518,7 @@ export async function editProgram(id) {
 			credentials: "include",
 		});
 		const program = await res.json();
+		hideAddCourseForm();
 		document.getElementById("program-form-title").textContent = "Upravit kurz";
 		document.getElementById("program-edit-id").value = program.id;
 		document.getElementById("program-name").value = program.name;

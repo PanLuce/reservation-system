@@ -1,7 +1,7 @@
 ## Feature backlog
 
-1. Whenever I create new "kurz" or editing "skupinku" or "lesson" the screen stays in edit or create new mode even
-   though I navigate to different tab. Ask for a screenshot once tackling this.
+~~1. Whenever I create new "kurz" or editing "skupinku" or "lesson" the screen stays in edit or create new mode even
+though I navigate to different tab. Ask for a screenshot once tackling this.~~
 2. Waitlisting participant - whenever participant is waitlisted, and subsequently the space is emptied, the first
    participant should be placed there to fill the space AND email is sent to him informing about it, leaving an option
    to decline the assignment to the lesson.
