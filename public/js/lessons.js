@@ -75,20 +75,90 @@ export async function addLesson(event) {
 
 			if (response.ok) {
 				const data = await response.json();
-				const enrolledSuffix = data.enrolled
-					? `, přihlášeno ${data.enrolled} dětí`
-					: "";
-				showNotification(
-					`Vytvořeno ${data.lessons.length} lekcí${enrolledSuffix}`,
-				);
 				hideAddLessonForm();
 				loadCalendar();
+				if (data.needsResolution) {
+					showLessonOverflowDialog(courseId, data);
+				} else {
+					const enrolledSuffix = data.enrolled
+						? `, přihlášeno ${data.enrolled} dětí`
+						: "";
+					showNotification(
+						`Vytvořeno ${data.lessons.length} lekcí${enrolledSuffix}`,
+					);
+				}
 			} else {
 				const err = await response.json().catch(() => ({}));
 				showNotification(err.error || "Chyba při přidávání lekcí", "error");
 			}
 		} catch (error) {
 			showNotification("Chyba při přidávání lekcí", "error");
+			console.error(error);
+		}
+	});
+}
+
+function renderOverflowParticipantOption(participant, checked) {
+	return `<label style="display:block;font-size:13px;margin-bottom:4px;">
+		<input type="checkbox" name="overflow-participant" value="${participant.id}" ${checked ? "checked" : ""}> ${escapeHtml(participant.name)}
+	</label>`;
+}
+
+function showLessonOverflowDialog(courseId, { lessons, capacity, roster }) {
+	const lessonIds = lessons.map((l) => l.id);
+	const optionsHtml = roster
+		.map((p, i) => renderOverflowParticipantOption(p, i < capacity))
+		.join("");
+
+	const body = `
+		<p style="margin-bottom:12px;">
+			Skupinka má ${roster.length} dětí, ale kapacita lekce je ${capacity}.
+			Vyberte, které děti se mají přihlásit — ostatní budou zapsány jako náhradníci.
+		</p>
+		<form data-submit="resolve-lesson-overflow" data-course-id="${courseId}" data-lesson-ids="${escapeHtml(JSON.stringify(lessonIds))}">
+			<div style="max-height:280px;overflow-y:auto;margin-bottom:12px;">${optionsHtml}</div>
+			<div style="display:flex;gap:8px;">
+				<button class="btn btn-primary" type="submit">Přiřadit</button>
+				<button class="btn btn-secondary" data-action="hide-info-modal" type="button">Zavřít</button>
+			</div>
+		</form>`;
+
+	showInfoModal("Nedostatek místa — vyberte děti", body);
+}
+
+export async function submitResolveOverflow(event) {
+	event.preventDefault();
+	const form = event.target;
+	const courseId = form.dataset.courseId;
+	const lessonIds = JSON.parse(form.dataset.lessonIds);
+	const confirmedParticipantIds = Array.from(
+		form.querySelectorAll('input[name="overflow-participant"]:checked'),
+	).map((el) => el.value);
+
+	await withLoading(event.submitter, async () => {
+		try {
+			const res = await fetch(
+				`${API_URL}/courses/${courseId}/resolve-lesson-overflow`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include",
+					body: JSON.stringify({ lessonIds, confirmedParticipantIds }),
+				},
+			);
+			if (res.ok) {
+				const data = await res.json();
+				showNotification(
+					`Přihlášeno: ${data.successful}, náhradníci: ${data.waitlisted}`,
+				);
+				hideInfoModal();
+				loadCalendar();
+			} else {
+				const err = await res.json().catch(() => ({}));
+				showNotification(err.error || "Chyba při řešení kapacity", "error");
+			}
+		} catch (error) {
+			showNotification("Chyba při řešení kapacity", "error");
 			console.error(error);
 		}
 	});
@@ -299,4 +369,5 @@ registerActions("click", {
 registerActions("submit", {
 	"add-lesson": (_form, event) => addLesson(event),
 	"submit-edit-lesson": (_form, event) => submitEditLesson(event),
+	"resolve-lesson-overflow": (_form, event) => submitResolveOverflow(event),
 });
