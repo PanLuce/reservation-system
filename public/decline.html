@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Odmítnutí místa - Centrum Rubáček</title>
+    <link href="styles.css" rel="stylesheet">
+    <style>
+        .decline-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+
+        .decline-card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .decline-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .decline-header h1 {
+            margin: 0;
+            color: #333;
+        }
+
+        .decline-details {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .error-message, .success-message {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+<div class="global-progress" hidden id="global-progress"></div>
+<div class="decline-container">
+    <div class="decline-card">
+        <div class="decline-header">
+            <h1>Centrum Rubáček</h1>
+        </div>
+        <div id="decline-content">Načítání…</div>
+    </div>
+</div>
+
+<script src="busy-state.js"></script>
+<script src="decline.js" type="module"></script>
+</body>
+</html>

@@ -11,6 +11,7 @@ import { logger } from "./src/logger.js";
 import { adminRouter } from "./src/routes/admin.js";
 import { authRouter } from "./src/routes/auth.js";
 import { coursesRouter } from "./src/routes/courses.js";
+import { declineRouter } from "./src/routes/decline.js";
 import { createFrontendRouter } from "./src/routes/frontend.js";
 import { healthRouter } from "./src/routes/health.js";
 import { importRouter } from "./src/routes/import.js";
@@ -193,6 +194,9 @@ app.use(registrationsRouter);
 // Admin overrides + substitutions
 app.use(adminRouter);
 app.use(substitutionsRouter);
+
+// Public waitlist-promotion decline link (reached from email, no login)
+app.use(declineRouter);
 
 // ODS participant import (admin)
 app.use(importRouter);

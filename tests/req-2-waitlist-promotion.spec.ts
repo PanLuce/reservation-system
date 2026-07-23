@@ -95,6 +95,16 @@ async function statusFor(
 	return regs.find((r) => r.participantId === participantId)?.status as string;
 }
 
+async function declineTokenFor(
+	lessonId: string,
+	participantId: string,
+): Promise<string | undefined> {
+	const regs = await RegistrationDB.getByLessonId(lessonId);
+	return regs.find((r) => r.participantId === participantId)?.declineToken as
+		| string
+		| undefined;
+}
+
 test.describe
 	.serial("REQ-2: Waitlist auto-promotion", () => {
 		test.beforeEach(async () => {
@@ -233,5 +243,78 @@ test.describe
 			const reg = regs.find((r) => r.participantId === alena);
 			expect(reg?.status).toBe("confirmed");
 			expect(reg?.declineToken).toBeFalsy();
+		});
+
+		test("declining via the public link cancels the seat and cascades to the next waitlisted participant", async () => {
+			const cookie = await loginAsAdmin();
+			const lessonId = await createLessonWithCapacity(1);
+			const alena = await createUnlinkedParticipant("Alena");
+			const bedrich = await createUnlinkedParticipant("Bedrich");
+			const cyril = await createUnlinkedParticipant("Cyril");
+
+			const regA = await registerParticipant(cookie, lessonId, alena);
+			await registerParticipant(cookie, lessonId, bedrich);
+			await registerParticipant(cookie, lessonId, cyril);
+
+			await cancelRegistration(cookie, regA.registrationId);
+			expect(await statusFor(lessonId, bedrich)).toBe("confirmed");
+
+			const token = await declineTokenFor(lessonId, bedrich);
+			expect(token).toBeTruthy();
+
+			const infoRes = await fetch(`${BASE}/api/decline/${token}`);
+			expect(infoRes.status).toBe(200);
+			const info = (await infoRes.json()) as {
+				participant: { name: string };
+				lesson: { title: string };
+			};
+			expect(info.participant.name).toBe("Bedrich");
+
+			const declineRes = await fetch(`${BASE}/api/decline/${token}`, {
+				method: "POST",
+			});
+			expect(declineRes.status).toBe(200);
+			const declineData = (await declineRes.json()) as { declined?: boolean };
+			expect(declineData.declined).toBe(true);
+
+			expect(await statusFor(lessonId, bedrich)).toBe("cancelled");
+			expect(await statusFor(lessonId, cyril)).toBe("confirmed");
+
+			const lesson = await LessonDB.getById(lessonId);
+			expect(lesson?.enrolledCount).toBe(1);
+		});
+
+		test("declining twice reports the second attempt as already declined", async () => {
+			const cookie = await loginAsAdmin();
+			const lessonId = await createLessonWithCapacity(1);
+			const alena = await createUnlinkedParticipant("Alena");
+			const bedrich = await createUnlinkedParticipant("Bedrich");
+
+			const regA = await registerParticipant(cookie, lessonId, alena);
+			await registerParticipant(cookie, lessonId, bedrich);
+			await cancelRegistration(cookie, regA.registrationId);
+
+			const token = await declineTokenFor(lessonId, bedrich);
+
+			const first = await fetch(`${BASE}/api/decline/${token}`, {
+				method: "POST",
+			});
+			expect((await first.json()).declined).toBe(true);
+
+			const second = await fetch(`${BASE}/api/decline/${token}`, {
+				method: "POST",
+			});
+			expect(second.status).toBe(200);
+			expect((await second.json()).alreadyDeclined).toBe(true);
+		});
+
+		test("GET and POST decline for an unknown token both 404", async () => {
+			const infoRes = await fetch(`${BASE}/api/decline/not-a-real-token`);
+			expect(infoRes.status).toBe(404);
+
+			const declineRes = await fetch(`${BASE}/api/decline/not-a-real-token`, {
+				method: "POST",
+			});
+			expect(declineRes.status).toBe(404);
 		});
 	});
