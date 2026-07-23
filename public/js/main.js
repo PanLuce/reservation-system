@@ -10,6 +10,7 @@ import {
 	toggleDayLessonMembers,
 } from "./calendar.js";
 import {
+	abortPendingTransfer,
 	closeAddMomModal,
 	closeAddMomModalDirect,
 	hideAddCourseForm,
@@ -41,10 +42,26 @@ import {
 } from "./reservations.js";
 import { hideInfoModal } from "./utils.js";
 
+// Closes any create/edit form or floating modal left open from a previous
+// tab, so switching tabs never leaves stale edit state behind.
+function resetAllOpenForms() {
+	hideAddProgramForm();
+	hideAddCourseForm();
+	hideAddLessonForm();
+	closeEditLessonModal();
+	closeAddMomModalDirect();
+	closeDayModalDirect();
+	hideInfoModal();
+	abortPendingTransfer();
+	resetOdsImport();
+}
+
 // Tab switching
 document.querySelectorAll(".tab").forEach((tab) => {
 	tab.addEventListener("click", () => {
 		const targetTab = tab.dataset.tab;
+
+		resetAllOpenForms();
 
 		// Update tabs
 		document.querySelectorAll(".tab").forEach((t) => {

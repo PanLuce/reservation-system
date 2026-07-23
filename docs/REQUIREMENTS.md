@@ -1,16 +1,12 @@
 ## Feature backlog
 
-1. the parent don't see created lessons in the Rozvrh
-2. (admin) whenever I want to assign a course to a lesson - if there is not enough room left for the whole group, there
-   has to be a dialog for resolving this - preferably selecting the specific kids which should be added.
-
-## Backlog from repository health check (2026-07-03)
-
 1. Whenever I create new "kurz" or editing "skupinku" or "lesson" the screen stays in edit or create new mode even
    though I navigate to different tab. Ask for a screenshot once tackling this.
 2. Waitlisting participant - whenever participant is waitlisted, and subsequently the space is emptied, the first
    participant should be placed there to fill the space AND email is sent to him informing about it, leaving an option
    to decline the assignment to the lesson.
+
+## Backlog from repository health check (2026-07-03)
 
 ### Tier 4 — Lower (maintainability, no direct exploit)
 
