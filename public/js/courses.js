@@ -5,8 +5,6 @@ import {
 	API_URL,
 	escapeHtml,
 	hideInfoModal,
-	localDateString,
-	showInfoModal,
 	showNotification,
 	withLoading,
 } from "./utils.js";
@@ -137,8 +135,6 @@ function renderCourseCard(course) {
 					? `
 			<div class="lesson-actions">
 				<button class="btn btn-primary" data-action="show-add-mom-modal" data-id="${course.id}">+ Přidat dítě</button>
-				<button class="btn btn-secondary" data-action="sync-course-enrollments" data-id="${course.id}">🔄 Přihlásit skupinku</button>
-				<button class="btn btn-secondary" data-action="show-bulk-assign-modal" data-id="${course.id}">👥 Hromadně přiřadit</button>
 				<button class="btn btn-secondary" data-action="edit-course" data-id="${course.id}">Upravit</button>
 				<button class="btn btn-danger" data-action="delete-course" data-id="${course.id}">Smazat</button>
 			</div>`
@@ -659,160 +655,10 @@ export async function submitAddMom(event) {
 	});
 }
 
-export async function syncCourseEnrollments(courseId, triggerEl) {
-	await withLoading(triggerEl, async () => {
-		try {
-			const res = await fetch(
-				`${API_URL}/courses/${courseId}/sync-enrollments`,
-				{
-					method: "POST",
-					credentials: "include",
-				},
-			);
-			if (res.ok) {
-				const data = await res.json();
-				showNotification(
-					`Přihlášeno: ${data.enrolled}, přeskočeno: ${data.skipped}`,
-				);
-				loadCourseMembers(courseId);
-			} else {
-				showNotification("Chyba při hromadném přihlašování", "error");
-			}
-		} catch (error) {
-			showNotification("Chyba při hromadném přihlašování", "error");
-			console.error(error);
-		}
-	});
-}
-
-function renderBulkAssignParticipantOption(p) {
-	return `<label style="display:block;font-size:13px;margin-bottom:4px;">
-		<input type="checkbox" class="bulk-assign-participant" value="${p.id}"> ${escapeHtml(p.name)}
-	</label>`;
-}
-
-function renderBulkAssignLessonOption(l) {
-	return `<label style="display:block;font-size:13px;margin-bottom:4px;">
-		<input type="checkbox" class="bulk-assign-lesson" value="${l.id}"> ${escapeHtml(l.title)} (${l.date})
-	</label>`;
-}
-
-export async function showBulkAssignModal(courseId) {
-	document.getElementById("bulk-assign-course-id").value = courseId;
-	const participantsContainer = document.getElementById(
-		"bulk-assign-participants",
-	);
-	const lessonsContainer = document.getElementById("bulk-assign-lessons");
-	participantsContainer.innerHTML =
-		'<span style="color:#aaa;font-size:13px;">Načítám…</span>';
-	lessonsContainer.innerHTML =
-		'<span style="color:#aaa;font-size:13px;">Načítám…</span>';
-	document.getElementById("bulk-assign-modal").style.display = "flex";
-
-	const [participantsRes, lessonsRes] = await Promise.all([
-		fetch(`${API_URL}/courses/${courseId}/participants`, {
-			credentials: "include",
-		}),
-		fetch(`${API_URL}/lessons`, { credentials: "include" }),
-	]);
-
-	const participants = participantsRes.ok ? await participantsRes.json() : [];
-	const allLessons = lessonsRes.ok ? await lessonsRes.json() : [];
-	const today = localDateString();
-	const futureLessons = allLessons.filter(
-		(l) => l.courseId === courseId && l.date >= today,
-	);
-
-	participantsContainer.innerHTML = participants.length
-		? participants.map(renderBulkAssignParticipantOption).join("")
-		: '<span style="color:#aaa;font-size:13px;">Žádné děti ve skupince.</span>';
-
-	lessonsContainer.innerHTML = futureLessons.length
-		? futureLessons.map(renderBulkAssignLessonOption).join("")
-		: '<span style="color:#aaa;font-size:13px;">Žádné budoucí lekce.</span>';
-}
-
-export function closeBulkAssignModal(el, event) {
-	if (event.target === el) {
-		document.getElementById("bulk-assign-modal").style.display = "none";
-	}
-}
-
-export function closeBulkAssignModalDirect() {
-	document.getElementById("bulk-assign-modal").style.display = "none";
-}
-
-// One-time listener on the static form — its two checklist containers are
-// re-populated per open, but the form element itself is never recreated.
-document.getElementById("bulk-assign-form")?.addEventListener("change", () => {
-	const hasParticipant = document.querySelector(
-		".bulk-assign-participant:checked",
-	);
-	const hasLesson = document.querySelector(".bulk-assign-lesson:checked");
-	const submitBtn = document.getElementById("bulk-assign-submit");
-	if (submitBtn) submitBtn.disabled = !(hasParticipant && hasLesson);
-});
-
-export async function submitBulkAssign(event) {
-	event.preventDefault();
-	const courseId = document.getElementById("bulk-assign-course-id").value;
-	const participantIds = Array.from(
-		document.querySelectorAll(".bulk-assign-participant:checked"),
-	).map((el) => el.value);
-	const lessonIds = Array.from(
-		document.querySelectorAll(".bulk-assign-lesson:checked"),
-	).map((el) => el.value);
-
-	if (participantIds.length === 0 || lessonIds.length === 0) {
-		showNotification("Vyberte alespoň jedno dítě a jednu lekci", "error");
-		return;
-	}
-
-	await withLoading(event.submitter, async () => {
-		try {
-			const res = await fetch(`${API_URL}/courses/${courseId}/bulk-register`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				credentials: "include",
-				body: JSON.stringify({ participantIds, lessonIds }),
-			});
-			if (res.ok) {
-				const data = await res.json();
-				closeBulkAssignModalDirect();
-				loadCourseMembers(courseId);
-				showInfoModal(
-					"Výsledek hromadného přiřazení",
-					`<p>Přiřazeno: <strong>${data.successful}</strong></p>
-					<p>Přeskočeno (již přihlášeno): <strong>${data.skipped}</strong></p>
-					<p>Náhradníci (plná kapacita): <strong>${data.waitlisted}</strong></p>
-					${data.errors.length ? `<p style="color:#c0392b;">Chyby: <strong>${data.errors.length}</strong></p>` : ""}`,
-				);
-			} else {
-				const data = await res.json().catch(() => ({}));
-				showNotification(
-					data.error || "Chyba při hromadném přiřazování",
-					"error",
-				);
-			}
-		} catch (error) {
-			showNotification("Chyba při hromadném přiřazování", "error");
-			console.error(error);
-		}
-	});
-}
-
-registerActions("submit", {
-	"bulk-assign": (_form, event) => submitBulkAssign(event),
-});
-
 registerActions("click", {
 	"edit-program": (el) => editProgram(el.dataset.id),
 	"delete-program": (el) => deleteProgram(el.dataset.id, el),
 	"show-add-mom-modal": (el) => showAddMomModal(el.dataset.id),
-	"sync-course-enrollments": (el) => syncCourseEnrollments(el.dataset.id, el),
-	"show-bulk-assign-modal": (el) => showBulkAssignModal(el.dataset.id),
-	"close-bulk-assign-modal-backdrop": closeBulkAssignModal,
-	"close-bulk-assign-modal": closeBulkAssignModalDirect,
 	"edit-course": (el) => editCourse(el.dataset.id),
 	"delete-course": (el) => deleteCourse(el.dataset.id, el),
 	"toggle-members-list": (el) => toggleMembersList(el.dataset.id),
