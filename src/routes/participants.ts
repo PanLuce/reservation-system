@@ -82,52 +82,6 @@ participantsRouter.post(
 );
 
 participantsRouter.post(
-	"/api/courses/:courseId/bulk-register",
-	requireAdmin,
-	async (req, res) => {
-		const courseId = req.params.courseId as string;
-		if (!courseId) {
-			return res.status(400).json({ error: "Course ID is required" });
-		}
-
-		const { participantIds, lessonIds } = req.body;
-
-		if (
-			!participantIds ||
-			!Array.isArray(participantIds) ||
-			participantIds.length === 0
-		) {
-			return res
-				.status(400)
-				.json({ error: "participantIds array is required" });
-		}
-
-		if (!lessonIds || !Array.isArray(lessonIds) || lessonIds.length === 0) {
-			return res.status(400).json({ error: "lessonIds array is required" });
-		}
-
-		try {
-			const result = await registrationManager.bulkAssignGroupToLessons({
-				participantIds,
-				lessonIds,
-			});
-
-			res.status(201).json({
-				message: `Bulk registration completed`,
-				...result,
-			});
-		} catch (error) {
-			res.status(500).json({
-				error:
-					error instanceof Error
-						? error.message
-						: "Failed to process bulk registration",
-			});
-		}
-	},
-);
-
-participantsRouter.post(
 	"/api/courses/:courseId/resolve-lesson-overflow",
 	requireAdmin,
 	async (req, res) => {
