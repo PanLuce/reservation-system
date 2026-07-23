@@ -120,8 +120,10 @@ export class RegistrationManagerDB {
 	 * frees (cancellation) or a lesson's capacity is raised — either can open
 	 * more than one seat, so this loops rather than promoting a single kid.
 	 */
-	async promoteWaitlistForLesson(lessonId: string): Promise<Registration[]> {
-		const promoted: Registration[] = [];
+	async promoteWaitlistForLesson(
+		lessonId: string,
+	): Promise<Array<Registration & { declineToken: string }>> {
+		const promoted: Array<Registration & { declineToken: string }> = [];
 		for (;;) {
 			const result = await RegistrationDB.promoteFirstWaitlisted(lessonId);
 			if (!result) break;
@@ -131,6 +133,7 @@ export class RegistrationManagerDB {
 				participantId: result.participantId,
 				registeredAt: new Date(),
 				status: "confirmed",
+				declineToken: result.declineToken,
 			});
 		}
 		return promoted;

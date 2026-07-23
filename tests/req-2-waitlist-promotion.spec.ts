@@ -200,4 +200,38 @@ test.describe
 			const lesson = await LessonDB.getById(lessonId);
 			expect(lesson?.enrolledCount).toBe(1);
 		});
+
+		test("promoting a waitlisted participant mints a decline token resolvable via getByDeclineToken", async () => {
+			const cookie = await loginAsAdmin();
+			const lessonId = await createLessonWithCapacity(1);
+			const alena = await createUnlinkedParticipant("Alena");
+			const bedrich = await createUnlinkedParticipant("Bedrich");
+
+			const regA = await registerParticipant(cookie, lessonId, alena);
+			await registerParticipant(cookie, lessonId, bedrich);
+
+			await cancelRegistration(cookie, regA.registrationId);
+
+			const regs = await RegistrationDB.getByLessonId(lessonId);
+			const promoted = regs.find((r) => r.participantId === bedrich);
+			expect(promoted?.status).toBe("confirmed");
+			const token = promoted?.declineToken as string;
+			expect(token).toBeTruthy();
+
+			const found = await RegistrationDB.getByDeclineToken(token);
+			expect(found?.id).toBe(promoted?.id);
+		});
+
+		test("a registration that was never promoted has no decline token", async () => {
+			const cookie = await loginAsAdmin();
+			const lessonId = await createLessonWithCapacity(1);
+			const alena = await createUnlinkedParticipant("Alena");
+
+			await registerParticipant(cookie, lessonId, alena);
+
+			const regs = await RegistrationDB.getByLessonId(lessonId);
+			const reg = regs.find((r) => r.participantId === alena);
+			expect(reg?.status).toBe("confirmed");
+			expect(reg?.declineToken).toBeFalsy();
+		});
 	});

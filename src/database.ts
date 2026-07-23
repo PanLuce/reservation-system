@@ -251,6 +251,19 @@ export async function initializeDatabase() {
 		"write",
 	);
 
+	// No versioned migration system exists yet (see docs/REQUIREMENTS.md backlog
+	// item 17) — new columns on an existing table go through this boot-time
+	// try/catch, same as the (now-removed) legacy migrations did. SQLite/libSQL
+	// has no "ADD COLUMN IF NOT EXISTS", so a duplicate-column error here just
+	// means a previous boot already added it.
+	try {
+		await client.execute(
+			"ALTER TABLE registrations ADD COLUMN declineToken TEXT",
+		);
+	} catch {
+		// already exists
+	}
+
 	logger.info("Database initialized successfully");
 }
 
@@ -1212,6 +1225,14 @@ export const RegistrationDB = {
 		return result.rows[0];
 	},
 
+	async getByDeclineToken(token: string) {
+		const result = await client.execute({
+			sql: "SELECT * FROM registrations WHERE declineToken = ?",
+			args: [token],
+		});
+		return result.rows[0];
+	},
+
 	/**
 	 * Batch existence check for (participantId, lessonId) pairs — avoids the N×M
 	 * getByParticipantAndLesson round-trips syncGroupEnrollments used to make (one
@@ -1319,6 +1340,7 @@ export const RegistrationDB = {
 		id: string;
 		lessonId: string;
 		participantId: string;
+		declineToken: string;
 	} | null> {
 		return withWriteRetry(async () => {
 			const tx = await client.transaction("write");
@@ -1350,10 +1372,11 @@ export const RegistrationDB = {
 					return null;
 				}
 				const candidateId = candidate.id as string;
+				const declineToken = randomUUID();
 
 				await tx.execute({
-					sql: "UPDATE registrations SET status = 'confirmed' WHERE id = ?",
-					args: [candidateId],
+					sql: "UPDATE registrations SET status = 'confirmed', declineToken = ? WHERE id = ?",
+					args: [declineToken, candidateId],
 				});
 				await tx.execute({
 					sql: "UPDATE lessons SET enrolledCount = enrolledCount + 1 WHERE id = ?",
@@ -1365,6 +1388,7 @@ export const RegistrationDB = {
 					id: candidateId,
 					lessonId,
 					participantId: candidate.participantId as string,
+					declineToken,
 				};
 			} finally {
 				tx.close();
