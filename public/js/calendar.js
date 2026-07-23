@@ -106,26 +106,10 @@ function lessonPillTooltip(lesson) {
 	return `${name} • ${time} • ${capacity} obsazeno`;
 }
 
-function getLessonTileIcon(lesson, isParticipant) {
-	if (!isParticipant) {
-		const color = lesson.courseColor || "#B3E5FC";
-		const tooltip = escapeHtml(lessonPillTooltip(lesson));
-		return { pill: true, color, tooltip };
-	}
-	if (calendarMyRegisteredIds.has(lesson.id)) {
-		return { icon: "❤️", label: `Moje lekce: ${escapeHtml(lesson.title)}` };
-	}
-	const isFull = lesson.enrolledCount >= lesson.capacity;
-	if (isFull) {
-		return { icon: "🚫", label: `Plná lekce: ${escapeHtml(lesson.title)}` };
-	}
-	if (calendarSubCandidateIds.has(lesson.id)) {
-		return {
-			icon: "✨",
-			label: `Možná náhrada: ${escapeHtml(lesson.title)}`,
-		};
-	}
-	return null;
+function getLessonTileIcon(lesson) {
+	const color = lesson.courseColor || "#B3E5FC";
+	const tooltip = escapeHtml(lessonPillTooltip(lesson));
+	return { pill: true, color, tooltip };
 }
 
 function renderMonthCalendar(year, month) {
@@ -157,29 +141,12 @@ function renderMonthCalendar(year, month) {
 		const lessons = byDate[dateStr] || [];
 
 		const MAX_ICONS = 4;
-		const isParticipant =
-			state.currentUser && state.currentUser.role !== "admin";
-		const hasMine =
-			isParticipant && lessons.some((l) => calendarMyRegisteredIds.has(l.id));
-		const hasSub =
-			isParticipant &&
-			!hasMine &&
-			lessons.some(
-				(l) =>
-					calendarSubCandidateIds.has(l.id) &&
-					(l.enrolledCount ?? 0) < (l.capacity ?? 0),
-			);
 		const icons = lessons
 			.slice(0, MAX_ICONS)
 			.map((l) => {
-				const badge = getLessonTileIcon(l, isParticipant);
-				if (!badge) return "";
-				if (badge.pill) {
-					return `<span class="calendar-pill" style="background:${badge.color};" title="${badge.tooltip}"></span>`;
-				}
-				return `<span class="calendar-icon" title="${badge.label}">${badge.icon}</span>`;
+				const badge = getLessonTileIcon(l);
+				return `<span class="calendar-pill" style="background:${badge.color};" title="${badge.tooltip}"></span>`;
 			})
-			.filter(Boolean)
 			.join("");
 		const overflow =
 			lessons.length > MAX_ICONS
@@ -187,7 +154,7 @@ function renderMonthCalendar(year, month) {
 				: "";
 
 		html += `
-			<div class="calendar-day${isToday ? " today" : ""}${hasSub ? " has-substitution" : ""}" data-action="open-day-modal" data-date="${dateStr}">
+			<div class="calendar-day${isToday ? " today" : ""}" data-action="open-day-modal" data-date="${dateStr}">
 				<div class="calendar-day-number">${day}</div>
 				<div class="calendar-icons">${icons}${overflow}</div>
 			</div>`;
@@ -234,6 +201,11 @@ function renderDayLessons(lessons, dateStr) {
 			if (isAdmin) {
 				actions = `<button class="btn btn-secondary" data-action="edit-lesson" data-id="${l.id}">Upravit</button>
 				<button class="btn btn-danger" data-action="delete-lesson" data-id="${l.id}">Smazat</button>`;
+			} else if (calendarMyRegisteredIds.has(l.id)) {
+				actions = `<button class="btn btn-danger" data-action="self-cancel" data-id="${l.id}"
+				${canCancel ? "" : "disabled title='Nelze odhlásit po půlnoci před lekcí'"}>
+				Odhlásit
+			</button>`;
 			} else if (calendarSubCandidateIds.has(l.id)) {
 				const noCredit = calendarCreditCount <= 0;
 				let subDisabled = "";
@@ -247,10 +219,7 @@ function renderDayLessons(lessons, dateStr) {
 				Přihlásit jako náhrada
 			</button>`;
 			} else {
-				actions = `<button class="btn btn-danger" data-action="self-cancel" data-id="${l.id}"
-				${canCancel ? "" : "disabled title='Nelze odhlásit po půlnoci před lekcí'"}>
-				Odhlásit
-			</button>`;
+				actions = "";
 			}
 
 			const participantsBlock = isAdmin

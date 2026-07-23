@@ -2,39 +2,26 @@ import { expect, test } from "@playwright/test";
 
 // getLessonTileIcon is defined in public/js/calendar.js (browser-only).
 // We reproduce the contract here to test the logic independently.
+//
+// Requirement: parents must see every lesson on the calendar, exactly like
+// admins do (colored pill per lesson) — no per-participant hiding or
+// alternate icons on the grid itself.
 
 type TileIconResult = {
-	icon: string;
-	label: string;
-	color?: string | null | undefined;
-} | null;
+	pill: true;
+	color: string;
+	tooltip: string;
+};
 
-function getLessonTileIcon(
-	lesson: {
-		id: string;
-		title: string;
-		enrolledCount: number;
-		capacity: number;
-		courseColor?: string | null;
-	},
-	isParticipant: boolean,
-	myRegisteredIds: Set<string>,
-	subCandidateIds: Set<string>,
-): TileIconResult {
-	if (!isParticipant) {
-		return { icon: "●", label: lesson.title, color: lesson.courseColor };
-	}
-	if (myRegisteredIds.has(lesson.id)) {
-		return { icon: "❤️", label: `Moje lekce: ${lesson.title}` };
-	}
-	const isFull = lesson.enrolledCount >= lesson.capacity;
-	if (isFull) {
-		return { icon: "🚫", label: `Plná lekce: ${lesson.title}` };
-	}
-	if (subCandidateIds.has(lesson.id)) {
-		return { icon: "✨", label: `Možná náhrada: ${lesson.title}` };
-	}
-	return null;
+function getLessonTileIcon(lesson: {
+	id: string;
+	title: string;
+	enrolledCount: number;
+	capacity: number;
+	courseColor?: string | null;
+}): TileIconResult {
+	const color = lesson.courseColor || "#B3E5FC";
+	return { pill: true, color, tooltip: lesson.title };
 }
 
 const baseLesson = {
@@ -46,56 +33,27 @@ const baseLesson = {
 };
 
 test.describe("getLessonTileIcon", () => {
-	test("admin always gets neutral dot regardless of registration state", () => {
-		const result = getLessonTileIcon(
-			baseLesson,
-			false,
-			new Set(["l1"]),
-			new Set(),
-		);
-		expect(result?.icon).toBe("●");
+	test("always returns a pill, regardless of registration state", () => {
+		const result = getLessonTileIcon(baseLesson);
+		expect(result.pill).toBe(true);
+		expect(result.color).toBe(baseLesson.courseColor);
 	});
 
-	test("participant registered → heart emoji", () => {
-		const result = getLessonTileIcon(
-			baseLesson,
-			true,
-			new Set(["l1"]),
-			new Set(),
-		);
-		expect(result?.icon).toBe("❤️");
-		expect(result?.label).toContain(baseLesson.title);
-	});
-
-	test("participant not registered, lesson full → no-entry emoji", () => {
+	test("full lesson still renders a pill, not a no-entry icon", () => {
 		const full = { ...baseLesson, enrolledCount: 10, capacity: 10 };
-		const result = getLessonTileIcon(full, true, new Set(), new Set());
-		expect(result?.icon).toBe("🚫");
+		const result = getLessonTileIcon(full);
+		expect(result.pill).toBe(true);
 	});
 
-	test("participant not registered, lesson not full, is a sub candidate → sparkle emoji", () => {
-		const result = getLessonTileIcon(
-			baseLesson,
-			true,
-			new Set(),
-			new Set(["l1"]),
-		);
-		expect(result?.icon).toBe("✨");
+	test("lesson with no course color falls back to the default pill color", () => {
+		const uncolored = { ...baseLesson, courseColor: null };
+		const result = getLessonTileIcon(uncolored);
+		expect(result.color).toBe("#B3E5FC");
 	});
 
-	test("participant not registered, not full, not a sub candidate → null (hidden)", () => {
-		const result = getLessonTileIcon(baseLesson, true, new Set(), new Set());
-		expect(result).toBeNull();
-	});
-
-	test("registered takes priority over full (edge case: over-enrolled)", () => {
+	test("over-enrolled lesson still renders a pill", () => {
 		const overEnrolled = { ...baseLesson, enrolledCount: 12, capacity: 10 };
-		const result = getLessonTileIcon(
-			overEnrolled,
-			true,
-			new Set(["l1"]),
-			new Set(),
-		);
-		expect(result?.icon).toBe("❤️");
+		const result = getLessonTileIcon(overEnrolled);
+		expect(result.pill).toBe(true);
 	});
 });

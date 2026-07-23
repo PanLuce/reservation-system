@@ -524,24 +524,6 @@ header p {
 	justify-content: center;
 }
 
-.calendar-day.has-substitution {
-	background: linear-gradient(
-		135deg,
-		rgba(246, 156, 78, 0.1) 0%,
-		rgba(246, 156, 78, 0.18) 100%
-	);
-	border: 2px solid var(--color-cta);
-	padding: 4px;
-}
-
-.calendar-day.has-substitution:hover {
-	background: linear-gradient(
-		135deg,
-		rgba(246, 156, 78, 0.18) 0%,
-		rgba(246, 156, 78, 0.28) 100%
-	);
-}
-
 .calendar-dots {
 	display: flex;
 	flex-wrap: wrap;
@@ -562,16 +544,6 @@ header p {
 	gap: 2px;
 	margin-top: 2px;
 	line-height: 1;
-}
-
-.calendar-icon {
-	font-size: 14px;
-	line-height: 1;
-	cursor: default;
-}
-
-.calendar-day.has-substitution .calendar-icon {
-	font-size: 1.15em;
 }
 
 .calendar-pill {
@@ -711,10 +683,6 @@ header p {
 	.calendar-dot {
 		width: 7px;
 		height: 7px;
-	}
-
-	.calendar-icon {
-		font-size: 11px;
 	}
 
 	.calendar-month-label {

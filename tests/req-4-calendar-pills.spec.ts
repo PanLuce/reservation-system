@@ -46,7 +46,6 @@ async function navigateToMonth(
 		const current = await label();
 		if (current === target) return;
 		const today = new Date();
-		const _currentMonth = today.getMonth() + 1 + i; // rough forward check
 		if (
 			today.getFullYear() < targetYear ||
 			(today.getFullYear() === targetYear && today.getMonth() + 1 < targetMonth)
@@ -185,7 +184,7 @@ test.describe("REQ-4: Calendar colored pills for admin view", () => {
 		expect(titles.some((t) => t.includes("10:00"))).toBe(true);
 	});
 
-	test("participant view still uses emoji icons, not pills", async ({
+	test("participant view now renders the same pills as admin (REQ: parent sees all lessons)", async ({
 		page,
 	}) => {
 		// Login as participant
@@ -198,19 +197,34 @@ test.describe("REQ-4: Calendar colored pills for admin view", () => {
 
 		await navigateToMonth(page, 2027, 6);
 
-		// Pills must NOT appear for participants
+		// Pills must appear for participants too, one per lesson, same as admin
 		const pills = page.locator(".calendar-pill");
-		await expect(pills).toHaveCount(0);
+		await expect(pills.first()).toBeVisible({ timeout: 5000 });
+		await expect(pills).toHaveCount(2);
+
+		// No leftover participant-only emoji icons on the grid
+		const emojiIcons = page.locator(".calendar-icon");
+		await expect(emojiIcons).toHaveCount(0);
 	});
 
-	test("admin calendar legend reads 'Lekce', not 'Skupinky v tento den'", async ({
+	test("calendar legend reads 'Lekce' for both admin and participant", async ({
 		page,
 	}) => {
 		await loginAsAdmin(page);
+		const adminLegend = page.locator(".calendar-legend");
+		await expect(adminLegend).toBeVisible();
+		await expect(adminLegend).toContainText("Lekce");
+		await expect(adminLegend).not.toContainText("Skupinky v tento den");
 
-		const legend = page.locator(".calendar-legend.admin-only");
-		await expect(legend).toBeVisible();
-		await expect(legend).toContainText("Lekce");
-		await expect(legend).not.toContainText("Skupinky v tento den");
+		await page.goto(`${BASE}/login.html`);
+		await page.fill("#login-email", "maminka@test.cz");
+		await page.fill("#login-password", "test123");
+		await page.click('button[type="submit"]');
+		await page.waitForURL(`${BASE}/`, { timeout: 10000 });
+		await page.waitForSelector("#calendar-grid", { timeout: 10000 });
+
+		const participantLegend = page.locator(".calendar-legend");
+		await expect(participantLegend).toBeVisible();
+		await expect(participantLegend).toContainText("Lekce");
 	});
 });
