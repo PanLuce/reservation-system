@@ -744,11 +744,25 @@ export const CourseDB = {
 	},
 };
 
+// A lesson's occupancy is derived live from confirmed registrations rather
+// than trusted from the stored lessons.enrolledCount column, which drifts:
+// it's only ever adjusted by hand-written ±1 deltas, so it never notices a
+// participant row disappearing out from under it (e.g. a cascade delete) and
+// silently disagrees with the confirmed-only view once it does. Every lesson
+// read routes through this fragment so there's exactly one definition of
+// "how many seats are occupied".
+const CONFIRMED_COUNT_SUBQUERY = `(
+	SELECT COUNT(*) FROM registrations reg
+	WHERE reg.lessonId = l.id AND reg.status = 'confirmed'
+)`;
+
 // Database operations for Lessons
 export const LessonDB = {
 	async getAll() {
 		const result = await client.execute({
-			sql: `SELECT l.*, COALESCE(c.location, '') AS location
+			sql: `SELECT l.*,
+                         COALESCE(c.location, '')    AS location,
+                         ${CONFIRMED_COUNT_SUBQUERY} AS confirmedCount
 				FROM lessons l
 				LEFT JOIN courses c ON l.courseId = c.id
 				ORDER BY l.dayOfWeek, l.time`,
@@ -759,7 +773,9 @@ export const LessonDB = {
 
 	async getById(id: string): Promise<Lesson | undefined> {
 		const result = await client.execute({
-			sql: `SELECT l.*, COALESCE(c.location, '') AS location
+			sql: `SELECT l.*,
+                         COALESCE(c.location, '')    AS location,
+                         ${CONFIRMED_COUNT_SUBQUERY} AS confirmedCount
 				FROM lessons l
 				LEFT JOIN courses c ON l.courseId = c.id
 				WHERE l.id = ?`,
@@ -771,7 +787,9 @@ export const LessonDB = {
 
 	async getByDay(dayOfWeek: string) {
 		const result = await client.execute({
-			sql: `SELECT l.*, COALESCE(c.location, '') AS location
+			sql: `SELECT l.*,
+                         COALESCE(c.location, '')    AS location,
+                         ${CONFIRMED_COUNT_SUBQUERY} AS confirmedCount
 				FROM lessons l
 				LEFT JOIN courses c ON l.courseId = c.id
 				WHERE l.dayOfWeek = ?`,
@@ -896,7 +914,9 @@ export const LessonDB = {
 
 	async getByCourse(courseId: string) {
 		const result = await client.execute({
-			sql: `SELECT l.*, COALESCE(c.location, '') AS location
+			sql: `SELECT l.*,
+                         COALESCE(c.location, '')    AS location,
+                         ${CONFIRMED_COUNT_SUBQUERY} AS confirmedCount
 				FROM lessons l
 				LEFT JOIN courses c ON l.courseId = c.id
 				WHERE l.courseId = ?
@@ -992,7 +1012,7 @@ export const ParticipantDB = {
 				COALESCE(c.location, '') as lessonLocation,
 				l.ageGroup as lessonAgeGroup,
 				l.capacity as lessonCapacity,
-				l.enrolledCount as lessonEnrolledCount
+                ${CONFIRMED_COUNT_SUBQUERY} as lessonEnrolledCount
 			FROM registrations r
 			INNER JOIN lessons l ON r.lessonId = l.id
 			LEFT JOIN courses c ON l.courseId = c.id
@@ -1267,12 +1287,14 @@ export const RegistrationDB = {
 	},
 
 	/**
-	 * Atomically reads a lesson's capacity, inserts the registration, and bumps
-	 * enrolledCount if there's room — all inside one write transaction, so two
-	 * concurrent callers racing for the last seat can't both read "not full" and
-	 * both insert as confirmed. Local SQLite write-transactions throw SQLITE_BUSY
+	 * Atomically reads a lesson's confirmed-registration count and inserts the
+	 * new registration — all inside one write transaction, so two concurrent
+	 * callers racing for the last seat can't both read "not full" and both
+	 * insert as confirmed. Local SQLite write-transactions throw SQLITE_BUSY
 	 * on conflict instead of queueing server-side (unlike Turso's remote HTTP
-	 * client), so callers must go through withWriteRetry.
+	 * client), so callers must go through withWriteRetry. Occupancy is counted
+	 * from registrations rather than trusted from lessons.enrolledCount — see
+	 * CONFIRMED_COUNT_SUBQUERY.
 	 */
 	async insertWithCapacityCheck(
 		registration: {
@@ -1287,16 +1309,21 @@ export const RegistrationDB = {
 			const tx = await client.transaction("write");
 			try {
 				const lessonRow = await tx.execute({
-					sql: "SELECT enrolledCount, capacity FROM lessons WHERE id = ?",
+					sql: "SELECT capacity FROM lessons WHERE id = ?",
 					args: [registration.lessonId],
 				});
 				const lesson = lessonRow.rows[0];
 				if (!lesson) {
 					throw new Error(`Lesson ${registration.lessonId} not found`);
 				}
-				const enrolledCount = lesson.enrolledCount as number;
 				const capacity = lesson.capacity as number;
-				const isFull = enrolledCount >= capacity;
+
+				const countRow = await tx.execute({
+					sql: "SELECT COUNT(*) as confirmedCount FROM registrations WHERE lessonId = ? AND status = 'confirmed'",
+					args: [registration.lessonId],
+				});
+				const confirmedCount = Number(countRow.rows[0]?.confirmedCount ?? 0);
+				const isFull = confirmedCount >= capacity;
 				const confirm = !isFull || options?.forceCapacity;
 				const status: "confirmed" | "waitlist" = confirm
 					? "confirmed"
@@ -1312,13 +1339,6 @@ export const RegistrationDB = {
 						registration.missedLessonId || null,
 					],
 				});
-
-				if (confirm) {
-					await tx.execute({
-						sql: "UPDATE lessons SET enrolledCount = enrolledCount + 1 WHERE id = ?",
-						args: [registration.lessonId],
-					});
-				}
 
 				await tx.commit();
 				return { status, wasFull: isFull };
@@ -1346,16 +1366,21 @@ export const RegistrationDB = {
 			const tx = await client.transaction("write");
 			try {
 				const lessonRow = await tx.execute({
-					sql: "SELECT enrolledCount, capacity FROM lessons WHERE id = ?",
+					sql: "SELECT capacity FROM lessons WHERE id = ?",
 					args: [lessonId],
 				});
 				const lesson = lessonRow.rows[0];
 				if (!lesson) {
 					throw new Error(`Lesson ${lessonId} not found`);
 				}
-				const enrolledCount = lesson.enrolledCount as number;
 				const capacity = lesson.capacity as number;
-				if (enrolledCount >= capacity) {
+
+				const countRow = await tx.execute({
+					sql: "SELECT COUNT(*) as confirmedCount FROM registrations WHERE lessonId = ? AND status = 'confirmed'",
+					args: [lessonId],
+				});
+				const confirmedCount = Number(countRow.rows[0]?.confirmedCount ?? 0);
+				if (confirmedCount >= capacity) {
 					await tx.commit();
 					return null;
 				}
@@ -1377,10 +1402,6 @@ export const RegistrationDB = {
 				await tx.execute({
 					sql: "UPDATE registrations SET status = 'confirmed', declineToken = ? WHERE id = ?",
 					args: [declineToken, candidateId],
-				});
-				await tx.execute({
-					sql: "UPDATE lessons SET enrolledCount = enrolledCount + 1 WHERE id = ?",
-					args: [lessonId],
 				});
 
 				await tx.commit();

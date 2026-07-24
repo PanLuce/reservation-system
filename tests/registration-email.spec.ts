@@ -169,8 +169,11 @@ test.describe("Registration with Email Integration", () => {
 			time: "14:00",
 			location: "CV\u010c Vietnamsk\u00e1",
 			ageGroup: "6-9 měsíců (do lezení)",
-			capacity: 5,
-			enrolledCount: 5, // Full
+			// Zero capacity, not a fabricated occupied count — enrolledCount is
+			// now derived from confirmed registrations, so "full" has to mean no
+			// room at all rather than a stored number with no registrations behind it.
+			capacity: 0,
+			enrolledCount: 0,
 		};
 		await LessonDB.insert(lesson);
 

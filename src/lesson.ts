@@ -23,7 +23,9 @@ export function rowToLesson(row: Row): Lesson {
 		location: str(row.location),
 		ageGroup: str(row.ageGroup),
 		capacity: num(row.capacity),
-		enrolledCount: num(row.enrolledCount),
+		// Derived from confirmed registration rows at query time, not the stored
+		// lessons.enrolledCount column — see CONFIRMED_COUNT_SUBQUERY in database.ts.
+		enrolledCount: num(row.confirmedCount),
 		...(row.courseId != null && { courseId: str(row.courseId) }),
 	};
 }

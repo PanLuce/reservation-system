@@ -108,7 +108,10 @@ test.describe
 				wrongAgeCourse.id,
 			);
 
-			// Full lesson on sister course — MUST NOT appear
+			// Full lesson on sister course — MUST NOT appear. Zero capacity, not a
+			// fabricated occupied count: enrolledCount is derived from confirmed
+			// registrations, so "full" has to mean no room at all rather than a
+			// stored number with no registrations behind it.
 			await LessonDB.insert(
 				{
 					id: "lesson_sister_full",
@@ -118,8 +121,8 @@ test.describe
 					time: "10:00",
 					location: "Studio",
 					ageGroup: "1 - 2 roky",
-					capacity: 2,
-					enrolledCount: 2,
+					capacity: 0,
+					enrolledCount: 0,
 				},
 				sisterCourse.id,
 			);

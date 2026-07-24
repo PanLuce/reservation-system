@@ -99,15 +99,10 @@ export class RegistrationManagerDB {
 
 		const status = registration.status as string;
 		const regLessonId = registration.lessonId as string;
-		if (status === "confirmed") {
-			const lesson = await LessonDB.getById(regLessonId);
-			if (lesson) {
-				await LessonDB.update(regLessonId, {
-					enrolledCount: Math.max(0, lesson.enrolledCount - 1),
-				});
-			}
-		}
 
+		// enrolledCount is derived live from confirmed registrations (see
+		// CONFIRMED_COUNT_SUBQUERY in database.ts), so flipping this row's status
+		// below is all that's needed to free the seat — no counter to decrement.
 		await RegistrationDB.update(registrationId, { status: "cancelled" });
 
 		// Only a confirmed cancellation actually frees a seat — cancelling an
