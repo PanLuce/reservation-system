@@ -8,8 +8,10 @@ import {
 	RegistrationDB,
 	resetDatabaseForTests,
 } from "../src/database.js";
+import type { EmailServiceInterface } from "../src/email-factory.js";
 import { createLesson } from "../src/lesson.js";
 import { createParticipant } from "../src/participant.js";
+import { RegistrationManagerDB } from "../src/registration-db.js";
 
 import { BASE } from "./helpers/base.js";
 
@@ -316,5 +318,57 @@ test.describe
 				method: "POST",
 			});
 			expect(declineRes.status).toBe(404);
+		});
+
+		test("promotion sends a waitlist promotion email with a working decline link", async () => {
+			const lessonId = await createLessonWithCapacity(1);
+
+			const calls: Array<{ participantEmail: string; declineUrl: string }> = [];
+			const mockEmailService: EmailServiceInterface = {
+				sendParticipantConfirmation: async () => {},
+				sendAdminNotification: async () => {},
+				sendWaitlistPromotion: async (participant, _lesson, declineUrl) => {
+					calls.push({ participantEmail: participant.email, declineUrl });
+				},
+			};
+			const manager = new RegistrationManagerDB(
+				mockEmailService,
+				"https://test.example",
+			);
+
+			const alena = {
+				id: `p_${Math.random().toString(36).slice(2)}`,
+				name: "Alena",
+				email: "alena@t.cz",
+				phone: "",
+				ageGroup: "1 - 2 roky",
+			};
+			const bedrich = {
+				id: `p_${Math.random().toString(36).slice(2)}`,
+				name: "Bedrich",
+				email: "bedrich@t.cz",
+				phone: "",
+				ageGroup: "1 - 2 roky",
+			};
+
+			const regA = await manager.registerParticipant(lessonId, alena, {
+				sendEmails: false,
+			});
+			await manager.registerParticipant(lessonId, bedrich, {
+				sendEmails: false,
+			});
+
+			await manager.cancelRegistration(regA.id);
+
+			// promoteWaitlistForLesson fires the promotion email fire-and-forget
+			// (same pattern as registerParticipant's confirmation emails) — give it
+			// a tick to land, matching tests/registration-email.spec.ts.
+			await new Promise((resolve) => setTimeout(resolve, 100));
+
+			expect(calls).toHaveLength(1);
+			expect(calls[0]?.participantEmail).toBe("bedrich@t.cz");
+			expect(calls[0]?.declineUrl).toMatch(
+				/^https:\/\/test\.example\/decline\.html\?token=[\w-]+$/,
+			);
 		});
 	});

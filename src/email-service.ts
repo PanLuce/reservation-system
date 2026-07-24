@@ -78,6 +78,61 @@ export class EmailService {
 		}
 	}
 
+	/**
+	 * Sends notification email when a participant is auto-promoted off the
+	 * waitlist into a freed seat, with a link to decline it.
+	 * Fails gracefully without throwing errors
+	 * @param participant - The participant who was promoted
+	 * @param lesson - The lesson they were promoted into
+	 * @param declineUrl - Link the parent can use to give up the seat
+	 */
+	async sendWaitlistPromotion(
+		participant: Participant,
+		lesson: Lesson,
+		declineUrl: string,
+	): Promise<void> {
+		try {
+			await this.transporter.sendMail({
+				from: this.fromEmail,
+				to: participant.email,
+				subject: `Uvolnilo se místo - ${lesson.title}`,
+				text: this.createWaitlistPromotionEmailText(
+					participant,
+					lesson,
+					declineUrl,
+				),
+			});
+		} catch (error) {
+			console.error("Failed to send waitlist promotion email:", error);
+		}
+	}
+
+	private createWaitlistPromotionEmailText(
+		participant: Participant,
+		lesson: Lesson,
+		declineUrl: string,
+	): string {
+		return `Dobrý den ${participant.name},
+
+Uvolnilo se místo na lekci, na kterou jste byli na čekací listině, a vaše
+registrace byla automaticky potvrzena!
+
+Detaily lekce:
+- Název: ${lesson.title}
+- Den: ${lesson.dayOfWeek}
+- Čas: ${lesson.time}
+- Místo: ${lesson.location}
+- Věková skupina: ${lesson.ageGroup}
+
+Status: POTVRZENO ✓
+
+Pokud toto místo nechcete, můžete ho odmítnout a přenechat dalšímu čekajícímu
+dítěti zde: ${declineUrl}
+
+S pozdravem,
+Centrum Rubáček`;
+	}
+
 	private createConfirmedEmailText(
 		participant: Participant,
 		lesson: Lesson,

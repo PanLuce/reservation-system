@@ -112,7 +112,6 @@ test.describe("syncGroupEnrollments — waitlisted count", () => {
 		await CourseDB.insert(course);
 
 		const names = ["Iva", "Jarda", "Kuba"];
-		const participantIds: string[] = [];
 		for (const name of names) {
 			const p = createParticipant({
 				name,
@@ -122,7 +121,6 @@ test.describe("syncGroupEnrollments — waitlisted count", () => {
 			});
 			await ParticipantDB.insert(p);
 			await ParticipantDB.linkToCourse(p.id, course.id);
-			participantIds.push(p.id);
 		}
 
 		await LessonDB.insertWithCourse(
@@ -164,13 +162,19 @@ test.describe("syncGroupEnrollments — sendEmails option", () => {
 	});
 
 	function createSpyEmailService(): EmailServiceInterface & { calls: number } {
+		const state = { calls: 0 };
 		return {
-			calls: 0,
+			get calls() {
+				return state.calls;
+			},
 			async sendParticipantConfirmation() {
-				this.calls++;
+				state.calls++;
 			},
 			async sendAdminNotification() {
-				this.calls++;
+				state.calls++;
+			},
+			async sendWaitlistPromotion() {
+				state.calls++;
 			},
 		};
 	}

@@ -7,7 +7,10 @@ import { isAfterMidnightCutoff } from "./registration-rules.js";
 import { localDateString, type Registration } from "./types.js";
 
 export class RegistrationManagerDB {
-	constructor(private emailService?: EmailServiceInterface) {}
+	constructor(
+		private emailService?: EmailServiceInterface,
+		private publicBaseUrl?: string,
+	) {}
 
 	/**
 	 * Shared atomic core for every registration flow (self-service, substitution,
@@ -135,8 +138,44 @@ export class RegistrationManagerDB {
 				status: "confirmed",
 				declineToken: result.declineToken,
 			});
+			this.sendWaitlistPromotionEmail(
+				result.participantId,
+				result.lessonId,
+				result.declineToken,
+			).catch((err) => {
+				console.error("Waitlist promotion email failed:", err);
+			});
 		}
 		return promoted;
+	}
+
+	private async sendWaitlistPromotionEmail(
+		participantId: string,
+		lessonId: string,
+		declineToken: string,
+	): Promise<void> {
+		if (!this.emailService) return;
+
+		const [participant, lesson] = await Promise.all([
+			ParticipantDB.getById(participantId) as Promise<
+				Record<string, unknown> | undefined
+			>,
+			LessonDB.getById(lessonId),
+		]);
+		if (!participant || !lesson) return;
+
+		const declineUrl = `${this.publicBaseUrl ?? ""}/decline.html?token=${declineToken}`;
+		await this.emailService.sendWaitlistPromotion(
+			{
+				id: participantId,
+				name: participant.name as string,
+				email: participant.email as string,
+				phone: (participant.phone as string) ?? "",
+				ageGroup: participant.ageGroup as string,
+			},
+			lesson,
+			declineUrl,
+		);
 	}
 
 	async bulkRegisterParticipants(

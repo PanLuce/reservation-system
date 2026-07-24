@@ -56,6 +56,10 @@ function createMockEmailService() {
 				status,
 			});
 		},
+		sendWaitlistPromotion: async () => {
+			// not exercised by these tests — REQ-2 promotion emails are covered
+			// in tests/req-2-waitlist-promotion.spec.ts
+		},
 		getCalls: () => calls,
 		resetCalls: () => {
 			calls.length = 0;
@@ -70,6 +74,9 @@ function createFailingEmailService() {
 			throw new Error("Email service failure");
 		},
 		sendAdminNotification: async () => {
+			throw new Error("Email service failure");
+		},
+		sendWaitlistPromotion: async () => {
 			throw new Error("Email service failure");
 		},
 	};

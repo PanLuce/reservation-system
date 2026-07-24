@@ -162,6 +162,39 @@ test.describe("Email Service", () => {
 		expect(email.text).toContain("5/10");
 	});
 
+	test("should send waitlist promotion email with the decline link", async () => {
+		// Arrange
+		const mockTransporter = createMockTransporter();
+		const emailService = new EmailService(
+			mockTransporter as unknown as nodemailer.Transporter,
+			"admin@centrumrubacek.cz",
+			"info@centrumrubacek.cz",
+		);
+		const declineUrl = "https://centrumrubacek.cz/decline.html?token=abc123";
+
+		// Act
+		await emailService.sendWaitlistPromotion(
+			mockParticipant,
+			mockLesson,
+			declineUrl,
+		);
+
+		// Assert
+		const sentEmails = mockTransporter.getSentEmails();
+		expect(sentEmails).toHaveLength(1);
+
+		const email = sentEmails[0]!;
+		expect(email.to).toBe("jana@example.cz");
+		expect(email.from).toBe("info@centrumrubacek.cz");
+		expect(email.subject).toContain("Ranní cvičení");
+
+		expect(email.text).toContain("Dobrý den Jana Nováková");
+		expect(email.text).toContain("Ranní cvičení");
+		expect(email.text).toContain("Pondělí");
+		expect(email.text).toContain("10:00");
+		expect(email.text).toContain(declineUrl);
+	});
+
 	test("should handle SMTP errors gracefully without throwing", async () => {
 		// Arrange
 		const failingTransporter = {
@@ -190,6 +223,14 @@ test.describe("Email Service", () => {
 				mockParticipant,
 				mockLesson,
 				"confirmed",
+			),
+		).resolves.toBeUndefined();
+
+		await expect(
+			emailService.sendWaitlistPromotion(
+				mockParticipant,
+				mockLesson,
+				"https://centrumrubacek.cz/decline.html?token=abc123",
 			),
 		).resolves.toBeUndefined();
 	});

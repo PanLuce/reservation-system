@@ -19,6 +19,12 @@ export interface EmailServiceInterface {
 		lesson: Lesson,
 		status: "confirmed" | "waitlist",
 	): Promise<void>;
+
+	sendWaitlistPromotion(
+		participant: Participant,
+		lesson: Lesson,
+		declineUrl: string,
+	): Promise<void>;
 }
 
 class NoOpEmailService implements EmailServiceInterface {
@@ -27,6 +33,10 @@ class NoOpEmailService implements EmailServiceInterface {
 	}
 
 	async sendAdminNotification(): Promise<void> {
+		// No-op: do nothing
+	}
+
+	async sendWaitlistPromotion(): Promise<void> {
 		// No-op: do nothing
 	}
 }
