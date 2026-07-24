@@ -337,16 +337,17 @@ export async function addParticipantToLesson(participantId, lessonId) {
 			return;
 		}
 		showNotification("Dítě přidáno na lekci");
-		const membersContainer = document.getElementById(
-			`day-lesson-members-${lessonId}`,
-		);
-		if (membersContainer) {
-			const list = membersContainer.querySelector("ul");
-			if (list) list.remove();
-			membersContainer.querySelector("span").textContent =
-				"👶 Načíst účastníky ▾";
-			toggleDayLessonMembers(lessonId);
-		}
+
+		// Re-render the day modal from a fresh calendar fetch — the enrolledCount
+		// pill and capacity bar are drawn from the cached calendarLessons array,
+		// so just re-fetching the member list (as before) left them stale.
+		const lessonRes = await fetch(`${API_URL}/lessons/${lessonId}`, {
+			credentials: "include",
+		});
+		const lesson = await lessonRes.json();
+		await loadCalendar();
+		openDayModal(lesson.date);
+		toggleDayLessonMembers(lessonId);
 	} catch {
 		showNotification("Chyba při přidávání", "error");
 	}
