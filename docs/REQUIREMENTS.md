@@ -1,31 +1,8 @@
 ## Feature backlog
 
-~~1. Whenever I create new "kurz" or editing "skupinku" or "lesson" the screen stays in edit or create new mode even
-though I navigate to different tab. Ask for a screenshot once tackling this.~~
-~~2. Waitlisting participant - whenever participant is waitlisted, and subsequently the space is emptied, the first
-   participant should be placed there to fill the space AND email is sent to him informing about it, leaving an option
-to decline the assignment to the lesson.~~
-3. add participants is not working properly: when I look at the lesson it shows 12/15 capacity, however when I look at
-   the lesson detail it lists NO kids there. Furthermore, when I add 1 kid, he is listed but the counter still shows
-   12/15 and the others are not listed still. Ask for screenshots for this issue.
 4. There are number of "in progress" screens which are waiting for data or a process to finish. One example is login
    screen. But there is no UX mechanism to inform the user to not do anything and wait (e.g. gray UI, disable buttons,
    any other proposal). I have a screenshot so ask for it once you tackle this.
-5. ```
-   Error: expect(received).toBe(expected) // Object.is equality
-
-   Expected: "/login.html"
-   Received: "/"
-
-   29 | 		await page.goto(`${BASE}/`);
-   30 |
-   31 | 		expect(new URL(page.url()).pathname).toBe("/login.html");
-      | 		                                     ^
-   32 | 	});
-   33 |
-   34 | 	test("session cookie is host-scoped and SameSite=Lax after login", async ({
-   at /home/runner/work/reservation-system/reservation-system/tests/wordpress-pluggability.spec.ts:31:40
-   ```
 
 ## Backlog from repository health check (2026-07-03)
 
