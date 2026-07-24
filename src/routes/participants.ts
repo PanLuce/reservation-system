@@ -159,7 +159,7 @@ participantsRouter.get(
 			sql: `SELECT p.id, p.name, p.email, p.phone, p.ageGroup
 				FROM participants p
 				INNER JOIN registrations r ON p.id = r.participantId
-				WHERE r.lessonId = ? AND r.status != 'cancelled'`,
+				WHERE r.lessonId = ? AND r.status = 'confirmed'`,
 			args: [lessonId],
 		});
 

@@ -163,4 +163,21 @@ test.describe
 			const lesson = await fetchLesson(lessonId);
 			expect(lesson.enrolledCount).toBe(1);
 		});
+
+		test("the lesson detail list shows only confirmed participants, matching enrolledCount", async () => {
+			const cookie = await loginAsAdmin();
+			const lessonId = await createLessonWithCapacity(1);
+			const alena = await createUnlinkedParticipant("Alena");
+			const bedrich = await createUnlinkedParticipant("Bedrich");
+
+			await registerParticipant(cookie, lessonId, alena);
+			const regB = await registerParticipant(cookie, lessonId, bedrich);
+			expect(regB.status).toBe("waitlist");
+
+			const lesson = await fetchLesson(lessonId);
+			const participants = await fetchLessonParticipants(cookie, lessonId);
+
+			expect(participants).toHaveLength(lesson.enrolledCount);
+			expect(participants.map((p) => p.name)).toEqual(["Alena"]);
+		});
 	});
